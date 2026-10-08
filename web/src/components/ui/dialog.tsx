@@ -66,7 +66,7 @@ function DialogContent({
           // select-none for the same reason the app shell carries it: a dialog
           // is chrome, not a document. It has to be repeated here because the
           // portal renders this outside the shell's subtree.
-          "fixed inset-x-0 bottom-0 z-50 grid max-h-[85dvh] w-full gap-6 overflow-y-auto rounded-t-2xl bg-popover p-6 text-sm text-popover-foreground shadow-xl duration-100 outline-none select-none max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-8 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-8",
+          "fixed inset-x-0 bottom-0 z-50 grid max-h-[85dvh] w-full gap-6 overflow-y-auto rounded-t-2xl bg-dialog p-6 text-sm text-popover-foreground shadow-xl duration-100 outline-none select-none max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-8 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-8",
           "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[calc(100dvh-2rem)] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:ring-1 sm:ring-foreground/5 dark:sm:ring-foreground/10 sm:data-open:slide-in-from-bottom-0 sm:data-open:zoom-in-95 sm:data-closed:slide-out-to-bottom-0 sm:data-closed:zoom-out-95",
           className
         )}

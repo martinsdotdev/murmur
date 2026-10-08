@@ -31,6 +31,9 @@
   /* neutral-background-4: the highest Fluent layer, used for controls that
        need to lift off an already-tinted row (the saved-mix delete button). */
   --color-elevated: var(--elevated);
+  /* neutral-background-3: dialogs sit one layer above the page, unlike the
+       popover surface menus and toasts share. */
+  --color-dialog: var(--dialog);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -105,6 +108,7 @@
   --brand-hover: #8a4c10;
   --track: rgba(33, 18, 14, 0.16);
   --elevated: #d8cdb5; /* neutral-background-4 */
+  --dialog: #ece4d2; /* neutral-background-3 */
   --scrollbar: rgba(33, 18, 14, 0.24);
   --scrollbar-hover: rgba(33, 18, 14, 0.4);
   --chart-1: #b86d20;
@@ -146,6 +150,7 @@
   --brand-hover: #ffedc8;
   --track: rgba(250, 246, 238, 0.14);
   --elevated: #3a3527; /* neutral-background-4 */
+  --dialog: #2c281e; /* neutral-background-3 */
   --scrollbar: rgba(250, 246, 238, 0.22);
   --scrollbar-hover: rgba(250, 246, 238, 0.38);
   --chart-1: #f5c375;
@@ -161,6 +166,16 @@
   --sidebar-accent-foreground: #faf6ee;
   --sidebar-border: rgba(250, 246, 238, 0.06);
   --sidebar-ring: #f5c375;
+}
+
+/* A dialog's surface is background-3, the layer these four already use for
+   hovers, the selected mix and the close button. Inside one they step up to
+   background-4 with it, or they would sink into the surface. */
+[data-slot="dialog-content"] {
+  --secondary: var(--elevated);
+  --muted: var(--elevated);
+  --accent: var(--elevated);
+  --sidebar-accent: var(--elevated);
 }
 
 @layer base {
