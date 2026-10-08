@@ -2246,7 +2246,7 @@ export function MurmurApp() {
             put a second scrollbar on this dialog and let the header and footer
             scroll away with the content. Only the body below scrolls now. */}
         <DialogContent className="flex flex-col gap-0 overflow-hidden p-0 max-sm:pb-0 sm:max-w-md">
-          <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
+          <DialogHeader className="shrink-0 px-5 py-4">
             <DialogTitle className="text-lg">Preferences</DialogTitle>
           </DialogHeader>
 
