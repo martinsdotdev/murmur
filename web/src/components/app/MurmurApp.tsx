@@ -17,6 +17,7 @@ import {
   LeftToRightListBulletIcon,
   MinusSignCircleIcon,
   Moon02Icon,
+  MoreHorizontalIcon,
   PauseIcon,
   PlayIcon,
   PlusSignIcon,
@@ -202,6 +203,8 @@ interface MixRowProps {
   dirty?: boolean
   onApply: () => void
   onRemove?: () => void
+  /** On the button, e.g. a taller row where a finger has to hit it. */
+  className?: string
 }
 
 /**
@@ -219,7 +222,15 @@ interface MixRowProps {
  * rows need the <li> to be the context-menu trigger, and a trigger wrapped
  * around the item would put a <div> between the <ul> and its children.
  */
-function MixRow({ name, mix, loaded, dirty, onApply, onRemove }: MixRowProps) {
+function MixRow({
+  name,
+  mix,
+  loaded,
+  dirty,
+  onApply,
+  onRemove,
+  className,
+}: MixRowProps) {
   return (
     <>
       {loaded && (
@@ -242,7 +253,8 @@ function MixRow({ name, mix, loaded, dirty, onApply, onRemove }: MixRowProps) {
           // data-active:font-semibold because the variant's data-active sets
           // font-medium, and the row's weight is fixed at 600 by the design.
           "h-[34px] gap-[7px] rounded-[7px] px-2.5 text-[13px] leading-[17px] font-semibold data-active:font-semibold",
-          !loaded && "text-foreground/85"
+          !loaded && "text-foreground/85",
+          className
         )}
       >
         <span className="flex size-3.5 shrink-0 items-center justify-center">
@@ -801,6 +813,8 @@ export function MurmurApp() {
   // the session without losing the only invitation an empty sidebar has.
   const [allMixesOpen, setAllMixesOpen] = React.useState(false)
   const [nowPlayingOpen, setNowPlayingOpen] = React.useState(false)
+  /** The All mixes row whose Rename · Duplicate · Delete strip is open. */
+  const [mixActionsFor, setMixActionsFor] = React.useState<string | null>(null)
   const [timerOpen, setTimerOpen] = React.useState(false)
   const [addOpen, setAddOpen] = React.useState(false)
   const [saveName, setSaveName] = React.useState("")
@@ -1126,10 +1140,32 @@ export function MurmurApp() {
     setRenaming(null)
   }
 
+  /** Desktop's context menu and the phone's All mixes, both undoable. */
   const removeSaved = (name: string) => {
+    const at = saved.findIndex((s) => s.name === name)
+    if (at < 0) return
+    const removed = saved[at]
     setSaved((prev) => prev.filter((s) => s.name !== name))
     // Still loaded but no longer stored, so it must read as unsaved.
     if (name === mixName) setDirty(true)
+    toast(`Deleted “${name}”`, {
+      id: "mix-deleted",
+      action: {
+        label: "Undo",
+        onClick: () => undoRef.current.undoDelete(removed, at),
+      },
+    })
+  }
+
+  const undoDelete = (mix: SavedMix, at: number) => {
+    setSaved((prev) =>
+      // A mix saved under the same name since then wins.
+      prev.some((s) => s.name === mix.name)
+        ? prev
+        : [...prev.slice(0, at), mix, ...prev.slice(at)]
+    )
+    // Saved again, so a loaded copy is clean if it still matches.
+    if (mix.name === mixName) setDirty(!sameMix(vols, mix.mix))
   }
 
   const duplicateMix = (mix: SavedMix) => {
@@ -1339,9 +1375,9 @@ export function MurmurApp() {
 
   // Latest-ref: an Undo can fire after other changes, and has to walk the
   // volumes as they are then, not as they were when its toast went up.
-  const undoRef = React.useRef({ undoLink, restoreMix })
+  const undoRef = React.useRef({ undoLink, restoreMix, undoDelete })
   React.useEffect(() => {
-    undoRef.current = { undoLink, restoreMix }
+    undoRef.current = { undoLink, restoreMix, undoDelete }
   })
 
   /** Now playing's "Turn all off". No confirmation, since Undo is right there. */
@@ -2471,29 +2507,98 @@ export function MurmurApp() {
       </Dialog>
 
       {/* The phone's stand-in for both the sidebar list and the right-click
-          menu it can't offer: every mix, each with its delete. */}
-      <Dialog open={allMixesOpen} onOpenChange={setAllMixesOpen}>
+          menu it can't offer: every mix, and behind each one's ··· the same
+          Rename, Duplicate and Delete. A context menu is hidden by default, so
+          its actions need a visible way in as well. */}
+      <Dialog
+        open={allMixesOpen}
+        onOpenChange={(open) => {
+          setAllMixesOpen(open)
+          if (!open) setMixActionsFor(null)
+        }}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Your mixes</DialogTitle>
-            <DialogDescription>Load or delete a saved mix.</DialogDescription>
+            <DialogDescription>
+              Tap a mix to play it, or the dots beside it to rename, duplicate
+              or delete it.
+            </DialogDescription>
           </DialogHeader>
           <SidebarMenu className="max-h-[50vh] scroll-fade overflow-y-auto scroll-fade-5">
-            {saved.map((mix) => (
-              <SidebarMenuItem key={mix.name}>
-                <MixRow
-                  name={mix.name}
-                  mix={mix.mix}
-                  loaded={mix.name === mixName}
-                  dirty={mix.name === mixName && dirty}
-                  onApply={() => {
-                    applyMix(mix.name, mix.mix)
-                    setAllMixesOpen(false)
-                  }}
-                  onRemove={() => removeSaved(mix.name)}
-                />
-              </SidebarMenuItem>
-            ))}
+            {saved.map((mix) => {
+              const open = mixActionsFor === mix.name
+              return (
+                <SidebarMenuItem key={mix.name}>
+                  <div className="relative flex items-center">
+                    <div className="min-w-0 flex-1">
+                      <MixRow
+                        name={mix.name}
+                        mix={mix.mix}
+                        loaded={mix.name === mixName}
+                        dirty={mix.name === mixName && dirty}
+                        className="h-11"
+                        onApply={() => {
+                          applyMix(mix.name, mix.mix)
+                          setAllMixesOpen(false)
+                        }}
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11 shrink-0 rounded-full text-muted-foreground"
+                      aria-label={`More for ${mix.name}`}
+                      aria-expanded={open}
+                      onClick={() => setMixActionsFor(open ? null : mix.name)}
+                    >
+                      <HugeiconsIcon
+                        icon={MoreHorizontalIcon}
+                        strokeWidth={2}
+                        className="size-5"
+                      />
+                    </Button>
+                  </div>
+                  {open && (
+                    <div className="flex gap-1 pb-1 pl-8">
+                      <Button
+                        variant="ghost"
+                        className="h-11 px-3"
+                        onClick={() => {
+                          // One sheet at a time: this one closes first.
+                          setAllMixesOpen(false)
+                          setMixActionsFor(null)
+                          setRenameValue(mix.name)
+                          setRenaming(mix.name)
+                        }}
+                      >
+                        Rename
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="h-11 px-3"
+                        onClick={() => {
+                          duplicateMix(mix)
+                          setMixActionsFor(null)
+                        }}
+                      >
+                        Duplicate
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="h-11 px-3 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          removeSaved(mix.name)
+                          setMixActionsFor(null)
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  )}
+                </SidebarMenuItem>
+              )
+            })}
           </SidebarMenu>
         </DialogContent>
       </Dialog>
