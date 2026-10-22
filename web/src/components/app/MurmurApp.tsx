@@ -45,7 +45,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarHeader,
+  SidebarInset,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuButton,
@@ -1599,155 +1599,36 @@ export function MurmurApp() {
   }
 
   return (
-    // SidebarProvider is the app root rather than a wrapper around it: it
-    // already renders the flex row this layout needs, and Sidebar reads its
-    // context even under collapsible="none".
+    // SidebarProvider is the app root rather than a wrapper around it: Sidebar
+    // reads its context even under collapsible="none", and with the inset
+    // variant inside, it paints the frame the header and sidebar share.
     <SidebarProvider
       // select-none because this reads as an app, not a document: dragging a
       // slider or a card would otherwise smear a text selection across the
       // labels beside it. Dialogs and toasts portal to <body>, outside this
       // subtree, so anything genuinely worth copying stays selectable.
-      className="h-dvh overflow-hidden bg-background text-foreground select-none"
+      className="h-dvh flex-col overflow-hidden text-foreground select-none"
       // 15rem, not the component's 16rem default: the sidebar was 240px and
       // the sound grid's column count is tuned against the width that leaves.
       style={{ "--sidebar-width": "15rem" } as React.CSSProperties}
     >
-      {/* collapsible="none": below md the mixes become the chip strip and the
-          overflow dialog, so the off-canvas drawer would be a second, competing
-          answer to the same problem. */}
-      <Sidebar collapsible="none" className="hidden border-r md:flex">
-        <SidebarHeader className="flex-row items-center gap-[7px] px-5 pt-4 pb-2">
+      {/* From md up the header sits on the frame beside the sidebar, the two
+          reading as one title bar over the inset panel. On a phone there is
+          no panel, so it keeps its own surface and rule. */}
+      <header className="flex shrink-0 items-center border-b bg-background py-3 md:border-b-0 md:bg-transparent">
+        {/* Exactly the sidebar's width, so the controls start where the
+            panel does; pl-5 is the sidebar's own inset. */}
+        <div className="flex shrink-0 items-center gap-[7px] pl-4 md:w-(--sidebar-width) md:pl-5">
           <BrandMark />
           <span className="font-serif text-[17px] font-semibold tracking-tight">
             Murmur
           </span>
-        </SidebarHeader>
+        </div>
 
-        <SidebarContent className="scroll-fade gap-0 px-3 scroll-fade-5">
-          <SidebarGroup className="gap-1 p-0">
-            <SidebarGroupLabel className="h-auto px-2 pb-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-              Your mixes
-            </SidebarGroupLabel>
-            <SidebarMenu>
-              {saved.map((mix) => {
-                const loaded = mix.name === mixName
-                return (
-                  <ContextMenu key={mix.name}>
-                    {/* The <li> is the trigger: a trigger wrapped around the item
-                    would sit between the <ul> and its children. */}
-                    <ContextMenuTrigger render={<SidebarMenuItem />}>
-                      <MixRow
-                        name={mix.name}
-                        mix={mix.mix}
-                        loaded={loaded}
-                        dirty={loaded && dirty}
-                        onApply={() => applyMix(mix.name, mix.mix)}
-                        onRemove={() => removeSaved(mix.name)}
-                      />
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <ContextMenuItem
-                        onClick={() => {
-                          setRenameValue(mix.name)
-                          setRenaming(mix.name)
-                        }}
-                      >
-                        Rename…
-                      </ContextMenuItem>
-                      <ContextMenuItem onClick={() => duplicateMix(mix)}>
-                        Duplicate
-                      </ContextMenuItem>
-                      <ContextMenuSeparator />
-                      <ContextMenuItem onClick={() => removeSaved(mix.name)}>
-                        Delete
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                )
-              })}
-            </SidebarMenu>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-1 w-full justify-start border border-dashed text-muted-foreground"
-              onClick={() => {
-                setSaveName(dirty || mixName === "Shared mix" ? "" : mixName)
-                setSaveOpen(true)
-              }}
-            >
-              <HugeiconsIcon
-                icon={PlusSignIcon}
-                strokeWidth={2}
-                className="size-3.5"
-              />
-              Save current mix
-            </Button>
-          </SidebarGroup>
-        </SidebarContent>
-
-        <SidebarFooter className="gap-0 px-3 pb-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start"
-            onClick={() => setTimerOpen(true)}
-          >
-            <HugeiconsIcon
-              icon={Clock01Icon}
-              strokeWidth={2}
-              className="size-3.5"
-            />
-            Sleep timer
-            <span
-              className={cn(
-                "ml-auto font-mono text-xs tabular-nums",
-                timerOn ? "text-brand" : "text-muted-foreground"
-              )}
-            >
-              {timerOn ? formatClock(timerLeft) : "Off"}
-            </span>
-          </Button>
-
-          <Separator className="my-3" />
-
-          <div className="flex items-center gap-2 px-1">
-            {/* Without this /app is a dead end. The old sidebar had it too. */}
-            <a
-              className="text-xs text-muted-foreground hover:text-foreground"
-              href={`${BASE}/`}
-            >
-              About
-            </a>
-            <a
-              className="text-xs text-muted-foreground hover:text-foreground"
-              href={repoUrl}
-              target="_blank"
-              rel="noopener"
-            >
-              GitHub
-            </a>
-            <div className="flex-1" />
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Preferences"
-              title="Preferences (Ctrl+P)"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <HugeiconsIcon
-                icon={Settings01Icon}
-                strokeWidth={2}
-                className="size-4"
-              />
-            </Button>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-
-      <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center gap-3 border-b px-4 py-3 md:px-6">
-          {/* Play, title and status move to the phone transport bar, so the
-              small header carries the wordmark the hidden sidebar took. */}
+        {/* px-6 is the panel's p-6, so the play button and Share sit on the
+            grid's content edges. */}
+        <div className="flex min-w-0 flex-1 items-center gap-3 px-4 md:px-6">
+          {/* Play, title and status move to the phone transport bar. */}
           <Button
             size="icon-lg"
             className="hidden rounded-full md:inline-flex"
@@ -1760,15 +1641,6 @@ export function MurmurApp() {
               className="size-4"
             />
           </Button>
-
-          {/* The whole lockup, not just the word. gap-[7px] matches the one
-              in SidebarHeader, so the two never read as different marks. */}
-          <div className="flex items-center gap-[7px] md:hidden">
-            <BrandMark />
-            <span className="font-serif text-[17px] font-semibold tracking-tight">
-              Murmur
-            </span>
-          </div>
 
           <div className="hidden min-w-0 md:block">
             <p className="truncate text-sm font-medium">
@@ -1888,73 +1760,223 @@ export function MurmurApp() {
               className="size-4"
             />
           </Button>
-        </header>
+        </div>
+      </header>
 
-        {/* Below md the sidebar is hidden, so the mixes need a home of their
-            own or a phone visitor has no way to load or save one. The `||` is
-            what keeps + Save reachable: with every mix deleted this strip is the
-            only route to it, so it has to survive an empty list. */}
-        {(saved.length > 0 || activeIds.length > 0) && (
-          <div className="flex shrink-0 flex-col px-4 pt-2.5 pb-3 md:hidden">
-            {saved.length > 0 && (
-              <p className="pb-[7px] text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+      <div className="flex min-h-0 flex-1">
+        {/* collapsible="none": below md the mixes become the chip strip and the
+            overflow dialog, so the off-canvas drawer would be a second,
+            competing answer to the same problem. */}
+        <Sidebar variant="inset" collapsible="none" className="hidden md:flex">
+          {/* pt-6 matches the panel's p-6, so "Your mixes" sits level with
+              the first category heading. */}
+          <SidebarContent className="scroll-fade gap-0 px-3 pt-6 scroll-fade-5">
+            <SidebarGroup className="gap-1 p-0">
+              <SidebarGroupLabel className="h-auto px-2 pb-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                 Your mixes
-              </p>
-            )}
-            <div className="flex items-center gap-2">
-              {/* The fade is scroll-aware, so it only marks an edge that still
-                has chips behind it, which the ··· button alone cannot say. */}
-              <div className="no-scrollbar flex min-w-0 flex-1 scroll-fade-x gap-2 overflow-x-auto scroll-fade-5">
-                {saved.map((mix) => (
-                  <MixChip
-                    key={mix.name}
-                    label={mix.name}
-                    iconPath={mixIconPath(mix.mix)}
-                    active={mix.name === mixName && !dirty}
-                    onClick={() => applyMix(mix.name, mix.mix)}
-                  />
-                ))}
-                {activeIds.length > 0 && (
-                  <MixChip
-                    label="+ Save"
-                    dashed
-                    onClick={() => {
-                      setSaveName(
-                        dirty || mixName === "Shared mix" ? "" : mixName
-                      )
-                      setSaveOpen(true)
-                    }}
-                  />
+              </SidebarGroupLabel>
+              <SidebarMenu>
+                {saved.map((mix) => {
+                  const loaded = mix.name === mixName
+                  return (
+                    <ContextMenu key={mix.name}>
+                      {/* The <li> is the trigger: a trigger wrapped around the item
+                      would sit between the <ul> and its children. */}
+                      <ContextMenuTrigger render={<SidebarMenuItem />}>
+                        <MixRow
+                          name={mix.name}
+                          mix={mix.mix}
+                          loaded={loaded}
+                          dirty={loaded && dirty}
+                          onApply={() => applyMix(mix.name, mix.mix)}
+                          onRemove={() => removeSaved(mix.name)}
+                        />
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem
+                          onClick={() => {
+                            setRenameValue(mix.name)
+                            setRenaming(mix.name)
+                          }}
+                        >
+                          Rename…
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => duplicateMix(mix)}>
+                          Duplicate
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem onClick={() => removeSaved(mix.name)}>
+                          Delete
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  )
+                })}
+              </SidebarMenu>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-1 w-full justify-start border border-dashed text-muted-foreground"
+                onClick={() => {
+                  setSaveName(dirty || mixName === "Shared mix" ? "" : mixName)
+                  setSaveOpen(true)
+                }}
+              >
+                <HugeiconsIcon
+                  icon={PlusSignIcon}
+                  strokeWidth={2}
+                  className="size-3.5"
+                />
+                Save current mix
+              </Button>
+            </SidebarGroup>
+          </SidebarContent>
+
+          <SidebarFooter className="gap-0 px-3 pb-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => setTimerOpen(true)}
+            >
+              <HugeiconsIcon
+                icon={Clock01Icon}
+                strokeWidth={2}
+                className="size-3.5"
+              />
+              Sleep timer
+              <span
+                className={cn(
+                  "ml-auto font-mono text-xs tabular-nums",
+                  timerOn ? "text-brand" : "text-muted-foreground"
+                )}
+              >
+                {timerOn ? formatClock(timerLeft) : "Off"}
+              </span>
+            </Button>
+
+            <Separator className="my-3" />
+
+            <div className="flex items-center gap-2 px-1">
+              {/* Without this /app is a dead end. The old sidebar had it too. */}
+              <a
+                className="text-xs text-muted-foreground hover:text-foreground"
+                href={`${BASE}/`}
+              >
+                About
+              </a>
+              <a
+                className="text-xs text-muted-foreground hover:text-foreground"
+                href={repoUrl}
+                target="_blank"
+                rel="noopener"
+              >
+                GitHub
+              </a>
+              <div className="flex-1" />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Preferences"
+                title="Preferences (Ctrl+P)"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <HugeiconsIcon
+                  icon={Settings01Icon}
+                  strokeWidth={2}
+                  className="size-4"
+                />
+              </Button>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
+
+        {/* overflow-hidden clips the grid's scroll fade to the inset's
+            rounded corner. */}
+        <SidebarInset className="min-w-0 overflow-hidden">
+          {/* Below md the sidebar is hidden, so the mixes need a home of their
+              own or a phone visitor has no way to load or save one. The `||` is
+              what keeps + Save reachable: with every mix deleted this strip is the
+              only route to it, so it has to survive an empty list. */}
+          {(saved.length > 0 || activeIds.length > 0) && (
+            <div className="flex shrink-0 flex-col px-4 pt-2.5 pb-3 md:hidden">
+              {saved.length > 0 && (
+                <p className="pb-[7px] text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                  Your mixes
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                {/* The fade is scroll-aware, so it only marks an edge that still
+                  has chips behind it, which the ··· button alone cannot say. */}
+                <div className="no-scrollbar flex min-w-0 flex-1 scroll-fade-x gap-2 overflow-x-auto scroll-fade-5">
+                  {saved.map((mix) => (
+                    <MixChip
+                      key={mix.name}
+                      label={mix.name}
+                      iconPath={mixIconPath(mix.mix)}
+                      active={mix.name === mixName && !dirty}
+                      onClick={() => applyMix(mix.name, mix.mix)}
+                    />
+                  ))}
+                  {activeIds.length > 0 && (
+                    <MixChip
+                      label="+ Save"
+                      dashed
+                      onClick={() => {
+                        setSaveName(
+                          dirty || mixName === "Shared mix" ? "" : mixName
+                        )
+                        setSaveOpen(true)
+                      }}
+                    />
+                  )}
+                </div>
+                {/* Pinned outside the scroller so whatever scrolls past the edge,
+                  and the rename/delete that right-click carries on desktop,
+                  stays reachable. */}
+                {saved.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-9 shrink-0 rounded-full bg-transparent text-base leading-none"
+                    aria-label="More mixes"
+                    title="More mixes"
+                    onClick={() => setAllMixesOpen(true)}
+                  >
+                    ···
+                  </Button>
                 )}
               </div>
-              {/* Pinned outside the scroller so whatever scrolls past the edge,
-                and the rename/delete that right-click carries on desktop,
-                stays reachable. */}
-              {saved.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-9 shrink-0 rounded-full bg-transparent text-base leading-none"
-                  aria-label="More mixes"
-                  title="More mixes"
-                  onClick={() => setAllMixesOpen(true)}
-                >
-                  ···
-                </Button>
-              )}
             </div>
-          </div>
-        )}
+          )}
 
-        <ScrollArea
-          className="min-h-0 flex-1"
-          viewportClassName="scroll-fade scroll-fade-6"
-        >
-          <div className="space-y-6 p-4 md:p-6">
-            {CATEGORIES.map((category) => (
-              <section key={category}>
+          <ScrollArea
+            className="min-h-0 flex-1"
+            viewportClassName="scroll-fade scroll-fade-6"
+          >
+            <div className="space-y-6 p-4 md:p-6">
+              {CATEGORIES.map((category) => (
+                <section key={category}>
+                  <h2 className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                    {categoryLabel[category]}
+                  </h2>
+                  <div
+                    className={cn(
+                      view === "grid"
+                        ? "grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5"
+                        : "flex flex-col gap-1.5"
+                    )}
+                  >
+                    {sounds
+                      .filter((s) => s.category === category)
+                      .map((s) => renderSound(s))}
+                  </div>
+                </section>
+              ))}
+
+              <section>
                 <h2 className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-                  {categoryLabel[category]}
+                  Yours
                 </h2>
                 <div
                   className={cn(
@@ -1963,136 +1985,123 @@ export function MurmurApp() {
                       : "flex flex-col gap-1.5"
                   )}
                 >
-                  {sounds
-                    .filter((s) => s.category === category)
-                    .map((s) => renderSound(s))}
+                  {customs.map((c) =>
+                    renderSound(
+                      {
+                        id: c.id,
+                        name: c.name,
+                        iconPath: c.videoId ? VIDEO_ICON : MUSIC_ICON,
+                      },
+                      true
+                    )
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddName("")
+                      setAddUrl("")
+                      setAddOpen(true)
+                    }}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground",
+                      // 83px is what a sound card measures. It only matters when
+                      // this tile is alone, since the grid stretches it to the
+                      // cards beside it otherwise, but it has to be the card's
+                      // height, not a round number: the 92px that was here made
+                      // the whole Yours row 9px taller than every other section.
+                      view === "grid"
+                        ? "min-h-[83px] flex-col p-3"
+                        : "px-4 py-3"
+                    )}
+                  >
+                    <HugeiconsIcon
+                      icon={PlusSignIcon}
+                      strokeWidth={2}
+                      className="size-4"
+                    />
+                    {view === "grid" ? "Add sound" : "Add your own sound"}
+                  </button>
                 </div>
               </section>
-            ))}
+            </div>
+          </ScrollArea>
 
-            <section>
-              <h2 className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
-                Yours
-              </h2>
-              <div
-                className={cn(
-                  view === "grid"
-                    ? "grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5"
-                    : "flex flex-col gap-1.5"
-                )}
-              >
-                {customs.map((c) =>
-                  renderSound(
-                    {
-                      id: c.id,
-                      name: c.name,
-                      iconPath: c.videoId ? VIDEO_ICON : MUSIC_ICON,
-                    },
-                    true
-                  )
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAddName("")
-                    setAddUrl("")
-                    setAddOpen(true)
-                  }}
-                  className={cn(
-                    "flex items-center justify-center gap-2 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground",
-                    // 83px is what a sound card measures. It only matters when
-                    // this tile is alone, since the grid stretches it to the
-                    // cards beside it otherwise, but it has to be the card's
-                    // height, not a round number: the 92px that was here made
-                    // the whole Yours row 9px taller than every other section.
-                    view === "grid" ? "min-h-[83px] flex-col p-3" : "px-4 py-3"
-                  )}
-                >
-                  <HugeiconsIcon
-                    icon={PlusSignIcon}
-                    strokeWidth={2}
-                    className="size-4"
-                  />
-                  {view === "grid" ? "Add sound" : "Add your own sound"}
-                </button>
-              </div>
-            </section>
-          </div>
-        </ScrollArea>
+          {prefs.hints && (
+            <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[11px] text-muted-foreground md:px-6">
+              {[
+                ["Space", "play"],
+                ["↑↓", "volume"],
+                ["S", "share"],
+                ["T", "timer"],
+                [",", "preferences"],
+              ].map(([key, action]) => (
+                <span key={key}>
+                  <b className="font-mono font-semibold text-foreground">
+                    {key}
+                  </b>{" "}
+                  {action}
+                </span>
+              ))}
+            </footer>
+          )}
 
-        {prefs.hints && (
-          <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[11px] text-muted-foreground md:px-6">
-            {[
-              ["Space", "play"],
-              ["↑↓", "volume"],
-              ["S", "share"],
-              ["T", "timer"],
-              [",", "preferences"],
-            ].map(([key, action]) => (
-              <span key={key}>
-                <b className="font-mono font-semibold text-foreground">{key}</b>{" "}
-                {action}
-              </span>
-            ))}
-          </footer>
-        )}
+          {/* Phone transport. Play, what is playing, and master volume all live
+              in the header or sidebar on desktop; pinned here they survive the
+              grid scrolling and stop the small header from overflowing. */}
+          <div className="flex shrink-0 items-center gap-[11px] border-t px-3.5 pt-2.5 pb-3 md:hidden">
+            <Button
+              size="icon"
+              className="size-11 shrink-0 rounded-full shadow-md"
+              aria-label={playing ? "Pause" : "Play"}
+              onClick={togglePlay}
+            >
+              <HugeiconsIcon
+                icon={playing ? PauseIcon : PlayIcon}
+                strokeWidth={2}
+                className="size-[15px]"
+              />
+            </Button>
 
-        {/* Phone transport. Play, what is playing, and master volume all live
-            in the header or sidebar on desktop; pinned here they survive the
-            grid scrolling and stop the small header from overflowing. */}
-        <div className="flex shrink-0 items-center gap-[11px] border-t px-3.5 pt-2.5 pb-3 md:hidden">
-          <Button
-            size="icon"
-            className="size-11 shrink-0 rounded-full shadow-md"
-            aria-label={playing ? "Pause" : "Play"}
-            onClick={togglePlay}
-          >
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-semibold">
+                {mixName}
+                {dirty && " *"}
+              </p>
+              <p className="mt-px truncate text-[11px] text-muted-foreground">
+                {status}
+              </p>
+            </div>
+
             <HugeiconsIcon
-              icon={playing ? PauseIcon : PlayIcon}
+              icon={VolumeHighIcon}
               strokeWidth={2}
-              className="size-[15px]"
+              className="size-3.5 shrink-0 text-muted-foreground"
             />
-          </Button>
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-semibold">
-              {mixName}
-              {dirty && " *"}
-            </p>
-            <p className="mt-px truncate text-[11px] text-muted-foreground">
-              {status}
-            </p>
+            {/* No readout on this one. A phone has no hover, so it could only
+                ever appear mid-drag, and permanently reserving 28px of the
+                tightest row in the app to show a number that briefly sits under
+                your own thumb is a bad trade. */}
+            {/* Width lives on a wrapper: the Slider root's own
+                data-horizontal:w-full outranks any bare w-* passed to it. */}
+            <div className="w-[76px] shrink-0">
+              <Slider
+                value={Math.round(master * 100)}
+                min={0}
+                max={100}
+                step={1}
+                wheelStep={5}
+                resetValue={Math.round(DEFAULT_MASTER * 100)}
+                aria-label="Master volume"
+                aria-valuetext={`${Math.round(master * 100)}%`}
+                onValueChange={(value) => dragMaster((value as number) / 100)}
+                onValueCommitted={(value) =>
+                  commitMaster((value as number) / 100)
+                }
+              />
+            </div>
           </div>
-
-          <HugeiconsIcon
-            icon={VolumeHighIcon}
-            strokeWidth={2}
-            className="size-3.5 shrink-0 text-muted-foreground"
-          />
-          {/* No readout on this one. A phone has no hover, so it could only
-              ever appear mid-drag, and permanently reserving 28px of the
-              tightest row in the app to show a number that briefly sits under
-              your own thumb is a bad trade. */}
-          {/* Width lives on a wrapper: the Slider root's own
-              data-horizontal:w-full outranks any bare w-* passed to it. */}
-          <div className="w-[76px] shrink-0">
-            <Slider
-              value={Math.round(master * 100)}
-              min={0}
-              max={100}
-              step={1}
-              wheelStep={5}
-              resetValue={Math.round(DEFAULT_MASTER * 100)}
-              aria-label="Master volume"
-              aria-valuetext={`${Math.round(master * 100)}%`}
-              onValueChange={(value) => dragMaster((value as number) / 100)}
-              onValueCommitted={(value) =>
-                commitMaster((value as number) / 100)
-              }
-            />
-          </div>
-        </div>
-      </main>
+        </SidebarInset>
+      </div>
 
       {/* The phone's stand-in for both the sidebar list and the right-click
           menu it can't offer: every mix, each with its delete. */}
