@@ -1720,19 +1720,21 @@ export function MurmurApp() {
   }, [])
 
   // "Pause in background tabs": stop on hide, resume only if we were the one
-  // who paused, so a deliberate pause isn't undone on return.
+  // who paused, so a deliberate pause isn't undone on return. A ref, because
+  // pausing changes `playing` and re-runs the effect, which would reset a
+  // local flag before the tab comes back.
+  const pausedByUs = React.useRef(false)
   React.useEffect(() => {
     if (!prefs.pauseHidden) return
-    let pausedByUs = false
     const onVisibility = () => {
       if (document.hidden) {
         if (playing) {
-          pausedByUs = true
+          pausedByUs.current = true
           setPlaying(false)
           mixer.setPlaying(false)
         }
-      } else if (pausedByUs) {
-        pausedByUs = false
+      } else if (pausedByUs.current) {
+        pausedByUs.current = false
         setPlaying(true)
         mixer.setPlaying(true)
       }
