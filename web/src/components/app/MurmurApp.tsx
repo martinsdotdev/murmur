@@ -3017,8 +3017,12 @@ export function MurmurApp() {
           </div>
 
           {/* This dialog sets p-0, which takes the sheet's safe-area padding
-              with it, so the footer has to clear the home indicator itself. */}
-          <div className="flex shrink-0 items-center gap-3 border-t border-border px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:pb-3">
+              with it, so the footer has to clear the home indicator itself.
+              It sits a layer below the dialog's background-3, on the
+              background-2 popovers use, the way a WinUI ContentDialog's command
+              area does, so it reads as the dialog's base rather than more of
+              its content. */}
+          <div className="flex shrink-0 items-center gap-3 border-t border-border bg-popover px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:pb-3">
             {!coarse && (
               <span>
                 Press{" "}
