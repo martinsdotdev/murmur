@@ -26,6 +26,7 @@ import {
   Share01Icon,
   Upload04Icon,
   VolumeHighIcon,
+  VolumeOffIcon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 
@@ -851,6 +852,7 @@ export function MurmurApp() {
   // Seeded from boot state so a reload doesn't forget the level of a sound that
   // is already audible.
   const lastNonZero = React.useRef<MixerState>({ ...initial.vols })
+  const lastMaster = React.useRef(initial.master || DEFAULT_MASTER)
   const { queue: queueFrame, drop: dropFrame } = useFrameQueue()
 
   const activeIds = Object.keys(vols).filter((id) => (vols[id] ?? 0) > 0)
@@ -1082,9 +1084,14 @@ export function MurmurApp() {
   const changeMaster = (value: number, ramp: VolumeRamp = "adjust") => {
     ensureAudio()
     const v = Math.max(0, Math.min(1, Math.round(value * 100) / 100))
+    if (v > 0) lastMaster.current = v
     setMaster(v)
     mixer.setMasterVolume(v * fadeMult.current, ramp)
   }
+
+  /** The header's speaker: unmuting returns to the last level heard. */
+  const toggleMute = () =>
+    changeMaster(master > 0 ? 0 : lastMaster.current, "fade")
 
   const dragMaster = (v: number) => {
     ensureAudio()
@@ -1973,6 +1980,53 @@ export function MurmurApp() {
 
           <div className="flex-1" />
 
+          {/* Playback, then a rule, then this mix and this view. From md, where
+              the phone bar stops. The level is always shown here: one number,
+              where the cards have fourteen and keep theirs for hover. The
+              speaker mutes, as on any player. */}
+          <div className="hidden w-52 min-w-0 items-center gap-1.5 md:flex">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label={master > 0 ? "Mute" : "Unmute"}
+              title={master > 0 ? "Mute" : "Unmute"}
+              onClick={toggleMute}
+            >
+              <HugeiconsIcon
+                icon={master > 0 ? VolumeHighIcon : VolumeOffIcon}
+                strokeWidth={2}
+                className="size-4"
+              />
+            </Button>
+            <Slider
+              value={Math.round(master * 100)}
+              min={0}
+              max={100}
+              step={1}
+              wheelStep={5}
+              resetValue={Math.round(DEFAULT_MASTER * 100)}
+              aria-label="Master volume"
+              aria-valuetext={`${Math.round(master * 100)}%`}
+              onValueChange={(value) => dragMaster((value as number) / 100)}
+              onValueCommitted={(value) =>
+                commitMaster((value as number) / 100)
+              }
+            />
+            {/* lg: below it the slider and the mix name need the room more. */}
+            <span
+              aria-hidden="true"
+              className="hidden w-7 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
+            >
+              {Math.round(master * 100)}
+            </span>
+          </div>
+
+          <Separator
+            orientation="vertical"
+            className="mx-1 hidden md:block data-vertical:h-5 data-vertical:self-center"
+          />
+
           <ToggleGroup
             value={[view]}
             onValueChange={(value) => {
@@ -2000,36 +2054,6 @@ export function MurmurApp() {
             </ToggleGroupItem>
           </ToggleGroup>
 
-          {/* md, where the phone transport and its slider stop. At lg this
-              left 768 to 1023px, a half-snapped window, with no master volume. */}
-          <div className="group hidden w-48 items-center gap-2 md:flex">
-            <HugeiconsIcon
-              icon={VolumeHighIcon}
-              strokeWidth={2}
-              className="size-4 shrink-0 text-muted-foreground"
-            />
-            <Slider
-              value={Math.round(master * 100)}
-              min={0}
-              max={100}
-              step={1}
-              wheelStep={5}
-              resetValue={Math.round(DEFAULT_MASTER * 100)}
-              aria-label="Master volume"
-              aria-valuetext={`${Math.round(master * 100)}%`}
-              onValueChange={(value) => dragMaster((value as number) / 100)}
-              onValueCommitted={(value) =>
-                commitMaster((value as number) / 100)
-              }
-            />
-            <span
-              aria-hidden="true"
-              className="w-7 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-            >
-              {Math.round(master * 100)}
-            </span>
-          </div>
-
           {/* Below md, Now playing's "Turn all off" stands in for this. */}
           <Button
             variant="ghost"
@@ -2051,6 +2075,8 @@ export function MurmurApp() {
             variant="outline"
             size="sm"
             className="hidden md:inline-flex"
+            // The label goes below lg, so it needs a name of its own there.
+            aria-label="Share"
             onClick={share}
           >
             <HugeiconsIcon
@@ -2058,7 +2084,7 @@ export function MurmurApp() {
               strokeWidth={2}
               className="size-3.5"
             />
-            Share
+            <span className="hidden lg:inline">Share</span>
           </Button>
 
           {/* The phone header keeps two actions, at a finger's 44px. Preferences
