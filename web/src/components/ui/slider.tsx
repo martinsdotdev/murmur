@@ -4,7 +4,7 @@ import { Slider as SliderPrimitive } from "@base-ui/react/slider"
 import { cn } from "@/lib/utils"
 
 /**
- * Diverges from the shadcn registry in four ways, all deliberate:
+ * Diverges from the shadcn registry in five ways, all deliberate:
  *
  * 1. A scalar `value` renders one thumb. The registry falls back to
  *    `[min, max]`, which renders two. Base UI gives both index 0 when the value
@@ -19,6 +19,13 @@ import { cn } from "@/lib/utils"
  * 4. `wheelStep` and `resetValue` add pointer affordances Base UI has no prop
  *    for. Both are opt-in and off by default, so a registry-shaped consumer
  *    behaves exactly as the registry does.
+ * 5. Thumbs render one pass after the control. An edge-aligned Thumb keeps its
+ *    position with a ResizeObserver it only creates if the Control's ref is
+ *    already attached, and on a first mount it never is: a child's layout
+ *    effects run before its parent's refs. Without the observer a thumb
+ *    measures once, so one mounted hidden (the master volume across a
+ *    breakpoint) stays invisible once shown, and every thumb drifts off its
+ *    value as the window resizes. Still true in Base UI 1.9.
  */
 
 /**
@@ -102,6 +109,9 @@ function Slider({
       : 1
 
   const controlRef = React.useRef<HTMLDivElement>(null)
+  // Set from a layout effect, so the second pass lands before paint.
+  const [controlMounted, setControlMounted] = React.useState(false)
+  React.useLayoutEffect(() => setControlMounted(true), [])
   const wheelAcc = React.useRef(0)
   const enteredAt = React.useRef(0)
 
@@ -226,7 +236,7 @@ function Slider({
             className="bg-primary select-none data-horizontal:h-full data-vertical:w-full"
           />
         </SliderPrimitive.Track>
-        {Array.from({ length: thumbCount }, (_, index) => (
+        {Array.from({ length: controlMounted ? thumbCount : 0 }, (_, index) => (
           <SliderPrimitive.Thumb
             data-slot="slider-thumb"
             key={index}
