@@ -2811,11 +2811,6 @@ export function MurmurApp() {
               }}
             />
           </label>
-
-          <p className="text-[11.5px] leading-relaxed text-muted-foreground">
-            Links and files are saved in your browser. Sounds loop
-            automatically.
-          </p>
         </DialogContent>
       </Dialog>
 
