@@ -1751,7 +1751,9 @@ export function MurmurApp() {
             </ToggleGroupItem>
           </ToggleGroup>
 
-          <div className="group hidden w-48 items-center gap-2 lg:flex">
+          {/* md, where the phone transport and its slider stop. At lg this
+              left 768 to 1023px, a half-snapped window, with no master volume. */}
+          <div className="group hidden w-48 items-center gap-2 md:flex">
             <HugeiconsIcon
               icon={VolumeHighIcon}
               strokeWidth={2}
