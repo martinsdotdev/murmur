@@ -1,6 +1,16 @@
 import * as React from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
 
+import { canPlayOgg } from "@/lib/mixer"
+
+/** Data Saver, or Chrome on Android reporting a cellular link. */
+function isMetered(): boolean {
+  const connection = (
+    navigator as { connection?: { saveData?: boolean; type?: string } }
+  ).connection
+  return connection?.saveData === true || connection?.type === "cellular"
+}
+
 export interface AudioStatus {
   /** Sounds already in the worker's audio cache. */
   cached: number
@@ -57,11 +67,16 @@ export function usePwa() {
     // Sent on every launch and again on reconnect. A worker killed mid-download
     // resumes from this; one that already finished skips every file in fourteen
     // cache lookups. `ready` rather than the register callback, because on a
-    // first install the registration has no active worker yet.
-    const prime = () =>
+    // first install the registration has no active worker yet. Never on a
+    // metered connection or where the files can't play: 17.6 MB of mobile data,
+    // or of Ogg an older iPhone can't decode, is a download nobody asked for.
+    // Preferences' Download button still fetches them on request.
+    const prime = () => {
+      if (isMetered() || !canPlayOgg()) return
       void navigator.serviceWorker.ready.then((registration) => {
         registration.active?.postMessage({ type: "PRIME_AUDIO" })
       })
+    }
     prime()
     window.addEventListener("online", prime)
 

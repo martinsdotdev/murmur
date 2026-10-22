@@ -19,7 +19,7 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
 ---
 
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" class="overscroll-none">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -68,7 +68,14 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
     <InstallPrompt />
   </head>
 
-  <body class="overflow-hidden">
+  <body
+    class="overflow-hidden overscroll-none [-webkit-tap-highlight-color:transparent]"
+  >
+    {
+      /* overscroll-none, here and on <html>: a pull at the top of the grid must
+        not reach Chrome's pull-to-refresh and reload mid-mix. The tap
+        highlight goes because every control here draws its own pressed state. */
+    }
     <slot />
   </body>
 </html>

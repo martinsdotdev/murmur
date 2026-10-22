@@ -121,7 +121,9 @@ export class Mixer {
       // playing nothing. Chrome rejects resume() before the page has been
       // interacted with, hence the swallowed catch: the next real gesture
       // retries. Nothing here ever calls suspend(), pause is a master ramp.
-      if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {})
+      // Not just "suspended": iOS leaves a context "interrupted" after a phone
+      // call or another app taking the audio, a state lib.dom doesn't name.
+      if (this.ctx.state !== "running") this.ctx.resume().catch(() => {})
       return this.ctx
     }
     const Ctor: typeof AudioContext =
@@ -471,6 +473,9 @@ export class Mixer {
     if (!this.master || !this.ctx) {
       return
     }
+    // Play is the gesture someone reaches for after a call has interrupted
+    // the context, so it has to be able to wake it, not only a volume change.
+    if (playing) this.ensureContext()
     const now = this.ctx.currentTime
     const target = playing ? this.masterVolume : 0
     this.master.gain.cancelScheduledValues(now)
@@ -481,6 +486,18 @@ export class Mixer {
   getVolume(id: string): number {
     return this.sounds.get(id)?.volume ?? 0
   }
+}
+
+/**
+ * The catalog ships as Ogg Vorbis only, which Safari plays from 18.4. Asked of
+ * an <audio> element because decodeAudioData has no capability query.
+ */
+export function canPlayOgg(): boolean {
+  return (
+    document
+      .createElement("audio")
+      .canPlayType('audio/ogg; codecs="vorbis"') !== ""
+  )
 }
 
 /**

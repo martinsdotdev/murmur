@@ -55,6 +55,8 @@ export interface Prefs {
   sleepFade: number
   pauseHidden: boolean
   keepAwake: boolean
+  /** iOS audio session "ambient" rather than "playback". See MurmurApp. */
+  mixWithOthers: boolean
 }
 
 /** fadeMs and sleepFade reproduce v1's hard-coded constants, so a migrating
@@ -66,6 +68,7 @@ export const DEFAULT_PREFS: Prefs = {
   sleepFade: 10,
   pauseHidden: false,
   keepAwake: false,
+  mixWithOthers: false,
 }
 
 export interface PersistedState {
@@ -162,6 +165,7 @@ function cleanPrefs(v: unknown): Prefs {
     sleepFade: clamp(v.sleepFade, 2, 60, DEFAULT_PREFS.sleepFade),
     pauseHidden: bool(v.pauseHidden, DEFAULT_PREFS.pauseHidden),
     keepAwake: bool(v.keepAwake, DEFAULT_PREFS.keepAwake),
+    mixWithOthers: bool(v.mixWithOthers, DEFAULT_PREFS.mixWithOthers),
   }
 }
 

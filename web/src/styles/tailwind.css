@@ -97,7 +97,9 @@
   --secondary: #ece4d2; /* neutral-background-3 */
   --secondary-foreground: #1f1311;
   --muted: #ece4d2;
-  --muted-foreground: #8b7e6e; /* neutral-foreground-3 */
+  /* neutral-foreground-3 as tokens.css has it. The old #8b7e6e was 3.1:1 on
+     the muted surfaces and failed AA; this clears 4.5:1 on them and the page. */
+  --muted-foreground: #6f6355;
   --accent: #ece4d2;
   --accent-foreground: #1f1311;
   --destructive: #a33a25;

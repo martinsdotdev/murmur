@@ -79,6 +79,7 @@ import {
 import { deleteBlob, getAllBlobs, putBlob } from "@/lib/blob-store"
 import {
   Mixer,
+  canPlayOgg,
   decodeMix,
   encodeMix,
   type MixerState,
@@ -94,6 +95,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import { SoundIcon } from "./SoundIcon"
+import { useCoarsePointer } from "./use-coarse-pointer"
 import { usePwa } from "./use-pwa"
 
 /** Vite inlines this at build time, in client islands as well as .astro files. */
@@ -710,6 +712,7 @@ export function MurmurApp() {
   const [dataArmed, setDataArmed] = React.useState(false)
 
   const pwa = usePwa()
+  const coarse = useCoarsePointer()
   const audioStarted = React.useRef(false)
   const fadeMult = React.useRef(1)
   // Ids that failed to load while offline, so reconnecting can offer them back
@@ -1327,6 +1330,26 @@ export function MurmurApp() {
     mixer.fadeInMs = prefs.fadeMs
   }, [mixer, prefs.fadeMs])
 
+  // iOS gives Web Audio the "ambient" session unless told otherwise, so the
+  // silent switch mutes it and locking the screen stops it: the bedside use
+  // case, gone. "playback" survives both but pauses other apps' audio, which
+  // is why mixing with them is the opt-in. Safari only; elsewhere there is no
+  // audioSession and this does nothing.
+  React.useEffect(() => {
+    const session = (navigator as { audioSession?: { type: string } })
+      .audioSession
+    if (session) session.type = prefs.mixWithOthers ? "ambient" : "playback"
+  }, [prefs.mixWithOthers])
+
+  // Said once, up front, rather than as one card failing at a time.
+  React.useEffect(() => {
+    if (canPlayOgg()) return
+    toast(
+      "Murmur's built-in sounds need Safari 18.4 or later. YouTube sounds and your own MP3 or M4A files still play",
+      { id: "ogg-unsupported", duration: Infinity }
+    )
+  }, [])
+
   // "Pause in background tabs": stop on hide, resume only if we were the one
   // who paused, so a deliberate pause isn't undone on return.
   React.useEffect(() => {
@@ -1420,6 +1443,13 @@ export function MurmurApp() {
     return () => window.removeEventListener("online", onOnline)
   }, [])
 
+  // Latest-ref, so the session below is rebuilt when what the OS shows
+  // changes, not on every frame of a slider drag.
+  const mediaActions = React.useRef({ togglePlay, cycleMix })
+  React.useEffect(() => {
+    mediaActions.current = { togglePlay, cycleMix }
+  })
+
   // Next/Previous cycle presets, mirroring how the desktop maps SMTC.
   React.useEffect(() => {
     if (!("mediaSession" in navigator)) return
@@ -1445,10 +1475,10 @@ export function MurmurApp() {
     })
     navigator.mediaSession.playbackState = playing ? "playing" : "paused"
     const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
-      ["play", () => !playing && togglePlay()],
-      ["pause", () => playing && togglePlay()],
-      ["nexttrack", () => cycleMix(1)],
-      ["previoustrack", () => cycleMix(-1)],
+      ["play", () => !playing && mediaActions.current.togglePlay()],
+      ["pause", () => playing && mediaActions.current.togglePlay()],
+      ["nexttrack", () => mediaActions.current.cycleMix(1)],
+      ["previoustrack", () => mediaActions.current.cycleMix(-1)],
     ]
     for (const [action, handler] of handlers) {
       try {
@@ -1466,7 +1496,7 @@ export function MurmurApp() {
         }
       }
     }
-  })
+  }, [mixName, playing])
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1681,7 +1711,9 @@ export function MurmurApp() {
       // slider or a card would otherwise smear a text selection across the
       // labels beside it. Dialogs and toasts portal to <body>, outside this
       // subtree, so anything genuinely worth copying stays selectable.
-      className="h-dvh flex-col overflow-hidden text-foreground select-none"
+      // The side insets keep a landscape phone's notch off the brand and grid;
+      // viewport-fit=cover would otherwise draw them underneath it.
+      className="h-dvh flex-col overflow-hidden pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-foreground select-none"
       // 15rem, not the component's 16rem default: the sidebar was 240px and
       // the sound grid's column count is tuned against the width that leaves.
       style={{ "--sidebar-width": "15rem" } as React.CSSProperties}
@@ -1796,7 +1828,13 @@ export function MurmurApp() {
             />
           </Button>
 
-          <Button variant="outline" size="sm" onClick={share}>
+          <Button
+            variant="outline"
+            size="sm"
+            // Icon-only below sm, where the visible label is hidden.
+            aria-label="Share"
+            onClick={share}
+          >
             <HugeiconsIcon
               icon={Share01Icon}
               strokeWidth={2}
@@ -2098,7 +2136,7 @@ export function MurmurApp() {
             </div>
           </ScrollArea>
 
-          {prefs.hints && (
+          {prefs.hints && !coarse && (
             <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[11px] text-muted-foreground md:px-6">
               {[
                 ["Space", "play"],
@@ -2120,7 +2158,7 @@ export function MurmurApp() {
           {/* Phone transport. Play, what is playing, and master volume all live
               in the header or sidebar on desktop; pinned here they survive the
               grid scrolling and stop the small header from overflowing. */}
-          <div className="flex shrink-0 items-center gap-[11px] border-t px-3.5 pt-2.5 pb-3 md:hidden">
+          <div className="flex shrink-0 items-center gap-[11px] border-t px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
             <Button
               size="icon"
               className="size-11 shrink-0 rounded-full shadow-md"
@@ -2217,6 +2255,8 @@ export function MurmurApp() {
             autoFocus
             value={saveName}
             placeholder="Name your mix"
+            autoComplete="off"
+            enterKeyHint="done"
             // Select the prefilled name so typing replaces it instead of
             // appending to it, the standard "save as" behaviour.
             onFocus={(e) => e.currentTarget.select()}
@@ -2243,12 +2283,21 @@ export function MurmurApp() {
             <Input
               value={addName}
               placeholder="Name (optional)"
+              // Otherwise phones offer the user's own name here.
+              autoComplete="off"
+              enterKeyHint="next"
               onChange={(e) => setAddName(e.target.value)}
             />
             <div className="flex gap-2">
               <Input
                 value={addUrl}
                 placeholder="A YouTube link, or https://…/sound.ogg"
+                type="url"
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="go"
                 className="min-w-0 flex-1"
                 onChange={(e) => setAddUrl(e.target.value)}
                 onKeyDown={(e) => {
@@ -2355,12 +2404,14 @@ export function MurmurApp() {
                   checked={prefs.eq}
                   onChange={(v) => setPref("eq", v)}
                 />
-                <PrefRow
-                  title="Keyboard hints"
-                  description="Shortcut strip along the bottom."
-                  checked={prefs.hints}
-                  onChange={(v) => setPref("hints", v)}
-                />
+                {!coarse && (
+                  <PrefRow
+                    title="Keyboard hints"
+                    description="Shortcut strip along the bottom."
+                    checked={prefs.hints}
+                    onChange={(v) => setPref("hints", v)}
+                  />
+                )}
               </div>
             </PrefSection>
 
@@ -2399,7 +2450,7 @@ export function MurmurApp() {
                 />
                 <PrefRow
                   title="Pause in background tabs"
-                  description="Stops when you switch away, resumes on return."
+                  description="Stops when you switch away or lock the screen, resumes on return."
                   checked={prefs.pauseHidden}
                   onChange={(v) => setPref("pauseHidden", v)}
                 />
@@ -2409,6 +2460,14 @@ export function MurmurApp() {
                   checked={prefs.keepAwake}
                   onChange={(v) => setPref("keepAwake", v)}
                 />
+                {"audioSession" in navigator && (
+                  <PrefRow
+                    title="Play alongside other apps"
+                    description="Music keeps playing, but the silent switch mutes Murmur and it stops when the screen locks."
+                    checked={prefs.mixWithOthers}
+                    onChange={(v) => setPref("mixWithOthers", v)}
+                  />
+                )}
               </div>
             </PrefSection>
 
@@ -2571,13 +2630,15 @@ export function MurmurApp() {
           {/* This dialog sets p-0, which takes the sheet's safe-area padding
               with it, so the footer has to clear the home indicator itself. */}
           <div className="flex shrink-0 items-center gap-3 border-t border-border px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:pb-3">
-            <span>
-              Press{" "}
-              <b className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
-                ,
-              </b>{" "}
-              to open this
-            </span>
+            {!coarse && (
+              <span>
+                Press{" "}
+                <b className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+                  ,
+                </b>{" "}
+                to open this
+              </span>
+            )}
             <span className="flex-1" />
             <Button
               variant="ghost"
@@ -2622,6 +2683,8 @@ export function MurmurApp() {
             autoFocus
             value={renameValue}
             placeholder="Name your mix"
+            autoComplete="off"
+            enterKeyHint="done"
             onFocus={(e) => e.currentTarget.select()}
             onChange={(e) => setRenameValue(e.target.value)}
             onKeyDown={(e) => {
@@ -2670,7 +2733,16 @@ export function MurmurApp() {
         </DialogContent>
       </Dialog>
 
-      <Toaster position="bottom-center" theme={themeMode} />
+      {/* Below md the phone bar owns the bottom edge: 55px plus its padding
+          over the home indicator, then an 8px gap. Sonner's own mobile switch
+          is at 600px, so both of its offsets read the same variable. */}
+      <Toaster
+        position="bottom-center"
+        theme={themeMode}
+        offset={{ bottom: "var(--toast-bottom)" }}
+        mobileOffset={{ bottom: "var(--toast-bottom)" }}
+        className="toaster group [--toast-bottom:calc(63px_+_max(12px,env(safe-area-inset-bottom)))] md:[--toast-bottom:24px]"
+      />
     </SidebarProvider>
   )
 }
