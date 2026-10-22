@@ -824,6 +824,9 @@ export function MurmurApp() {
   const [prefs, setPrefs] = React.useState<Prefs>(initial.prefs)
   const setPref = <K extends keyof Prefs>(key: K, value: Prefs[K]) =>
     setPrefs((p) => ({ ...p, [key]: value }))
+  const prefsAreDefault = (Object.keys(DEFAULT_PREFS) as (keyof Prefs)[]).every(
+    (key) => prefs[key] === DEFAULT_PREFS[key]
+  )
 
   // Theme is the site's, not the app's: it lives under its own localStorage key
   // so the landing page's toggle and this picker move the same setting.
@@ -3033,12 +3036,20 @@ export function MurmurApp() {
               </span>
             )}
             <span className="flex-1" />
+            {/* Undo rather than a confirmation: this only resets the rows
+                above, and on a phone a confirmation would be a second sheet
+                over this one. */}
             <Button
               variant="ghost"
               size="sm"
+              disabled={prefsAreDefault}
               onClick={() => {
+                const previous = prefs
                 setPrefs({ ...DEFAULT_PREFS })
-                toast.success("Preferences restored to defaults")
+                toast.success("Preferences restored to defaults", {
+                  id: "prefs-restored",
+                  action: { label: "Undo", onClick: () => setPrefs(previous) },
+                })
               }}
             >
               Restore defaults
