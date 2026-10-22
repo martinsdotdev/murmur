@@ -11,6 +11,16 @@ function isMetered(): boolean {
   return connection?.saveData === true || connection?.type === "cellular"
 }
 
+/**
+ * Asks the browser not to evict this origin's storage when space runs low:
+ * the offline audio cache and the user's own sound files. Called from the
+ * actions that store something, since Firefox answers with a prompt. Best
+ * effort; a refusal leaves storage as evictable as it was.
+ */
+export function persistStorage() {
+  void navigator.storage?.persist?.().catch(() => {})
+}
+
 export interface AudioStatus {
   /** Sounds already in the worker's audio cache. */
   cached: number
@@ -32,6 +42,9 @@ export function usePwa() {
   } = useRegisterSW({ immediate: true })
 
   const [audio, setAudio] = React.useState<AudioStatus | null>(null)
+  // Where the catalog can't play there is nothing to offer offline: the
+  // download would be Ogg this browser can't decode.
+  const [oggPlayable] = React.useState(canPlayOgg)
   const [online, setOnline] = React.useState(() => navigator.onLine)
 
   React.useEffect(() => {
@@ -104,6 +117,7 @@ export function usePwa() {
   /** Asks the worker to fill any gaps in the audio cache now. */
   const downloadSounds = React.useCallback(() => {
     if (!("serviceWorker" in navigator)) return
+    persistStorage()
     void navigator.serviceWorker.ready.then((registration) => {
       registration.active?.postMessage({ type: "PRIME_AUDIO" })
     })
@@ -121,7 +135,7 @@ export function usePwa() {
   return {
     needRefresh,
     updateNow: updateServiceWorker,
-    audio,
+    audio: oggPlayable ? audio : null,
     online,
     downloadSounds,
     canInstall: prompt !== null,

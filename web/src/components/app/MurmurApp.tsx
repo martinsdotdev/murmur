@@ -104,7 +104,7 @@ import { cn } from "@/lib/utils"
 
 import { SoundIcon } from "./SoundIcon"
 import { useCoarsePointer } from "./use-coarse-pointer"
-import { usePwa } from "./use-pwa"
+import { persistStorage, usePwa } from "./use-pwa"
 
 /** Vite inlines this at build time, in client islands as well as .astro files. */
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "")
@@ -498,6 +498,13 @@ interface RenderableSound {
  * alphabet, and the app boots paused. What it can do is overwrite the mix on
  * screen and add sounds to the mixer, so arrival is announced with an Undo.
  */
+/** What Clear all took, held for its Undo. */
+interface ClearedData {
+  saved: SavedMix[]
+  customs: CustomSound[]
+  vols: MixerState
+}
+
 interface LinkArrival {
   /** The mix that was on before the link, which Undo puts back. */
   previous: Pick<PersistedState, "vols" | "mixName" | "dirty">
@@ -937,9 +944,12 @@ export function MurmurApp() {
   const menuOpenedAt = React.useRef(0)
   const [renameValue, setRenameValue] = React.useState("")
   const [removing, setRemoving] = React.useState<CustomSound | null>(null)
-  const [dataArmed, setDataArmed] = React.useState(false)
 
   const pwa = usePwa()
+  // Where installing is possible at all: a prompt to show, or a touch device
+  // whose browser has an Add to Home Screen of its own.
+  const installRow =
+    !pwa.installed && (pwa.canInstall || navigator.maxTouchPoints > 0)
   const coarse = useCoarsePointer()
   // Touch shows tiles only, since list rows are built around their sliders.
   // The saved view is left as it was, for the next session with a mouse.
@@ -1133,6 +1143,7 @@ export function MurmurApp() {
     changeVolume(id, DEFAULT_TOGGLE_VOLUME, { keepName: true })
     void putBlob(id, file).then((stored) => {
       if (stored) {
+        persistStorage()
         commitCustoms(
           customsRef.current.map((c) =>
             c.id === id ? { ...c, hasFile: true } : c
@@ -1324,22 +1335,21 @@ export function MurmurApp() {
     toast.success(`Duplicated as “${name}”`)
   }
 
-  /** First press arms and self-disarms after 3s; the second actually wipes. */
+  /**
+   * Undo rather than a confirmation, like every other delete. The sound files
+   * outlive the toast's Undo and are only deleted once it closes. A tab closed
+   * first leaves them orphaned, and the boot-time sweep deletes them then.
+   */
   const clearData = () => {
-    if (!dataArmed) {
-      setDataArmed(true)
-      window.setTimeout(() => setDataArmed(false), 3000)
-      return
+    const cleared: ClearedData = {
+      saved,
+      customs: customsRef.current,
+      vols,
     }
-    setDataArmed(false)
-    for (const c of customsRef.current) {
+    for (const c of cleared.customs) {
       if (audioStarted.current) void mixer.setVolume(c.id, 0)
       if (c.videoId) mixer.unregister(c.id)
-      const url = blobUrls.current.get(c.id)
-      if (url) URL.revokeObjectURL(url)
-      void deleteBlob(c.id)
     }
-    blobUrls.current.clear()
     commitCustoms([])
     setSaved([])
     setVols((prev) =>
@@ -1347,7 +1357,54 @@ export function MurmurApp() {
         Object.entries(prev).filter(([id]) => CATALOG_IDS.has(id))
       )
     )
-    toast.success("Saved mixes and imported sounds cleared")
+    let settled = false
+    const purge = () => {
+      if (settled) return
+      settled = true
+      for (const c of cleared.customs) {
+        const url = blobUrls.current.get(c.id)
+        if (url) URL.revokeObjectURL(url)
+        blobUrls.current.delete(c.id)
+        void deleteBlob(c.id)
+      }
+    }
+    toast.success("Saved mixes and imported sounds cleared", {
+      id: "data-cleared",
+      onAutoClose: purge,
+      onDismiss: purge,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          if (settled) return
+          settled = true
+          undoRef.current.undoClear(cleared)
+        },
+      },
+    })
+  }
+
+  const undoClear = (cleared: ClearedData) => {
+    // Anything saved or added since the clear stays alongside.
+    setSaved((prev) => [
+      ...cleared.saved,
+      ...prev.filter((s) => !cleared.saved.some((c) => c.name === s.name)),
+    ])
+    commitCustoms([
+      ...cleared.customs,
+      ...customsRef.current.filter(
+        (s) => !cleared.customs.some((c) => c.id === s.id)
+      ),
+    ])
+    const levels: MixerState = {}
+    for (const c of cleared.customs) {
+      const v = cleared.vols[c.id]
+      if (v) levels[c.id] = v
+    }
+    setVols((prev) => ({ ...prev, ...levels }))
+    if (audioStarted.current) {
+      for (const [id, v] of Object.entries(levels))
+        void applyVolume(id, v, "fade")
+    }
   }
 
   const saveMix = () => {
@@ -1531,9 +1588,16 @@ export function MurmurApp() {
     restoreMix,
     undoDelete,
     undoSaveChanges,
+    undoClear,
   })
   React.useEffect(() => {
-    undoRef.current = { undoLink, restoreMix, undoDelete, undoSaveChanges }
+    undoRef.current = {
+      undoLink,
+      restoreMix,
+      undoDelete,
+      undoSaveChanges,
+      undoClear,
+    }
   })
 
   /**
@@ -3197,29 +3261,29 @@ export function MurmurApp() {
                 honest messages (a sound that isn't saved yet, a YouTube sound
                 that needs a connection) already appear where they matter. */
             }
-            <PrefSection icon={Download04Icon} title="Offline">
-              <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
-                {pwa.audio && (
-                  <div className="flex items-center gap-3 px-3.5 py-3">
-                    <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-                      {pwa.audio.cached} of {pwa.audio.total} sounds saved in
-                      this browser.
-                    </p>
-                    {pwa.audio.cached < pwa.audio.total && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0"
-                        disabled={!pwa.online}
-                        onClick={pwa.downloadSounds}
-                      >
-                        Download
-                      </Button>
-                    )}
-                  </div>
-                )}
-                {!pwa.installed &&
-                  (pwa.canInstall || navigator.maxTouchPoints > 0) && (
+            {(pwa.audio || installRow) && (
+              <PrefSection icon={Download04Icon} title="Offline">
+                <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
+                  {pwa.audio && (
+                    <div className="flex items-center gap-3 px-3.5 py-3">
+                      <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+                        {pwa.audio.cached} of {pwa.audio.total} sounds saved in
+                        this browser.
+                      </p>
+                      {pwa.audio.cached < pwa.audio.total && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0"
+                          disabled={!pwa.online}
+                          onClick={pwa.downloadSounds}
+                        >
+                          Download
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {installRow && (
                     <div className="flex items-center gap-3 px-3.5 py-3">
                       <p className="min-w-0 flex-1 text-xs text-muted-foreground">
                         {pwa.canInstall
@@ -3238,8 +3302,9 @@ export function MurmurApp() {
                       )}
                     </div>
                   )}
-              </div>
-            </PrefSection>
+                </div>
+              </PrefSection>
+            )}
 
             <PrefSection icon={Database01Icon} title="Your data">
               <div className="flex items-center gap-3 rounded-md border border-border px-3.5 py-3">
@@ -3248,12 +3313,13 @@ export function MurmurApp() {
                   {customs.length} of your own sounds, kept in this browser.
                 </p>
                 <Button
-                  variant={dataArmed ? "default" : "outline"}
+                  variant="outline"
                   size="sm"
                   className="shrink-0"
+                  disabled={saved.length === 0 && customs.length === 0}
                   onClick={clearData}
                 >
-                  {dataArmed ? "Sure?" : "Clear all"}
+                  Clear all
                 </Button>
               </div>
             </PrefSection>
