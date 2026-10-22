@@ -3183,7 +3183,7 @@ export function MurmurApp() {
                 {"audioSession" in navigator && (
                   <PrefRow
                     title="Play alongside other apps"
-                    description="Music keeps playing, but the silent switch mutes Murmur and it stops when the screen locks."
+                    description="Music keeps playing. The silent switch mutes Murmur, and it stops when the screen locks."
                     checked={prefs.mixWithOthers}
                     onChange={(v) => setPref("mixWithOthers", v)}
                   />
@@ -3276,7 +3276,7 @@ export function MurmurApp() {
                       </span>
                     </div>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Ambient sound mixer that runs entirely in your browser.
+                      Ambient sound mixer that runs in your browser.
                     </p>
                   </div>
                 </div>
@@ -3391,7 +3391,7 @@ export function MurmurApp() {
           <DialogHeader>
             <DialogTitle className="text-lg">Reset mix?</DialogTitle>
             <DialogDescription>
-              Every sound's volume will be set to 0.
+              Turns every sound down to 0.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -3431,13 +3431,12 @@ export function MurmurApp() {
             <DialogTitle className="text-lg">
               Remove “{removing?.name}”?
             </DialogTitle>
-            <DialogDescription>
-              {removing?.videoId
-                ? "This YouTube sound will be removed from your mixer."
-                : removing?.url
-                  ? "The link will be removed from your mixer."
-                  : "The saved audio file will be deleted from this browser."}
-            </DialogDescription>
+            {/* Only a file loses something the title doesn't already say. */}
+            {removing && !removing.videoId && !removing.url && (
+              <DialogDescription>
+                The saved audio file will be deleted from this browser.
+              </DialogDescription>
+            )}
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRemoving(null)}>
