@@ -48,7 +48,9 @@ import Icon from "./Icon.astro"
 
   .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    /* min() so a 320px screen, 280px inside the padding, gets one column that
+       fits rather than a 300px one clipped at the edge. */
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
     gap: var(--space-m);
   }
 
