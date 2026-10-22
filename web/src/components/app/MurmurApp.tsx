@@ -11,14 +11,17 @@ import {
   Download04Icon,
   FavouriteIcon,
   File01Icon,
+  FloppyDiskIcon,
   GithubIcon,
   GridViewIcon,
+  HeadphonesIcon,
   InformationCircleIcon,
   LeftToRightListBulletIcon,
   MinusSignCircleIcon,
   Moon02Icon,
   MoreHorizontalIcon,
   PauseIcon,
+  PencilEdit02Icon,
   PlayIcon,
   PlusSignIcon,
   RefreshIcon,
@@ -27,6 +30,7 @@ import {
   Upload04Icon,
   VolumeHighIcon,
   VolumeOffIcon,
+  YoutubeIcon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 
@@ -283,6 +287,56 @@ function MixRow({
         </SidebarMenuAction>
       )}
     </>
+  )
+}
+
+/**
+ * One per kind of thing renamed, rather than one whose title switches: a
+ * shared dialog would flip to the other title while it fades out.
+ */
+function RenameDialog({
+  open,
+  title,
+  placeholder,
+  value,
+  onValueChange,
+  onRename,
+  onCancel,
+}: {
+  open: boolean
+  title: string
+  placeholder: string
+  value: string
+  onValueChange: (value: string) => void
+  onRename: () => void
+  onCancel: () => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-lg">{title}</DialogTitle>
+        </DialogHeader>
+        <Input
+          autoFocus
+          value={value}
+          placeholder={placeholder}
+          autoComplete="off"
+          enterKeyHint="done"
+          onFocus={(e) => e.currentTarget.select()}
+          onChange={(e) => onValueChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onRename()
+          }}
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button onClick={onRename}>Rename</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -876,6 +930,11 @@ export function MurmurApp() {
   }, [])
   const [resetOpen, setResetOpen] = React.useState(false)
   const [renaming, setRenaming] = React.useState<string | null>(null)
+  /** An imported sound being renamed; the rename dialog serves both. */
+  const [renamingSound, setRenamingSound] = React.useState<string | null>(null)
+  // When a card's menu last opened, so the tap that ends a long press on it
+  // doesn't also toggle the sound underneath.
+  const menuOpenedAt = React.useRef(0)
   const [renameValue, setRenameValue] = React.useState("")
   const [removing, setRemoving] = React.useState<CustomSound | null>(null)
   const [dataArmed, setDataArmed] = React.useState(false)
@@ -1175,6 +1234,16 @@ export function MurmurApp() {
     setDirty(true)
   }
 
+  const renameSound = () => {
+    const id = renamingSound
+    const to = renameValue.trim()
+    if (!id || !to) return
+    commitCustoms(
+      customsRef.current.map((c) => (c.id === id ? { ...c, name: to } : c))
+    )
+    setRenamingSound(null)
+  }
+
   const renameMix = () => {
     const from = renaming
     const to = renameValue.trim()
@@ -1214,6 +1283,30 @@ export function MurmurApp() {
     )
     // Saved again, so a loaded copy is clean if it still matches.
     if (mix.name === mixName) setDirty(!sameMix(vols, mix.mix))
+  }
+
+  /** The mix menu's "Save changes": this saved mix takes the faders' levels. */
+  const saveChanges = (name: string) => {
+    const previous = saved.find((s) => s.name === name)?.mix
+    if (!previous) return
+    const mix: MixerState = {}
+    for (const [id, v] of Object.entries(vols)) if (v > 0) mix[id] = v
+    setSaved((prev) => prev.map((s) => (s.name === name ? { ...s, mix } : s)))
+    setDirty(false)
+    toast.success(`Saved changes to “${name}”`, {
+      id: "mix-saved",
+      action: {
+        label: "Undo",
+        onClick: () => undoRef.current.undoSaveChanges(name, previous),
+      },
+    })
+  }
+
+  const undoSaveChanges = (name: string, previous: MixerState) => {
+    setSaved((prev) =>
+      prev.map((s) => (s.name === name ? { ...s, mix: previous } : s))
+    )
+    if (name === mixName) setDirty(!sameMix(vols, previous))
   }
 
   const duplicateMix = (mix: SavedMix) => {
@@ -1282,9 +1375,13 @@ export function MurmurApp() {
     )
   }
 
-  const share = () => {
+  /**
+   * Copies a link that rebuilds `levels` under `name`. The header shares the
+   * mix on the faders; a saved mix's menu shares that mix without loading it.
+   */
+  const shareMix = (name: string, levels: MixerState, current: boolean) => {
     const mix: MixerState = {}
-    for (const [id, v] of Object.entries(vols)) {
+    for (const [id, v] of Object.entries(levels)) {
       // YouTube sounds travel: the id carries the whole reference. Files and
       // links don't. One is a blob only this browser holds, the other may not
       // be reachable from anywhere else.
@@ -1293,18 +1390,22 @@ export function MurmurApp() {
       }
     }
     const droppedCustoms = customs.some(
-      (c) => !c.videoId && (vols[c.id] ?? 0) > 0
+      (c) => !c.videoId && (levels[c.id] ?? 0) > 0
     )
     const fragment = encodeMix(mix)
     if (!fragment) {
       toast(
         droppedCustoms
-          ? "Only your imported sounds are playing, and those can't be shared"
-          : "Nothing playing to share yet"
+          ? current
+            ? "Only your imported sounds are playing, and those can't be shared"
+            : "This mix only has imported sounds, and those can't be shared"
+          : current
+            ? "Nothing playing to share yet"
+            : "This mix has no sounds to share"
       )
       return
     }
-    const url = `${window.location.origin}${window.location.pathname}#mix=${fragment}&n=${encodeURIComponent(mixName)}`
+    const url = `${window.location.origin}${window.location.pathname}#mix=${fragment}&n=${encodeURIComponent(name)}`
     const done = () =>
       droppedCustoms
         ? toast.success("Link copied. Your imported sounds aren't included")
@@ -1316,6 +1417,8 @@ export function MurmurApp() {
       toast("Link is in the address bar")
     }
   }
+
+  const share = () => shareMix(mixName, vols, true)
 
   const startTimer = (minutes: number) => {
     fadeMult.current = 1
@@ -1423,10 +1526,53 @@ export function MurmurApp() {
 
   // Latest-ref: an Undo can fire after other changes, and has to walk the
   // volumes as they are then, not as they were when its toast went up.
-  const undoRef = React.useRef({ undoLink, restoreMix, undoDelete })
-  React.useEffect(() => {
-    undoRef.current = { undoLink, restoreMix, undoDelete }
+  const undoRef = React.useRef({
+    undoLink,
+    restoreMix,
+    undoDelete,
+    undoSaveChanges,
   })
+  React.useEffect(() => {
+    undoRef.current = { undoLink, restoreMix, undoDelete, undoSaveChanges }
+  })
+
+  /**
+   * The card menu's "Play only this": every other sound off, this one on at
+   * its level (or the last it had, or 70%), playing, with Undo.
+   */
+  const playOnly = (id: string) => {
+    const before = { vols, mixName, dirty }
+    const level = vols[id] || lastNonZero.current[id] || DEFAULT_TOGGLE_VOLUME
+    ensureAudio()
+    for (const [other, v] of Object.entries(vols)) {
+      if (other === id) continue
+      lastNonZero.current[other] = v
+      void applyVolume(other, 0, "fade")
+    }
+    lastNonZero.current[id] = level
+    void applyVolume(id, level, "fade")
+    setVols({ [id]: level })
+    setDirty(true)
+    const wasPlaying = playing
+    if (!playing) {
+      setPlaying(true)
+      mixer.setPlaying(true)
+    }
+    toast(`Playing only ${nameFor(id)}`, {
+      id: "play-only",
+      action: {
+        label: "Undo",
+        onClick: () => {
+          undoRef.current.restoreMix(before)
+          // This started playback, so undoing it pauses again.
+          if (!wasPlaying) {
+            setPlaying(false)
+            mixer.setPlaying(false)
+          }
+        },
+      },
+    })
+  }
 
   /** Now playing's "Turn all off". No confirmation, since Undo is right there. */
   const turnAllOff = () => {
@@ -1805,6 +1951,7 @@ export function MurmurApp() {
     settingsOpen ||
     resetOpen ||
     renaming !== null ||
+    renamingSound !== null ||
     removing !== null
   const metersPaused = pageHidden || anyDialogOpen
 
@@ -1859,7 +2006,7 @@ export function MurmurApp() {
       <span
         aria-hidden="true"
         className={cn(
-          "w-7 shrink-0 text-right font-mono text-[11px] tabular-nums opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+          "w-7 shrink-0 text-right font-mono text-[11px] tabular-nums opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
           active ? "text-brand" : "text-muted-foreground"
         )}
       >
@@ -1881,92 +2028,159 @@ export function MurmurApp() {
       active ? "text-brand" : "text-muted-foreground"
     )
 
+    const videoId = ytVideoId(sound.id)
+    const askRemove = () =>
+      setRemoving(customsRef.current.find((c) => c.id === sound.id) ?? null)
+    const menu = (
+      <ContextMenuContent>
+        <ContextMenuItem
+          // Already the only sound playing, so there is nothing to turn off.
+          disabled={playing && active && activeIds.length === 1}
+          onClick={() => playOnly(sound.id)}
+        >
+          <HugeiconsIcon icon={HeadphonesIcon} strokeWidth={2} />
+          Play only this
+        </ContextMenuItem>
+        {active && volume !== DEFAULT_TOGGLE_VOLUME && (
+          <ContextMenuItem
+            onClick={() => changeVolume(sound.id, DEFAULT_TOGGLE_VOLUME)}
+          >
+            <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
+            Reset level
+          </ContextMenuItem>
+        )}
+        {removable && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={() => {
+                setRenameValue(sound.name)
+                setRenamingSound(sound.id)
+              }}
+            >
+              <HugeiconsIcon icon={PencilEdit02Icon} strokeWidth={2} />
+              Rename…
+            </ContextMenuItem>
+            {videoId && (
+              <ContextMenuItem
+                onClick={() =>
+                  window.open(
+                    `https://www.youtube.com/watch?v=${videoId}`,
+                    "_blank",
+                    "noopener"
+                  )
+                }
+              >
+                <HugeiconsIcon icon={YoutubeIcon} strokeWidth={2} />
+                Open on YouTube
+              </ContextMenuItem>
+            )}
+            <ContextMenuSeparator />
+            <ContextMenuItem variant="destructive" onClick={askRemove}>
+              <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+              Remove
+            </ContextMenuItem>
+          </>
+        )}
+      </ContextMenuContent>
+    )
+    // Base UI's long press doesn't swallow the click that can follow it, so
+    // the card ignores one that lands just after its menu opened.
+    const toggle = () => {
+      if (performance.now() - menuOpenedAt.current < 600) return
+      toggleSound(sound.id)
+    }
+    const noteMenuOpen = (open: boolean) => {
+      if (open) menuOpenedAt.current = performance.now()
+    }
+
     if (shownView === "list") {
       return (
-        <Card
-          key={sound.id}
-          role="button"
-          tabIndex={0}
-          aria-pressed={active}
-          onClick={() => toggleSound(sound.id)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") toggleSound(sound.id)
-          }}
-          className={cn(
-            "group flex cursor-pointer flex-row items-center gap-3 px-4 py-3",
-            tileState
-          )}
-        >
-          <SoundIcon path={sound.iconPath} size={17} className={iconState} />
-          <span className="w-28 shrink-0 truncate text-xs font-medium">
-            {sound.name}
-          </span>
-          <div className="min-w-0 flex-1" {...sliderGuard}>
-            {slider}
-          </div>
-          {readout}
-          {removable && (
-            <RemoveSoundButton
-              name={sound.name}
-              onRemove={() =>
-                setRemoving(
-                  customsRef.current.find((c) => c.id === sound.id) ?? null
-                )
-              }
-            />
-          )}
-        </Card>
+        <ContextMenu key={sound.id} onOpenChange={noteMenuOpen}>
+          <ContextMenuTrigger
+            render={
+              <Card
+                role="button"
+                tabIndex={0}
+                aria-pressed={active}
+                onClick={toggle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") toggleSound(sound.id)
+                }}
+                className={cn(
+                  "group flex cursor-pointer flex-row items-center gap-3 px-4 py-3",
+                  tileState
+                )}
+              />
+            }
+          >
+            <SoundIcon path={sound.iconPath} size={17} className={iconState} />
+            <span className="w-28 shrink-0 truncate text-xs font-medium">
+              {sound.name}
+            </span>
+            <div className="min-w-0 flex-1" {...sliderGuard}>
+              {slider}
+            </div>
+            {readout}
+            {removable && (
+              <RemoveSoundButton name={sound.name} onRemove={askRemove} />
+            )}
+          </ContextMenuTrigger>
+          {menu}
+        </ContextMenu>
       )
     }
 
     return (
-      <Card
-        key={sound.id}
-        role="button"
-        tabIndex={0}
-        aria-pressed={active}
-        onClick={() => toggleSound(sound.id)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") toggleSound(sound.id)
-        }}
-        className={cn("group cursor-pointer gap-0 p-3", tileState)}
-      >
-        <div className="flex items-start gap-1.5">
-          <SoundIcon path={sound.iconPath} size={19} className={iconState} />
-          <div className="flex-1" />
-          {active && audible && prefs.eq && (
-            <EqBars phase={meterPhase(sound.id)} paused={metersPaused} />
-          )}
-          {removable && (
-            <RemoveSoundButton
-              name={sound.name}
-              className="-mt-1 -mr-1.5"
-              onRemove={() =>
-                setRemoving(
-                  customsRef.current.find((c) => c.id === sound.id) ?? null
-                )
-              }
+      <ContextMenu key={sound.id} onOpenChange={noteMenuOpen}>
+        <ContextMenuTrigger
+          render={
+            <Card
+              role="button"
+              tabIndex={0}
+              aria-pressed={active}
+              onClick={toggle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") toggleSound(sound.id)
+              }}
+              className={cn("group cursor-pointer gap-0 p-3", tileState)}
             />
-          )}
-        </div>
-        {/* The readout sits on the name row rather than the icon row above:
+          }
+        >
+          <div className="flex items-start gap-1.5">
+            <SoundIcon path={sound.iconPath} size={19} className={iconState} />
+            <div className="flex-1" />
+            {active && audible && prefs.eq && (
+              <EqBars phase={meterPhase(sound.id)} paused={metersPaused} />
+            )}
+            {removable && (
+              <RemoveSoundButton
+                name={sound.name}
+                className="-mt-1 -mr-1.5"
+                onRemove={askRemove}
+              />
+            )}
+          </div>
+          {/* The readout sits on the name row rather than the icon row above:
             it right-aligns in the same column as list view, and the icon row is
             a variable-occupancy status corner (EqBars only while playing, the
             remove button only for customs) that a third element would make
             unpredictable. Kept inside the existing line box so the card still
             measures the 83px the "Add sound" tile hard-codes. */}
-        <div className="mt-2 mb-3 flex items-baseline gap-2">
-          <span className="min-w-0 flex-1 truncate text-xs font-medium">
-            {sound.name}
-          </span>
-          {!coarse && readout}
-        </div>
-        {coarse ? (
-          <LevelBar level={volume} />
-        ) : (
-          <div {...sliderGuard}>{slider}</div>
-        )}
-      </Card>
+          <div className="mt-2 mb-3 flex items-baseline gap-2">
+            <span className="min-w-0 flex-1 truncate text-xs font-medium">
+              {sound.name}
+            </span>
+            {!coarse && readout}
+          </div>
+          {coarse ? (
+            <LevelBar level={volume} />
+          ) : (
+            <div {...sliderGuard}>{slider}</div>
+          )}
+        </ContextMenuTrigger>
+        {menu}
+      </ContextMenu>
     )
   }
 
@@ -2221,19 +2435,46 @@ export function MurmurApp() {
                         />
                       </ContextMenuTrigger>
                       <ContextMenuContent>
+                        {loaded && dirty && (
+                          <ContextMenuItem
+                            onClick={() => saveChanges(mix.name)}
+                          >
+                            <HugeiconsIcon
+                              icon={FloppyDiskIcon}
+                              strokeWidth={2}
+                            />
+                            Save changes
+                          </ContextMenuItem>
+                        )}
+                        <ContextMenuItem
+                          onClick={() => shareMix(mix.name, mix.mix, false)}
+                        >
+                          <HugeiconsIcon icon={Share01Icon} strokeWidth={2} />
+                          Share
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
                         <ContextMenuItem
                           onClick={() => {
                             setRenameValue(mix.name)
                             setRenaming(mix.name)
                           }}
                         >
+                          <HugeiconsIcon
+                            icon={PencilEdit02Icon}
+                            strokeWidth={2}
+                          />
                           Rename…
                         </ContextMenuItem>
                         <ContextMenuItem onClick={() => duplicateMix(mix)}>
+                          <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} />
                           Duplicate
                         </ContextMenuItem>
                         <ContextMenuSeparator />
-                        <ContextMenuItem onClick={() => removeSaved(mix.name)}>
+                        <ContextMenuItem
+                          variant="destructive"
+                          onClick={() => removeSaved(mix.name)}
+                        >
+                          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
                           Delete
                         </ContextMenuItem>
                       </ContextMenuContent>
@@ -3160,34 +3401,24 @@ export function MurmurApp() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <RenameDialog
         open={renaming !== null}
-        onOpenChange={(o) => !o && setRenaming(null)}
-      >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Rename mix</DialogTitle>
-          </DialogHeader>
-          <Input
-            autoFocus
-            value={renameValue}
-            placeholder="Name your mix"
-            autoComplete="off"
-            enterKeyHint="done"
-            onFocus={(e) => e.currentTarget.select()}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") renameMix()
-            }}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenaming(null)}>
-              Cancel
-            </Button>
-            <Button onClick={renameMix}>Rename</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title="Rename mix"
+        placeholder="Name your mix"
+        value={renameValue}
+        onValueChange={setRenameValue}
+        onRename={renameMix}
+        onCancel={() => setRenaming(null)}
+      />
+      <RenameDialog
+        open={renamingSound !== null}
+        title="Rename sound"
+        placeholder="Name your sound"
+        value={renameValue}
+        onValueChange={setRenameValue}
+        onRename={renameSound}
+        onCancel={() => setRenamingSound(null)}
+      />
 
       <Dialog
         open={removing !== null}
