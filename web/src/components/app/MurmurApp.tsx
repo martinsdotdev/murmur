@@ -3,6 +3,7 @@
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
+  ArrowUp01Icon,
   Delete02Icon,
   Clock01Icon,
   Copy01Icon,
@@ -14,6 +15,7 @@ import {
   GridViewIcon,
   InformationCircleIcon,
   LeftToRightListBulletIcon,
+  MinusSignCircleIcon,
   Moon02Icon,
   PauseIcon,
   PlayIcon,
@@ -105,6 +107,9 @@ const TIMER_OPTIONS = [0, 15, 30, 45, 60, 90]
 const CATEGORIES: SoundCategory[] = ["nature", "urban", "generated"]
 const DEFAULT_TOGGLE_VOLUME = 0.7
 const CATALOG_IDS = new Set(sounds.map((s) => s.id))
+
+/** YouTube's player ignores setVolume on iPhone; iPadOS lets it through. */
+const IS_IPHONE = /iPhone|iPod/.test(navigator.userAgent)
 const MUSIC_ICON =
   "M9 18V5l12-2v13 M3 18A3 3 0 1 0 9 18A3 3 0 1 0 3 18Z M15 16A3 3 0 1 0 21 16A3 3 0 1 0 15 16Z"
 
@@ -268,39 +273,40 @@ function MixRow({ name, mix, loaded, dirty, onApply, onRemove }: MixRowProps) {
   )
 }
 
-/** The row's phone form: below md the sidebar is gone and mixes become chips. */
+/**
+ * The row's phone form: below md the sidebar is gone and mixes become chips.
+ * The loaded one is outlined in brand rather than filled with it: white on the
+ * light theme's filled amber is 4:1, short of AA for text this size.
+ */
 function MixChip({
   label,
   iconPath,
   active,
-  dashed,
   onClick,
 }: {
   label: string
   iconPath?: string
   active?: boolean
-  dashed?: boolean
   onClick: () => void
 }) {
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "flex h-9 shrink-0 items-center gap-[7px] rounded-full border px-[13px] text-xs font-semibold whitespace-nowrap transition-colors",
-        dashed
-          ? "border-dashed text-muted-foreground"
-          : active
-            ? "border-primary bg-primary text-primary-foreground"
-            : "bg-muted text-foreground/85 hover:bg-accent"
+        "flex h-10 shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors",
+        active
+          ? "border-brand bg-secondary text-foreground"
+          : "bg-muted text-foreground/85 hover:bg-accent"
       )}
     >
       {iconPath && (
         <SoundIcon
           path={iconPath}
-          size={12}
+          size={13}
           strokeWidth={1.9}
-          className="size-3 shrink-0"
+          className={cn("size-[13px] shrink-0", active && "text-brand")}
         />
       )}
       {label}
@@ -328,6 +334,84 @@ function LevelBar({ level }: { level: number }) {
         className="h-full rounded-full bg-primary"
         style={{ width: `${Math.round(level * 100)}%` }}
       />
+    </div>
+  )
+}
+
+/**
+ * One line of Now playing. The name column is plain text, so a swipe that
+ * starts on it still scrolls the sheet; only the slider takes the touch.
+ */
+function NowPlayingRow({
+  icon,
+  name,
+  level,
+  note,
+  onDrag,
+  onCommit,
+  onTurnOff,
+}: {
+  icon: React.ReactNode
+  name: string
+  level: number
+  /** A line under the name, for what the slider can't do on this device. */
+  note?: string
+  onDrag: (level: number) => void
+  onCommit: (level: number) => void
+  /** Absent for the master row, which has nothing to turn off. */
+  onTurnOff?: () => void
+}) {
+  const pct = Math.round(level * 100)
+  return (
+    <div className="flex min-h-14 items-center gap-3 py-1">
+      <span className="flex size-5 shrink-0 items-center justify-center">
+        {icon}
+      </span>
+      <span className="w-24 shrink-0">
+        <span className="block truncate text-sm font-semibold">{name}</span>
+        {note && (
+          <span className="block text-[11px] leading-tight text-muted-foreground">
+            {note}
+          </span>
+        )}
+      </span>
+      {/* Width on a wrapper: the Slider root's own data-horizontal:w-full
+          outranks any sizing passed to it. */}
+      <div className="min-w-0 flex-1">
+        <Slider
+          value={pct}
+          min={0}
+          max={100}
+          step={1}
+          aria-label={`${name} volume`}
+          aria-valuetext={`${pct}%`}
+          onValueChange={(value) => onDrag((value as number) / 100)}
+          onValueCommitted={(value) => onCommit((value as number) / 100)}
+        />
+      </div>
+      <span
+        aria-hidden="true"
+        className="w-7 shrink-0 text-right font-mono text-xs text-muted-foreground tabular-nums"
+      >
+        {pct}
+      </span>
+      {onTurnOff ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-11 shrink-0 rounded-full text-muted-foreground"
+          aria-label={`Turn off ${name}`}
+          onClick={onTurnOff}
+        >
+          <HugeiconsIcon
+            icon={MinusSignCircleIcon}
+            strokeWidth={1.8}
+            className="size-5"
+          />
+        </Button>
+      ) : (
+        <span aria-hidden="true" className="w-11 shrink-0" />
+      )}
     </div>
   )
 }
@@ -716,6 +800,7 @@ export function MurmurApp() {
   // Not persisted: a reload brings the starters back, so dismissing declutters
   // the session without losing the only invitation an empty sidebar has.
   const [allMixesOpen, setAllMixesOpen] = React.useState(false)
+  const [nowPlayingOpen, setNowPlayingOpen] = React.useState(false)
   const [timerOpen, setTimerOpen] = React.useState(false)
   const [addOpen, setAddOpen] = React.useState(false)
   const [saveName, setSaveName] = React.useState("")
@@ -1224,30 +1309,53 @@ export function MurmurApp() {
     }
   }, [mixer])
 
-  const undoLink = (link: LinkArrival) => {
-    for (const id of link.addedVideos) removeCustom(id)
-    const previous = link.previous.vols
+  /**
+   * Puts a whole mix back without touching play state, for the Undos below.
+   * `skip` names sounds already silenced some other way.
+   */
+  const restoreMix = (
+    previous: LinkArrival["previous"],
+    skip: string[] = []
+  ) => {
     if (audioStarted.current) {
       for (const id of new Set([
         ...Object.keys(vols),
-        ...Object.keys(previous),
+        ...Object.keys(previous.vols),
       ])) {
-        // removeCustom already silenced and unregistered these.
-        if (link.addedVideos.includes(id)) continue
-        void applyVolume(id, previous[id] ?? 0, "fade")
+        if (skip.includes(id)) continue
+        void applyVolume(id, previous.vols[id] ?? 0, "fade")
       }
     }
-    setVols({ ...previous })
-    setMixName(link.previous.mixName)
-    setDirty(link.previous.dirty)
+    setVols({ ...previous.vols })
+    setMixName(previous.mixName)
+    setDirty(previous.dirty)
   }
 
-  // Latest-ref: the toast's Undo can fire after other changes, and has to walk
-  // the volumes as they are then, not as they were at boot.
-  const undoLinkRef = React.useRef(undoLink)
+  const undoLink = (link: LinkArrival) => {
+    for (const id of link.addedVideos) removeCustom(id)
+    // removeCustom already silenced and unregistered these.
+    restoreMix(link.previous, link.addedVideos)
+  }
+
+  // Latest-ref: an Undo can fire after other changes, and has to walk the
+  // volumes as they are then, not as they were when its toast went up.
+  const undoRef = React.useRef({ undoLink, restoreMix })
   React.useEffect(() => {
-    undoLinkRef.current = undoLink
+    undoRef.current = { undoLink, restoreMix }
   })
+
+  /** Now playing's "Turn all off". No confirmation, since Undo is right there. */
+  const turnAllOff = () => {
+    const before = { vols, mixName, dirty }
+    resetMix()
+    toast("Turned everything off", {
+      id: "turn-all-off",
+      action: {
+        label: "Undo",
+        onClick: () => undoRef.current.restoreMix(before),
+      },
+    })
+  }
 
   React.useEffect(() => {
     const link = boot.link
@@ -1273,7 +1381,7 @@ export function MurmurApp() {
     toast(message, {
       id: "shared-link",
       duration: 10_000,
-      action: { label: "Undo", onClick: () => undoLinkRef.current(link) },
+      action: { label: "Undo", onClick: () => undoRef.current.undoLink(link) },
     })
   }, [boot.link])
 
@@ -1578,11 +1686,23 @@ export function MurmurApp() {
     return () => window.removeEventListener("keydown", onKey)
   })
 
-  const status = [
+  // The phone bar shows the countdown in its own timer button, so it takes
+  // playStatus; the header has no such button and gets the full line.
+  const playStatus = [
     activeIds.length === 1 ? "1 sound" : `${activeIds.length} sounds`,
     playing ? "playing" : "paused",
-    ...(timerOn ? [`sleeps in ${formatClock(timerLeft)}`] : []),
   ].join(" · ")
+  const status = timerOn
+    ? `${playStatus} · sleeps in ${formatClock(timerLeft)}`
+    : playStatus
+
+  const openSaveDialog = () => {
+    setSaveName(dirty || mixName === "Shared mix" ? "" : mixName)
+    setSaveOpen(true)
+  }
+  // Nothing new to save when the loaded mix is a saved one, unedited.
+  const canSave =
+    activeIds.length > 0 && (dirty || !saved.some((s) => s.name === mixName))
 
   // Starters stand in for an empty list, so they return if every mix is deleted.
 
@@ -1781,13 +1901,39 @@ export function MurmurApp() {
             />
           </Button>
 
-          <div className="hidden min-w-0 md:block">
-            <p className="truncate text-sm font-medium">
-              {mixName}
-              {dirty && " *"}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">{status}</p>
-          </div>
+          {/* On touch the name is the way into Now playing, as it is in the
+              phone bar: the grid has no sliders there to set levels with. */}
+          {coarse ? (
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setNowPlayingOpen(true)}
+              className="hidden min-h-11 min-w-0 items-center gap-2 rounded-md text-left md:flex"
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">
+                  {mixName}
+                  {dirty && " *"}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {status}
+                </span>
+              </span>
+              <HugeiconsIcon
+                icon={ArrowUp01Icon}
+                strokeWidth={2}
+                className="size-4 shrink-0 text-muted-foreground"
+              />
+            </button>
+          ) : (
+            <div className="hidden min-w-0 md:block">
+              <p className="truncate text-sm font-medium">
+                {mixName}
+                {dirty && " *"}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">{status}</p>
+            </div>
+          )}
 
           <div className="flex-1" />
 
@@ -1848,9 +1994,11 @@ export function MurmurApp() {
             </span>
           </div>
 
+          {/* Below md, Now playing's "Turn all off" stands in for this. */}
           <Button
             variant="ghost"
             size="icon-sm"
+            className="hidden md:inline-flex"
             aria-label="Reset mix"
             title="Reset mix (Ctrl+R)"
             disabled={activeIds.length === 0}
@@ -1866,8 +2014,7 @@ export function MurmurApp() {
           <Button
             variant="outline"
             size="sm"
-            // Icon-only below sm, where the visible label is hidden.
-            aria-label="Share"
+            className="hidden md:inline-flex"
             onClick={share}
           >
             <HugeiconsIcon
@@ -1875,38 +2022,40 @@ export function MurmurApp() {
               strokeWidth={2}
               className="size-3.5"
             />
-            <span className="hidden sm:inline">Share</span>
+            Share
           </Button>
 
-          {/* Both live in the sidebar footer, which md:hidden takes away. */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className={cn("md:hidden", timerOn && "text-brand")}
-            aria-label="Sleep timer"
-            title="Sleep timer (T)"
-            onClick={() => setTimerOpen(true)}
-          >
-            <HugeiconsIcon
-              icon={Clock01Icon}
-              strokeWidth={2}
-              className="size-4"
-            />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="md:hidden"
-            aria-label="Preferences"
-            title="Preferences (Ctrl+P)"
-            onClick={() => setSettingsOpen(true)}
-          >
-            <HugeiconsIcon
-              icon={Settings01Icon}
-              strokeWidth={2}
-              className="size-4"
-            />
-          </Button>
+          {/* The phone header keeps two actions, at a finger's 44px. Preferences
+              lives in the sidebar footer, which md:hidden takes away; the sleep
+              timer moves to the phone bar. */}
+          <div className="-mr-2 flex md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11 rounded-full"
+              aria-label="Share"
+              onClick={share}
+            >
+              <HugeiconsIcon
+                icon={Share01Icon}
+                strokeWidth={1.8}
+                className="size-5"
+              />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11 rounded-full"
+              aria-label="Preferences"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <HugeiconsIcon
+                icon={Settings01Icon}
+                strokeWidth={1.8}
+                className="size-5"
+              />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -1964,10 +2113,7 @@ export function MurmurApp() {
                 variant="ghost"
                 size="sm"
                 className="mt-1 w-full justify-start border border-dashed text-muted-foreground"
-                onClick={() => {
-                  setSaveName(dirty || mixName === "Shared mix" ? "" : mixName)
-                  setSaveOpen(true)
-                }}
+                onClick={openSaveDialog}
               >
                 <HugeiconsIcon
                   icon={PlusSignIcon}
@@ -2040,57 +2186,36 @@ export function MurmurApp() {
             rounded corner. */}
         <SidebarInset className="min-w-0 overflow-hidden">
           {/* Below md the sidebar is hidden, so the mixes need a home of their
-              own or a phone visitor has no way to load or save one. The `||` is
-              what keeps + Save reachable: with every mix deleted this strip is the
-              only route to it, so it has to survive an empty list. */}
-          {(saved.length > 0 || activeIds.length > 0) && (
-            <div className="flex shrink-0 flex-col px-4 pt-2.5 pb-3 md:hidden">
-              {saved.length > 0 && (
-                <p className="pb-[7px] text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+              own. Saving lives in Now playing, so with no saved mixes there is
+              nothing for this strip to show. */}
+          {saved.length > 0 && (
+            <div className="flex shrink-0 flex-col px-4 pb-3 md:hidden">
+              <div className="flex h-11 items-center justify-between">
+                <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
                   Your mixes
                 </p>
-              )}
-              <div className="flex items-center gap-2">
-                {/* The fade is scroll-aware, so it only marks an edge that still
-                  has chips behind it, which the ··· button alone cannot say. */}
-                <div className="no-scrollbar flex min-w-0 flex-1 scroll-fade-x gap-2 overflow-x-auto scroll-fade-5">
-                  {saved.map((mix) => (
-                    <MixChip
-                      key={mix.name}
-                      label={mix.name}
-                      iconPath={mixIconPath(mix.mix)}
-                      active={mix.name === mixName && !dirty}
-                      onClick={() => applyMix(mix.name, mix.mix)}
-                    />
-                  ))}
-                  {activeIds.length > 0 && (
-                    <MixChip
-                      label="+ Save"
-                      dashed
-                      onClick={() => {
-                        setSaveName(
-                          dirty || mixName === "Shared mix" ? "" : mixName
-                        )
-                        setSaveOpen(true)
-                      }}
-                    />
-                  )}
-                </div>
-                {/* Pinned outside the scroller so whatever scrolls past the edge,
-                  and the rename/delete that right-click carries on desktop,
-                  stays reachable. */}
-                {saved.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-9 shrink-0 rounded-full bg-transparent text-base leading-none"
-                    aria-label="More mixes"
-                    title="More mixes"
-                    onClick={() => setAllMixesOpen(true)}
-                  >
-                    ···
-                  </Button>
-                )}
+                {/* A label, not a "···": whatever scrolls past the edge is one
+                    tap away, and the tap says where it goes. */}
+                <Button
+                  variant="ghost"
+                  className="-mr-2 h-11 px-2 text-xs font-semibold text-brand hover:text-brand"
+                  onClick={() => setAllMixesOpen(true)}
+                >
+                  All mixes
+                </Button>
+              </div>
+              {/* The fade is scroll-aware, so it only marks an edge that still
+                  has chips behind it. */}
+              <div className="-mx-4 no-scrollbar flex scroll-fade-x gap-2 overflow-x-auto px-4 scroll-fade-5">
+                {saved.map((mix) => (
+                  <MixChip
+                    key={mix.name}
+                    label={mix.name}
+                    iconPath={mixIconPath(mix.mix)}
+                    active={mix.name === mixName && !dirty}
+                    onClick={() => applyMix(mix.name, mix.mix)}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -2190,10 +2315,11 @@ export function MurmurApp() {
             </footer>
           )}
 
-          {/* Phone transport. Play, what is playing, and master volume all live
-              in the header or sidebar on desktop; pinned here they survive the
-              grid scrolling and stop the small header from overflowing. */}
-          <div className="flex shrink-0 items-center gap-[11px] border-t px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+          {/* Phone bar. Play and what is playing live in the header on desktop;
+              pinned here they survive the grid scrolling. The name opens Now
+              playing, where the levels and the master volume are set, and the
+              sleep timer sits beside it, counting down while it runs. */}
+          <div className="flex shrink-0 items-center gap-2.5 border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
             <Button
               size="icon"
               className="size-11 shrink-0 rounded-full shadow-md"
@@ -2207,46 +2333,142 @@ export function MurmurApp() {
               />
             </Button>
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold">
-                {mixName}
-                {dirty && " *"}
-              </p>
-              <p className="mt-px truncate text-[11px] text-muted-foreground">
-                {status}
-              </p>
-            </div>
-
-            <HugeiconsIcon
-              icon={VolumeHighIcon}
-              strokeWidth={2}
-              className="size-3.5 shrink-0 text-muted-foreground"
-            />
-            {/* No readout on this one. A phone has no hover, so it could only
-                ever appear mid-drag, and permanently reserving 28px of the
-                tightest row in the app to show a number that briefly sits under
-                your own thumb is a bad trade. */}
-            {/* Width lives on a wrapper: the Slider root's own
-                data-horizontal:w-full outranks any bare w-* passed to it. */}
-            <div className="w-[76px] shrink-0">
-              <Slider
-                value={Math.round(master * 100)}
-                min={0}
-                max={100}
-                step={1}
-                wheelStep={5}
-                resetValue={Math.round(DEFAULT_MASTER * 100)}
-                aria-label="Master volume"
-                aria-valuetext={`${Math.round(master * 100)}%`}
-                onValueChange={(value) => dragMaster((value as number) / 100)}
-                onValueCommitted={(value) =>
-                  commitMaster((value as number) / 100)
-                }
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setNowPlayingOpen(true)}
+              className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg text-left"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {mixName}
+                  {dirty && " *"}
+                </span>
+                <span className="mt-px block truncate text-xs text-muted-foreground">
+                  {playStatus}
+                </span>
+              </span>
+              <HugeiconsIcon
+                icon={ArrowUp01Icon}
+                strokeWidth={2}
+                className="size-[18px] shrink-0 text-muted-foreground"
               />
-            </div>
+            </button>
+
+            <Button
+              variant="outline"
+              className={cn(
+                "h-11 shrink-0 gap-1.5 rounded-full bg-transparent",
+                timerOn ? "px-3.5" : "w-11 px-0"
+              )}
+              aria-label={
+                timerOn
+                  ? `Sleep timer, ${formatClock(timerLeft)} left`
+                  : "Sleep timer"
+              }
+              onClick={() => setTimerOpen(true)}
+            >
+              <HugeiconsIcon
+                icon={Moon02Icon}
+                strokeWidth={2}
+                className="size-4 text-brand"
+              />
+              {timerOn && (
+                <span className="text-sm font-semibold tabular-nums">
+                  {formatClock(timerLeft)}
+                </span>
+              )}
+            </Button>
           </div>
         </SidebarInset>
       </div>
+
+      {/* Where levels are set on a phone or any touch screen: the master and
+          only the sounds that are on, with sliders a finger can work, since
+          the grid there has none. One sheet at a time, so Save closes this
+          before opening its own. */}
+      <Dialog open={nowPlayingOpen} onOpenChange={setNowPlayingOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Now playing</DialogTitle>
+            <DialogDescription>
+              {mixName}
+              {dirty && " (edited)"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col">
+            <NowPlayingRow
+              icon={
+                <HugeiconsIcon
+                  icon={VolumeHighIcon}
+                  strokeWidth={2}
+                  className="size-[18px]"
+                />
+              }
+              name="Master"
+              level={master}
+              onDrag={dragMaster}
+              onCommit={commitMaster}
+            />
+            <Separator className="my-1" />
+            {activeIds.length ? (
+              activeIds.map((id) => (
+                <NowPlayingRow
+                  key={id}
+                  icon={
+                    <SoundIcon
+                      path={
+                        sounds.find((s) => s.id === id)?.iconPath ??
+                        (ytVideoId(id) ? VIDEO_ICON : MUSIC_ICON)
+                      }
+                      size={18}
+                      className="text-brand"
+                    />
+                  }
+                  name={nameFor(id)}
+                  level={vols[id] ?? 0}
+                  note={
+                    IS_IPHONE && ytVideoId(id)
+                      ? "Uses your iPhone's volume"
+                      : undefined
+                  }
+                  onDrag={(v) => dragVolume(id, v)}
+                  onCommit={(v) => commitVolume(id, v)}
+                  onTurnOff={() => toggleSound(id)}
+                />
+              ))
+            ) : (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nothing on yet. Tap a sound to add it.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="flex-row justify-between sm:justify-between">
+            {canSave ? (
+              <Button
+                variant="outline"
+                className="h-11 rounded-full px-5"
+                onClick={() => {
+                  setNowPlayingOpen(false)
+                  openSaveDialog()
+                }}
+              >
+                Save mix
+              </Button>
+            ) : (
+              <span />
+            )}
+            <Button
+              variant="ghost"
+              className="h-11 rounded-full px-4"
+              disabled={activeIds.length === 0}
+              onClick={turnAllOff}
+            >
+              Turn all off
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* The phone's stand-in for both the sidebar list and the right-click
           menu it can't offer: every mix, each with its delete. */}
