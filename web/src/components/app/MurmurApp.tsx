@@ -1855,9 +1855,7 @@ export function MurmurApp() {
               </span>
             </Button>
 
-            <Separator className="my-3" />
-
-            <div className="flex items-center gap-2 px-1">
+            <div className="mt-3 flex items-center gap-2 px-1">
               {/* Without this /app is a dead end. The old sidebar had it too. */}
               <a
                 className="text-xs text-muted-foreground hover:text-foreground"
