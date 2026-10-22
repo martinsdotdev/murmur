@@ -2661,44 +2661,58 @@ export function MurmurApp() {
                       />
                     </Button>
                   </div>
-                  {open && (
-                    <div className="flex gap-1 pb-1 pl-8">
-                      <Button
-                        variant="ghost"
-                        className="h-11 px-3"
-                        onClick={() => {
-                          afterClose.current = () => {
-                            setRenameValue(mix.name)
-                            setRenaming(mix.name)
-                          }
-                          setAllMixesOpen(false)
-                          setMixActionsFor(null)
-                        }}
-                      >
-                        Rename
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="h-11 px-3"
-                        onClick={() => {
-                          duplicateMix(mix)
-                          setMixActionsFor(null)
-                        }}
-                      >
-                        Duplicate
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="h-11 px-3 text-destructive hover:text-destructive"
-                        onClick={() => {
-                          removeSaved(mix.name)
-                          setMixActionsFor(null)
-                        }}
-                      >
-                        Delete
-                      </Button>
+                  {/* Always mounted, so it can close as well as open. Rows
+                      0fr to 1fr is the height of its content without
+                      measuring it, and closing is quicker than opening.
+                      inert while shut, so its buttons leave the tab order. */}
+                  <div
+                    inert={!open}
+                    className={cn(
+                      "grid transition-[grid-template-rows,opacity] ease-out motion-reduce:transition-opacity",
+                      open
+                        ? "grid-rows-[1fr] opacity-100 duration-200"
+                        : "grid-rows-[0fr] opacity-0 duration-150"
+                    )}
+                  >
+                    <div className="min-h-0 overflow-hidden">
+                      <div className="flex gap-1 pb-1 pl-8">
+                        <Button
+                          variant="ghost"
+                          className="h-11 px-3"
+                          onClick={() => {
+                            afterClose.current = () => {
+                              setRenameValue(mix.name)
+                              setRenaming(mix.name)
+                            }
+                            setAllMixesOpen(false)
+                            setMixActionsFor(null)
+                          }}
+                        >
+                          Rename
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="h-11 px-3"
+                          onClick={() => {
+                            duplicateMix(mix)
+                            setMixActionsFor(null)
+                          }}
+                        >
+                          Duplicate
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="h-11 px-3 text-destructive hover:text-destructive"
+                          onClick={() => {
+                            removeSaved(mix.name)
+                            setMixActionsFor(null)
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </SidebarMenuItem>
               )
             })}
