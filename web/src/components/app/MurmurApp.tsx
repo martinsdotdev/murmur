@@ -339,13 +339,16 @@ function LevelBar({ level }: { level: number }) {
     <div
       aria-hidden="true"
       className={cn(
-        "h-1 overflow-hidden rounded-full",
-        level > 0 && "bg-track"
+        "h-1 overflow-hidden rounded-full transition-colors",
+        level > 0 ? "bg-track" : "bg-transparent"
       )}
     >
+      {/* Full width and slid into place rather than sized: a transform
+          animates without layout, and the clipped track keeps the fill's
+          rounded end whatever the level. */}
       <div
-        className="h-full rounded-full bg-primary"
-        style={{ width: `${Math.round(level * 100)}%` }}
+        className="h-full rounded-full bg-primary transition-transform duration-150 ease-out motion-reduce:transition-none"
+        style={{ transform: `translateX(${Math.round(level * 100) - 100}%)` }}
       />
     </div>
   )
@@ -515,7 +518,18 @@ function formatClock(totalSeconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 }
 
-function EqBars() {
+/**
+ * A start offset from the sound's id, 0 to 0.9s, so meters on different cards
+ * don't rise and fall in lockstep. Stable per sound, so a card keeps its
+ * rhythm across renders.
+ */
+function meterPhase(id: string): number {
+  let hash = 0
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) % 997
+  return (hash % 10) / 10
+}
+
+function EqBars({ phase, paused }: { phase: number; paused: boolean }) {
   return (
     <div className="flex h-3 items-end gap-0.5" aria-hidden="true">
       {[0.9, 1.2, 0.7].map((duration, i) => (
@@ -524,7 +538,8 @@ function EqBars() {
           className="w-[3px] origin-bottom rounded-full bg-brand"
           style={{
             height: "100%",
-            animation: `murmur-eq ${duration}s ease-in-out ${-i * 0.3}s infinite`,
+            animation: `murmur-eq ${duration}s ease-in-out ${-(i * 0.3 + phase)}s infinite`,
+            animationPlayState: paused ? "paused" : "running",
           }}
         />
       ))}
@@ -848,6 +863,12 @@ export function MurmurApp() {
   // keyboard is the fast path, and animating it reads as lag. Any pointer
   // input hands motion back.
   const [keyDriven, setKeyDriven] = React.useState(false)
+  const [pageHidden, setPageHidden] = React.useState(() => document.hidden)
+  React.useEffect(() => {
+    const sync = () => setPageHidden(document.hidden)
+    document.addEventListener("visibilitychange", sync)
+    return () => document.removeEventListener("visibilitychange", sync)
+  }, [])
   React.useEffect(() => {
     const off = () => setKeyDriven(false)
     window.addEventListener("pointerdown", off)
@@ -1768,6 +1789,25 @@ export function MurmurApp() {
     setSaveName(dirty || mixName === "Shared mix" ? "" : mixName)
     setSaveOpen(true)
   }
+  // What the level meters claim is sound reaching the speakers, so they stop
+  // when it doesn't: muted, or once the sleep timer starts fading the mix out.
+  const audible =
+    playing && master > 0 && !(timerOn && timerLeft <= prefs.sleepFade)
+  // And they hold still while nobody can see them: a hidden page, or a dialog
+  // whose blurred backdrop covers the grid, where every frame they animate
+  // also costs a blur.
+  const anyDialogOpen =
+    nowPlayingOpen ||
+    allMixesOpen ||
+    saveOpen ||
+    addOpen ||
+    timerOpen ||
+    settingsOpen ||
+    resetOpen ||
+    renaming !== null ||
+    removing !== null
+  const metersPaused = pageHidden || anyDialogOpen
+
   // Nothing new to save when the loaded mix is a saved one, unedited.
   const canSave =
     activeIds.length > 0 && (dirty || !saved.some((s) => s.name === mixName))
@@ -1827,6 +1867,20 @@ export function MurmurApp() {
       </span>
     )
 
+    // Card draws its edge as a ring, not a border, so hover goes on the ring.
+    // The press is touch only, where nothing else answers a tap until the
+    // sound arrives; a mouse already has hover.
+    const tileState = cn(
+      "[transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] pointer-coarse:motion-safe:active:scale-[0.98]",
+      active ? "bg-secondary" : "hover:ring-brand/40 dark:hover:ring-brand/40"
+    )
+    // With the card, not after it: an icon that snaps while its card fades
+    // reads as two changes.
+    const iconState = cn(
+      "[transition:color_150ms_ease]",
+      active ? "text-brand" : "text-muted-foreground"
+    )
+
     if (shownView === "list") {
       return (
         <Card
@@ -1839,15 +1893,11 @@ export function MurmurApp() {
             if (e.key === "Enter") toggleSound(sound.id)
           }}
           className={cn(
-            "group flex cursor-pointer flex-row items-center gap-3 px-4 py-3 transition-colors",
-            active ? "border-brand bg-secondary" : "hover:border-brand/50"
+            "group flex cursor-pointer flex-row items-center gap-3 px-4 py-3",
+            tileState
           )}
         >
-          <SoundIcon
-            path={sound.iconPath}
-            size={17}
-            className={active ? "text-brand" : "text-muted-foreground"}
-          />
+          <SoundIcon path={sound.iconPath} size={17} className={iconState} />
           <span className="w-28 shrink-0 truncate text-xs font-medium">
             {sound.name}
           </span>
@@ -1879,19 +1929,14 @@ export function MurmurApp() {
         onKeyDown={(e) => {
           if (e.key === "Enter") toggleSound(sound.id)
         }}
-        className={cn(
-          "group cursor-pointer gap-0 p-3 transition-colors",
-          active ? "border-brand bg-secondary" : "hover:border-brand/50"
-        )}
+        className={cn("group cursor-pointer gap-0 p-3", tileState)}
       >
         <div className="flex items-start gap-1.5">
-          <SoundIcon
-            path={sound.iconPath}
-            size={19}
-            className={active ? "text-brand" : "text-muted-foreground"}
-          />
+          <SoundIcon path={sound.iconPath} size={19} className={iconState} />
           <div className="flex-1" />
-          {active && playing && prefs.eq && <EqBars />}
+          {active && audible && prefs.eq && (
+            <EqBars phase={meterPhase(sound.id)} paused={metersPaused} />
+          )}
           {removable && (
             <RemoveSoundButton
               name={sound.name}
