@@ -2354,8 +2354,9 @@ export function MurmurApp() {
           {/* Phone bar. Play and what is playing live in the header on desktop;
               pinned here they survive the grid scrolling. The name opens Now
               playing, where the levels and the master volume are set, and the
-              sleep timer sits beside it, counting down while it runs. */}
-          <div className="flex shrink-0 items-center gap-2.5 border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+              sleep timer sits beside it, counting down while it runs. Only the
+              top is rounded: the bottom meets the screen's own corners. */}
+          <div className="flex shrink-0 items-center gap-2.5 rounded-t-[24px] border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
             <Button
               size="icon"
               className="size-11 shrink-0 rounded-full shadow-md"
