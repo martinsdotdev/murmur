@@ -22,6 +22,12 @@
   --font-serif: "Young Serif", Georgia, "Times New Roman", serif;
   --font-heading: var(--font-sans);
 
+  /* Motion. Tailwind's own ease-out, (0, 0, 0.2, 1), is too soft to read as
+       deliberate, so it is replaced rather than joined by a second name.
+       ease-drawer is the iOS-like curve for sheets that rise from the bottom. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
   /* Brand amber sits alongside shadcn's --primary: --primary is the filled
        button colour, --color-brand the lighter accent used for active icons,
        eq bars and highlighted text (Fluent's brandForeground vs brandBackground). */

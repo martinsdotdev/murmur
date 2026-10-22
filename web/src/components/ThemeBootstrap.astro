@@ -7,6 +7,10 @@
  * ThemeToggle, and applyTheme in lib/theme.ts), so the meta follows the
  * attribute rather than each writer. The two colours live on the meta element
  * itself, because the landing page and the app are not the same surface.
+ *
+ * The same observer switches transitions off for the frame the theme changes
+ * in. Left on, anything that transitions colour fades for 150ms while the rest
+ * of the page snaps, and the switch arrives as a visible stagger.
  */
 ---
 
@@ -32,7 +36,17 @@
 
     root.dataset.theme = resolved
     paint()
-    new MutationObserver(paint).observe(root, {
+
+    const freeze = document.createElement("style")
+    freeze.textContent = "*,*::before,*::after{transition:none!important}"
+    new MutationObserver(() => {
+      document.head.appendChild(freeze)
+      // Forces the new colours to apply while transitions are off, so the
+      // removal below has nothing left to animate.
+      void document.body.offsetHeight
+      setTimeout(() => freeze.remove())
+      paint()
+    }).observe(root, {
       attributeFilter: ["data-theme"],
     })
   })()
