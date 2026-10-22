@@ -308,6 +308,30 @@ function MixChip({
   )
 }
 
+/**
+ * A card's level where it has no slider: on touch, where a slider in the
+ * scrolling grid takes the swipe meant to scroll it and sets a volume instead.
+ * Read-only; levels are set in Now playing. h-1 is the slider's own box (its
+ * thumb overhangs it), so the card still measures the 83px the "Add sound"
+ * tile copies.
+ */
+function LevelBar({ level }: { level: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "h-1 overflow-hidden rounded-full",
+        level > 0 && "bg-track"
+      )}
+    >
+      <div
+        className="h-full rounded-full bg-primary"
+        style={{ width: `${Math.round(level * 100)}%` }}
+      />
+    </div>
+  )
+}
+
 interface RenderableSound {
   id: string
   name: string
@@ -619,7 +643,11 @@ function PrefSection({
   )
 }
 
-/** Stops propagation so removing never also toggles the card it sits in. */
+/**
+ * Stops propagation so removing never also toggles the card it sits in. On
+ * touch the hit area grows to 44px past the 22px it draws; removing asks first,
+ * so a near miss costs a Cancel, not a sound.
+ */
 function RemoveSoundButton({
   name,
   className,
@@ -636,7 +664,7 @@ function RemoveSoundButton({
       aria-label={`Remove ${name}`}
       title="Remove"
       className={cn(
-        "size-[22px] shrink-0 rounded-[5px] text-muted-foreground hover:bg-accent hover:text-foreground",
+        "relative size-[22px] shrink-0 rounded-[5px] text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:after:absolute pointer-coarse:after:-inset-[11px]",
         className
       )}
       onClick={(e) => {
@@ -713,6 +741,9 @@ export function MurmurApp() {
 
   const pwa = usePwa()
   const coarse = useCoarsePointer()
+  // Touch shows tiles only, since list rows are built around their sliders.
+  // The saved view is left as it was, for the next session with a mouse.
+  const shownView: View = coarse ? "grid" : view
   const audioStarted = React.useRef(false)
   const fadeMult = React.useRef(1)
   // Ids that failed to load while offline, so reconnecting can offer them back
@@ -1608,7 +1639,7 @@ export function MurmurApp() {
       </span>
     )
 
-    if (view === "list") {
+    if (shownView === "list") {
       return (
         <Card
           key={sound.id}
@@ -1695,9 +1726,13 @@ export function MurmurApp() {
           <span className="min-w-0 flex-1 truncate text-xs font-medium">
             {sound.name}
           </span>
-          {readout}
+          {!coarse && readout}
         </div>
-        <div {...sliderGuard}>{slider}</div>
+        {coarse ? (
+          <LevelBar level={volume} />
+        ) : (
+          <div {...sliderGuard}>{slider}</div>
+        )}
       </Card>
     )
   }
@@ -1765,7 +1800,7 @@ export function MurmurApp() {
             spacing={0}
             variant="outline"
             size="sm"
-            className="hidden sm:flex"
+            className={coarse ? "hidden" : "hidden sm:flex"}
           >
             <ToggleGroupItem value="grid" aria-label="Grid view">
               <HugeiconsIcon
@@ -2072,7 +2107,7 @@ export function MurmurApp() {
                   </h2>
                   <div
                     className={cn(
-                      view === "grid"
+                      shownView === "grid"
                         ? "grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5"
                         : "flex flex-col gap-1.5"
                     )}
@@ -2090,7 +2125,7 @@ export function MurmurApp() {
                 </h2>
                 <div
                   className={cn(
-                    view === "grid"
+                    shownView === "grid"
                       ? "grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5"
                       : "flex flex-col gap-1.5"
                   )}
@@ -2119,7 +2154,7 @@ export function MurmurApp() {
                       // cards beside it otherwise, but it has to be the card's
                       // height, not a round number: the 92px that was here made
                       // the whole Yours row 9px taller than every other section.
-                      view === "grid"
+                      shownView === "grid"
                         ? "min-h-[83px] flex-col p-3"
                         : "px-4 py-3"
                     )}
@@ -2129,7 +2164,7 @@ export function MurmurApp() {
                       strokeWidth={2}
                       className="size-4"
                     />
-                    {view === "grid" ? "Add sound" : "Add your own sound"}
+                    {shownView === "grid" ? "Add sound" : "Add your own sound"}
                   </button>
                 </div>
               </section>

@@ -224,12 +224,14 @@ function Slider({
         // grid card's bottom padding, and anything more would be clipped by the
         // card or reach into the gap below it. The control is also touch-none
         // and Base UI takes a track press on touchstart, so every pixel here is
-        // a pixel a phone cannot start a scroll from.
-        className="relative flex w-full touch-none items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] data-disabled:opacity-50 data-dragging:cursor-grabbing data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:before:inset-y-0 data-vertical:before:-inset-x-3"
+        // a pixel a phone cannot start a scroll from. That is why touch screens
+        // get no sliders in the grid (MurmurApp draws a LevelBar there), and
+        // why, everywhere else on touch, the band can grow to a full 44px.
+        className="relative flex w-full touch-none items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] pointer-coarse:before:-inset-y-5 data-disabled:opacity-50 data-dragging:cursor-grabbing data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:before:inset-y-0 data-vertical:before:-inset-x-3"
       >
         <SliderPrimitive.Track
           data-slot="slider-track"
-          className="relative grow overflow-hidden rounded-full bg-track select-none data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
+          className="relative grow overflow-hidden rounded-full bg-track select-none data-horizontal:h-1 data-horizontal:w-full pointer-coarse:data-horizontal:h-1.5 data-vertical:h-full data-vertical:w-1"
         >
           <SliderPrimitive.Indicator
             data-slot="slider-range"
@@ -248,7 +250,8 @@ function Slider({
             getAriaValueText={getAriaValueText}
             // Murmur's thumb: a brand-filled circle cut out of the surface it
             // sits on by a 3px border, growing slightly on hover and while held.
-            className="block size-4 shrink-0 cursor-grab rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform select-none hover:scale-[1.15] focus-visible:ring-4 focus-visible:ring-ring/30 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-dragging:scale-[1.15] data-dragging:ring-4 data-dragging:ring-ring/25"
+            // A finger gets a 24px one, a size it can see past its own tip.
+            className="block size-4 shrink-0 cursor-grab rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform select-none hover:scale-[1.15] focus-visible:ring-4 focus-visible:ring-ring/30 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-dragging:scale-[1.15] data-dragging:ring-4 data-dragging:ring-ring/25 pointer-coarse:size-6 pointer-coarse:border-4"
           />
         ))}
       </SliderPrimitive.Control>
