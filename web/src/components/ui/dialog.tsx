@@ -2,14 +2,46 @@
 
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
+import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Cancel01Icon } from "@hugeicons/core-free-icons"
 
+const SHEET_QUERY = "(width < 40rem)"
+
+function subscribeSheet(onChange: () => void) {
+  const media = window.matchMedia(SHEET_QUERY)
+  media.addEventListener("change", onChange)
+  return () => media.removeEventListener("change", onChange)
+}
+
+/** Below sm, where a dialog is a bottom sheet that can be swiped away. */
+function useSheet() {
+  return React.useSyncExternalStore(
+    subscribeSheet,
+    () => window.matchMedia(SHEET_QUERY).matches,
+    () => false
+  )
+}
+
+/**
+ * DIVERGES FROM THE REGISTRY: below sm the root is Base UI's Drawer, which is
+ * Dialog plus swipe gestures, so a phone sheet can be swiped down to dismiss.
+ * Title, Description and Close are the same parts under either root. Crossing
+ * sm remounts the dialog, which only happens mid-resize.
+ */
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+  const sheet = useSheet()
+  return sheet ? (
+    <DrawerPrimitive.Root
+      swipeDirection="down"
+      {...(props as DrawerPrimitive.Root.Props)}
+    />
+  ) : (
+    <DialogPrimitive.Root data-slot="dialog" {...props} />
+  )
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
@@ -51,47 +83,77 @@ function DialogContent({
   /** No open or close motion, for a dialog a keyboard shortcut drives. */
   instant?: boolean
 }) {
+  const sheet = useSheet()
+  const popupClassName = cn(
+    // Padding is stated once, unprefixed, so a caller's p-0 actually wins:
+    // tailwind-merge only dedupes within a variant group, and an sm:p-6 here
+    // would survive alongside p-0 and re-inset the content. select-none for
+    // the same reason the app shell carries it: a dialog is chrome, not a
+    // document. It has to be repeated here because the portal renders this
+    // outside the shell's subtree.
+    "fixed inset-x-0 bottom-0 z-50 grid max-h-[85dvh] w-full gap-6 overflow-y-auto rounded-t-2xl bg-dialog p-6 text-sm text-popover-foreground shadow-xl outline-none select-none max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
+    "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[calc(100dvh-2rem)] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:ring-1 sm:ring-foreground/5 dark:sm:ring-foreground/10",
+    className
+  )
+  const close = showCloseButton && (
+    <DialogPrimitive.Close
+      data-slot="dialog-close"
+      render={
+        <Button
+          variant="ghost"
+          className="absolute top-4 right-4 rounded-full bg-secondary"
+          size="icon-sm"
+        />
+      }
+    >
+      <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+      <span className="sr-only">Close</span>
+    </DialogPrimitive.Close>
+  )
+
+  // DIVERGES FROM THE REGISTRY: below sm this is a bottom sheet, not a
+  // centred card, because a phone modal belongs under the thumb, and it can be
+  // swiped down to close. Both forms share data-slot, classes and the motion
+  // rules in tailwind.css. `shadcn add dialog` will drop all of it.
+  if (sheet) {
+    return (
+      <DrawerPrimitive.Portal>
+        <DrawerPrimitive.Backdrop
+          data-slot="dialog-overlay"
+          data-instant={instant || undefined}
+          className="fixed inset-0 isolate z-50 bg-black/30 supports-backdrop-filter:backdrop-blur-sm"
+        />
+        <DrawerPrimitive.Viewport className="fixed inset-0 z-50">
+          <DrawerPrimitive.Popup
+            data-slot="dialog-content"
+            data-instant={instant || undefined}
+            className={popupClassName}
+            {...(props as DrawerPrimitive.Popup.Props)}
+          >
+            {/* The sheet really does follow a finger now, so it says so. */}
+            <span
+              aria-hidden="true"
+              className="absolute top-2 left-1/2 h-1 w-9 -translate-x-1/2 rounded-full bg-foreground/20"
+            />
+            {children}
+            {close}
+          </DrawerPrimitive.Popup>
+        </DrawerPrimitive.Viewport>
+      </DrawerPrimitive.Portal>
+    )
+  }
+
   return (
     <DialogPortal>
       <DialogOverlay data-instant={instant || undefined} />
-      {/* DIVERGES FROM THE REGISTRY: below sm this is a bottom sheet, not a
-          centred card, because a phone modal belongs under the thumb. It stays one
-          component because Sheet is this same Base UI primitive with different
-          positioning, so switching on a breakpoint would only cost a remount
-          mid-resize. No drag handle: nothing here is draggable, and a grabber
-          that does not grab is a lie. `shadcn add dialog` will drop all of it. */}
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         data-instant={instant || undefined}
-        className={cn(
-          // Padding is stated once, unprefixed, so a caller's p-0 actually
-          // wins: tailwind-merge only dedupes within a variant group, and an
-          // sm:p-6 here would survive alongside p-0 and re-inset the content.
-          // select-none for the same reason the app shell carries it: a dialog
-          // is chrome, not a document. It has to be repeated here because the
-          // portal renders this outside the shell's subtree.
-          "fixed inset-x-0 bottom-0 z-50 grid max-h-[85dvh] w-full gap-6 overflow-y-auto rounded-t-2xl bg-dialog p-6 text-sm text-popover-foreground shadow-xl outline-none select-none max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
-          "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[calc(100dvh-2rem)] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:ring-1 sm:ring-foreground/5 dark:sm:ring-foreground/10",
-          className
-        )}
+        className={popupClassName}
         {...props}
       >
         {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            render={
-              <Button
-                variant="ghost"
-                className="absolute top-4 right-4 rounded-full bg-secondary"
-                size="icon-sm"
-              />
-            }
-          >
-            <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
+        {close}
       </DialogPrimitive.Popup>
     </DialogPortal>
   )

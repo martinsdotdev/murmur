@@ -191,9 +191,11 @@
  * data-ending-style, not tw-animate keyframes: a transition reverses from
  * wherever it is when a dialog closes mid-entrance, where a keyframe restarts.
  *
- * Below sm the dialog is a bottom sheet and rises the full height of itself on
- * the iOS-like drawer curve, at the 450ms Base UI's own Drawer uses. From sm
- * it is a centred modal, so it scales from 0.96 rather than out of any
+ * Below sm the dialog is a bottom sheet (Base UI's Drawer) and rises the full
+ * height of itself on the iOS-like drawer curve, at the 450ms the Drawer docs
+ * use. A finger can drag it down: it follows with no transition, the backdrop
+ * thins in step, and a flung sheet leaves faster the harder it was flung. From
+ * sm it is a centred modal, so it scales from 0.96 rather than out of any
  * trigger. Both leave faster than they arrive, and the backdrop fades with
  * them as one surface.
  *
@@ -201,11 +203,14 @@
  * utilities while a dialog is in its starting or ending style.
  */
 [data-slot="dialog-overlay"] {
+  opacity: calc(1 - var(--drawer-swipe-progress, 0));
   transition: opacity 450ms var(--ease-drawer);
 }
 
+/* max() keeps an upward pull from lifting the sheet off the bottom edge. */
 [data-slot="dialog-content"] {
-  transition: translate 450ms var(--ease-drawer);
+  transform: translateY(max(0px, var(--drawer-swipe-movement-y, 0px)));
+  transition: transform 450ms var(--ease-drawer);
 }
 
 [data-slot="dialog-overlay"][data-starting-style],
@@ -215,12 +220,21 @@
 
 [data-slot="dialog-content"][data-starting-style],
 [data-slot="dialog-content"][data-ending-style] {
-  translate: 0 100%;
+  transform: translateY(100%);
 }
 
 [data-slot="dialog-overlay"][data-ending-style],
 [data-slot="dialog-content"][data-ending-style] {
   transition-duration: 250ms;
+}
+
+[data-slot="dialog-content"][data-swipe-dismiss][data-ending-style] {
+  transition-duration: calc(var(--drawer-swipe-strength, 1) * 400ms);
+}
+
+[data-slot="dialog-overlay"][data-swiping],
+[data-slot="dialog-content"][data-swiping] {
+  transition-duration: 0ms;
 }
 
 @media (width >= 40rem) {
@@ -229,6 +243,7 @@
   }
 
   [data-slot="dialog-content"] {
+    transform: none;
     transition:
       opacity 250ms var(--ease-out),
       scale 250ms var(--ease-out);
@@ -236,6 +251,7 @@
 
   [data-slot="dialog-content"][data-starting-style],
   [data-slot="dialog-content"][data-ending-style] {
+    transform: none;
     translate: var(--tw-translate-x) var(--tw-translate-y);
     scale: 0.96;
     opacity: 0;
@@ -247,7 +263,9 @@
   }
 }
 
-/* Reduced motion keeps the fade and drops the movement. */
+/* Reduced motion keeps the fade and drops the movement. A sheet still
+   follows a finger that drags it, since that motion is the user's own, and
+   fades out from wherever it was let go. */
 @media (prefers-reduced-motion: reduce) {
   [data-slot="dialog-overlay"],
   [data-slot="dialog-content"] {
@@ -256,6 +274,7 @@
 
   [data-slot="dialog-content"][data-starting-style],
   [data-slot="dialog-content"][data-ending-style] {
+    transform: translateY(max(0px, var(--drawer-swipe-movement-y, 0px)));
     translate: none;
     scale: none;
     opacity: 0;
@@ -265,6 +284,7 @@
 @media (prefers-reduced-motion: reduce) and (width >= 40rem) {
   [data-slot="dialog-content"][data-starting-style],
   [data-slot="dialog-content"][data-ending-style] {
+    transform: none;
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
 }

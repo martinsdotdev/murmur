@@ -195,6 +195,9 @@ function Slider({
     <SliderPrimitive.Root
       className={cn("data-horizontal:w-full data-vertical:h-full", className)}
       data-slot="slider"
+      // A slider in a bottom sheet is a control, not a handle: a drag that
+      // starts on it, or wanders off its axis, must not swipe the sheet away.
+      data-base-ui-swipe-ignore=""
       defaultValue={defaultValue}
       value={value}
       min={min}
