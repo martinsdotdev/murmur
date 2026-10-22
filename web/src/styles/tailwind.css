@@ -186,6 +186,96 @@
   --sidebar-accent: var(--elevated);
 }
 
+/*
+ * How dialogs come and go. Transitions on Base UI's data-starting-style and
+ * data-ending-style, not tw-animate keyframes: a transition reverses from
+ * wherever it is when a dialog closes mid-entrance, where a keyframe restarts.
+ *
+ * Below sm the dialog is a bottom sheet and rises the full height of itself on
+ * the iOS-like drawer curve, at the 450ms Base UI's own Drawer uses. From sm
+ * it is a centred modal, so it scales from 0.96 rather than out of any
+ * trigger. Both leave faster than they arrive, and the backdrop fades with
+ * them as one surface.
+ *
+ * Unlayered on purpose: it must outrank the sm:-translate-1/2 centring
+ * utilities while a dialog is in its starting or ending style.
+ */
+[data-slot="dialog-overlay"] {
+  transition: opacity 450ms var(--ease-drawer);
+}
+
+[data-slot="dialog-content"] {
+  transition: translate 450ms var(--ease-drawer);
+}
+
+[data-slot="dialog-overlay"][data-starting-style],
+[data-slot="dialog-overlay"][data-ending-style] {
+  opacity: 0;
+}
+
+[data-slot="dialog-content"][data-starting-style],
+[data-slot="dialog-content"][data-ending-style] {
+  translate: 0 100%;
+}
+
+[data-slot="dialog-overlay"][data-ending-style],
+[data-slot="dialog-content"][data-ending-style] {
+  transition-duration: 250ms;
+}
+
+@media (width >= 40rem) {
+  [data-slot="dialog-overlay"] {
+    transition: opacity 250ms var(--ease-out);
+  }
+
+  [data-slot="dialog-content"] {
+    transition:
+      opacity 250ms var(--ease-out),
+      scale 250ms var(--ease-out);
+  }
+
+  [data-slot="dialog-content"][data-starting-style],
+  [data-slot="dialog-content"][data-ending-style] {
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+    scale: 0.96;
+    opacity: 0;
+  }
+
+  [data-slot="dialog-overlay"][data-ending-style],
+  [data-slot="dialog-content"][data-ending-style] {
+    transition-duration: 200ms;
+  }
+}
+
+/* Reduced motion keeps the fade and drops the movement. */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="dialog-overlay"],
+  [data-slot="dialog-content"] {
+    transition: opacity 150ms var(--ease-out);
+  }
+
+  [data-slot="dialog-content"][data-starting-style],
+  [data-slot="dialog-content"][data-ending-style] {
+    translate: none;
+    scale: none;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (width >= 40rem) {
+  [data-slot="dialog-content"][data-starting-style],
+  [data-slot="dialog-content"][data-ending-style] {
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
+}
+
+/* Opened or closed from a keyboard shortcut: no motion at all. The keyboard
+   is the fast path, and animating it reads as lag. */
+[data-slot="dialog-overlay"][data-instant],
+[data-slot="dialog-content"][data-instant] {
+  transition: none;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

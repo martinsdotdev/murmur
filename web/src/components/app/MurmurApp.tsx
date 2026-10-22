@@ -816,6 +816,14 @@ export function MurmurApp() {
   const [nowPlayingOpen, setNowPlayingOpen] = React.useState(false)
   /** The All mixes row whose Rename · Duplicate · Delete strip is open. */
   const [mixActionsFor, setMixActionsFor] = React.useState<string | null>(null)
+  // One sheet at a time, and the next one waits until the first has gone:
+  // opened together, their two blurred backdrops stack and flash darker.
+  const afterClose = React.useRef<(() => void) | null>(null)
+  const runAfterClose = () => {
+    const next = afterClose.current
+    afterClose.current = null
+    next?.()
+  }
   const [timerOpen, setTimerOpen] = React.useState(false)
   const [addOpen, setAddOpen] = React.useState(false)
   const [saveName, setSaveName] = React.useState("")
@@ -836,6 +844,15 @@ export function MurmurApp() {
     writeThemeMode(mode)
   }
   const [settingsOpen, setSettingsOpen] = React.useState(false)
+  // A dialog a shortcut opened or closed comes and goes without motion: the
+  // keyboard is the fast path, and animating it reads as lag. Any pointer
+  // input hands motion back.
+  const [keyDriven, setKeyDriven] = React.useState(false)
+  React.useEffect(() => {
+    const off = () => setKeyDriven(false)
+    window.addEventListener("pointerdown", off)
+    return () => window.removeEventListener("pointerdown", off)
+  }, [])
   const [resetOpen, setResetOpen] = React.useState(false)
   const [renaming, setRenaming] = React.useState<string | null>(null)
   const [renameValue, setRenameValue] = React.useState("")
@@ -1692,9 +1709,11 @@ export function MurmurApp() {
         const key = e.key.toLowerCase()
         if (key === "r" && !e.shiftKey) {
           e.preventDefault()
+          setKeyDriven(true)
           if (Object.keys(vols).length) setResetOpen(true)
         } else if (key === "i") {
           e.preventDefault()
+          setKeyDriven(true)
           setAddName("")
           setAddUrl("")
           setAddOpen(true)
@@ -1703,6 +1722,7 @@ export function MurmurApp() {
           setView(view === "grid" ? "list" : "grid")
         } else if (key === "p") {
           e.preventDefault()
+          setKeyDriven(true)
           setSettingsOpen((o) => !o)
         }
         return
@@ -1710,6 +1730,7 @@ export function MurmurApp() {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return
       if (e.key === ",") {
         e.preventDefault()
+        setKeyDriven(true)
         setSettingsOpen((o) => !o)
         return
       }
@@ -1725,6 +1746,7 @@ export function MurmurApp() {
       } else if (e.key === "s" || e.key === "S") {
         share()
       } else if (e.key === "t" || e.key === "T") {
+        setKeyDriven(true)
         setTimerOpen((o) => !o)
       }
     }
@@ -2453,7 +2475,11 @@ export function MurmurApp() {
           only the sounds that are on, with sliders a finger can work, since
           the grid there has none. One sheet at a time, so Save closes this
           before opening its own. */}
-      <Dialog open={nowPlayingOpen} onOpenChange={setNowPlayingOpen}>
+      <Dialog
+        open={nowPlayingOpen}
+        onOpenChange={setNowPlayingOpen}
+        onOpenChangeComplete={(open) => !open && runAfterClose()}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-lg">Now playing</DialogTitle>
@@ -2515,8 +2541,8 @@ export function MurmurApp() {
                 variant="outline"
                 className="h-11 rounded-full px-5"
                 onClick={() => {
+                  afterClose.current = openSaveDialog
                   setNowPlayingOpen(false)
-                  openSaveDialog()
                 }}
               >
                 Save mix
@@ -2546,6 +2572,7 @@ export function MurmurApp() {
           setAllMixesOpen(open)
           if (!open) setMixActionsFor(null)
         }}
+        onOpenChangeComplete={(open) => !open && runAfterClose()}
       >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -2595,11 +2622,12 @@ export function MurmurApp() {
                         variant="ghost"
                         className="h-11 px-3"
                         onClick={() => {
-                          // One sheet at a time: this one closes first.
+                          afterClose.current = () => {
+                            setRenameValue(mix.name)
+                            setRenaming(mix.name)
+                          }
                           setAllMixesOpen(false)
                           setMixActionsFor(null)
-                          setRenameValue(mix.name)
-                          setRenaming(mix.name)
                         }}
                       >
                         Rename
@@ -2667,7 +2695,7 @@ export function MurmurApp() {
       </Dialog>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
+        <DialogContent instant={keyDriven}>
           <DialogHeader>
             <DialogTitle className="text-lg">Add your own sound</DialogTitle>
           </DialogHeader>
@@ -2733,7 +2761,7 @@ export function MurmurApp() {
       </Dialog>
 
       <Dialog open={timerOpen} onOpenChange={setTimerOpen}>
-        <DialogContent className="sm:max-w-xs">
+        <DialogContent className="sm:max-w-xs" instant={keyDriven}>
           <DialogHeader>
             <DialogTitle className="text-lg">Sleep timer</DialogTitle>
             <DialogDescription>Fades out, then pauses.</DialogDescription>
@@ -2767,7 +2795,10 @@ export function MurmurApp() {
         {/* A column that clips: the base DialogContent scrolls itself, which
             put a second scrollbar on this dialog and let the header and footer
             scroll away with the content. Only the body below scrolls now. */}
-        <DialogContent className="flex flex-col gap-0 overflow-hidden p-0 max-sm:pb-0 sm:max-w-md">
+        <DialogContent
+          className="flex flex-col gap-0 overflow-hidden p-0 max-sm:pb-0 sm:max-w-md"
+          instant={keyDriven}
+        >
           <DialogHeader className="shrink-0 px-5 py-4">
             <DialogTitle className="text-lg">Preferences</DialogTitle>
           </DialogHeader>
@@ -3059,7 +3090,7 @@ export function MurmurApp() {
       </Dialog>
 
       <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm" instant={keyDriven}>
           <DialogHeader>
             <DialogTitle className="text-lg">Reset mix?</DialogTitle>
             <DialogDescription>
