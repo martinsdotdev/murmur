@@ -313,48 +313,78 @@ interface RenderableSound {
 }
 
 /**
+ * What opening a shared link changed. Nothing in a link needs a warning up
+ * front: volumes are bounded, ids are held to the catalog and to YouTube's
+ * alphabet, and the app boots paused. What it can do is overwrite the mix on
+ * screen and add sounds to the mixer, so arrival is announced with an Undo.
+ */
+interface LinkArrival {
+  /** The mix that was on before the link, which Undo puts back. */
+  previous: Pick<PersistedState, "vols" | "mixName" | "dirty">
+  /** No saved mix holds the previous one, so Undo is the only way back to it. */
+  replacedUnsaved: boolean
+  /** Ids of the YouTube sounds the link created, which Undo removes. */
+  addedVideos: string[]
+}
+
+function sameMix(a: MixerState, b: MixerState) {
+  const ids = Object.keys(a)
+  return (
+    ids.length === Object.keys(b).length && ids.every((id) => a[id] === b[id])
+  )
+}
+
+/**
  * Touches localStorage, so this only works because the island is client:only.
  * loadPersisted() also runs the v1 migration; it must stay on this synchronous
  * first-render path, ahead of the IndexedDB sweep effect. See lib/app-state.ts.
  */
 function readInitialState(): {
   state: PersistedState
-  /** How many YouTube sounds a link brought in, so arrival can be announced. */
-  sharedVideos: number
+  /** Set whenever the URL carried a mix, applied or not, so the hash is cleared. */
+  link: LinkArrival | null
 } {
   const state = loadPersisted()
-  let sharedVideos = 0
 
   const params = new URLSearchParams(window.location.hash.replace(/^#/, ""))
   const shared = params.get("mix")
-  if (shared) {
-    // Catalog sounds travel, and so do YouTube ones since the id is the whole
-    // reference. A file import is a blob in the sender's browser and a link
-    // import may not be public, so neither resolves to anything here.
-    const mix = Object.fromEntries(
-      Object.entries(decodeMix(shared)).filter(
-        ([id]) => CATALOG_IDS.has(id) || ytVideoId(id)
-      )
-    )
-    if (Object.keys(mix).length) {
-      state.vols = mix
-      state.mixName = params.get("n")?.trim() || "Shared mix"
-      state.dirty = false
+  if (shared === null) return { state, link: null }
 
-      // A link can name a video this browser has never seen, so its custom has
-      // to exist before the mixer goes looking. Nothing it carries can make a
-      // sound on its own: the app always boots paused, and ytVideoId has
-      // already held every id to YouTube's 11-character alphabet.
-      for (const id of Object.keys(mix)) {
-        const videoId = ytVideoId(id)
-        if (!videoId || state.customs.some((c) => c.id === id)) continue
-        state.customs.push({ id, name: YT_PLACEHOLDER_NAME, videoId })
-        sharedVideos++
-      }
-    }
+  const link: LinkArrival = {
+    previous: { vols: state.vols, mixName: state.mixName, dirty: state.dirty },
+    replacedUnsaved: false,
+    addedVideos: [],
   }
 
-  return { state, sharedVideos }
+  // Catalog sounds travel, and so do YouTube ones since the id is the whole
+  // reference. A file import is a blob in the sender's browser and a link
+  // import may not be public, so neither resolves to anything here.
+  const mix = Object.fromEntries(
+    Object.entries(decodeMix(shared)).filter(
+      ([id]) => CATALOG_IDS.has(id) || ytVideoId(id)
+    )
+  )
+  if (!Object.keys(mix).length || sameMix(mix, state.vols)) {
+    return { state, link }
+  }
+
+  link.replacedUnsaved =
+    Object.keys(state.vols).length > 0 &&
+    (state.dirty || !state.saved.some((s) => s.name === state.mixName))
+  state.vols = mix
+  state.mixName = params.get("n")?.trim() || "Shared mix"
+  state.dirty = false
+
+  // A link can name a video this browser has never seen, so its custom has
+  // to exist before the mixer goes looking.
+  for (const id of Object.keys(mix)) {
+    const videoId = ytVideoId(id)
+    if (!videoId || state.customs.some((c) => c.id === id)) continue
+    state.customs.push({ id, name: YT_PLACEHOLDER_NAME, videoId })
+    link.addedVideos.push(id)
+  }
+
+  return { state, link }
 }
 
 function formatClock(totalSeconds: number): string {
@@ -1160,14 +1190,58 @@ export function MurmurApp() {
     }
   }, [mixer])
 
+  const undoLink = (link: LinkArrival) => {
+    for (const id of link.addedVideos) removeCustom(id)
+    const previous = link.previous.vols
+    if (audioStarted.current) {
+      for (const id of new Set([
+        ...Object.keys(vols),
+        ...Object.keys(previous),
+      ])) {
+        // removeCustom already silenced and unregistered these.
+        if (link.addedVideos.includes(id)) continue
+        void applyVolume(id, previous[id] ?? 0, "fade")
+      }
+    }
+    setVols({ ...previous })
+    setMixName(link.previous.mixName)
+    setDirty(link.previous.dirty)
+  }
+
+  // Latest-ref: the toast's Undo can fire after other changes, and has to walk
+  // the volumes as they are then, not as they were at boot.
+  const undoLinkRef = React.useRef(undoLink)
   React.useEffect(() => {
-    if (!boot.sharedVideos) return
-    toast(
-      boot.sharedVideos === 1
-        ? "This link added a YouTube sound to your mixer"
-        : `This link added ${boot.sharedVideos} YouTube sounds to your mixer`
+    undoLinkRef.current = undoLink
+  })
+
+  React.useEffect(() => {
+    const link = boot.link
+    if (!link) return
+    // Consumed. Left in the address bar, every reload would apply the link
+    // again over whatever the user has changed since.
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search
     )
-  }, [boot.sharedVideos])
+
+    const added = link.addedVideos.length
+    const videos = added === 1 ? "a YouTube sound" : `${added} YouTube sounds`
+    const message = link.replacedUnsaved
+      ? added
+        ? `This link replaced your unsaved mix and added ${videos}`
+        : "This link replaced your unsaved mix"
+      : added
+        ? `This link added ${videos} to your mixer`
+        : null
+    if (!message) return
+    toast(message, {
+      id: "shared-link",
+      duration: 10_000,
+      action: { label: "Undo", onClick: () => undoLinkRef.current(link) },
+    })
+  }, [boot.link])
 
   // Restore file imports from IndexedDB, healing both directions: metadata
   // whose blob is gone is dropped, blobs with no metadata are deleted.
