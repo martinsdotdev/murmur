@@ -90,14 +90,15 @@
 
   /* Type families. Instrument Sans carries the page; the Segoe UI Variable
      stack stays behind it, so a failed font request lands on the platform UI
-     face rather than on Arial. Source Serif 4 is the wordmark only: nav,
+     face rather than on Arial. Young Serif is the wordmark only: nav,
      footer, hero, and the app's header and About lockups. Everything else,
-     section headings included, is sans. */
+     section headings included, is sans. It has one weight, 400, so every
+     wordmark rule sets that and nothing is faux-bolded. */
   --font-family-base:
     "Instrument Sans", "Segoe UI Variable Text", "Segoe UI Variable",
     "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue",
     Arial, sans-serif;
-  --font-family-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-family-serif: "Young Serif", Georgia, "Times New Roman", serif;
   --font-family-display:
     "Instrument Sans", "Segoe UI Variable Display", "Segoe UI Variable",
     "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue",

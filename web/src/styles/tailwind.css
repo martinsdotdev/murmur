@@ -13,13 +13,13 @@
 @custom-variant dark (&:is([data-theme="dark"] *));
 
 @theme inline {
-  /* Murmur's type pairing: Instrument Sans throughout, Source Serif 4 for the
+  /* Murmur's type pairing: Instrument Sans throughout, Young Serif for the
        wordmark alone. Mirrors web/src/styles/tokens.css. */
   --font-sans:
     "Instrument Sans", "Segoe UI Variable Text", "Segoe UI Variable",
     "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue",
     Arial, sans-serif;
-  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-serif: "Young Serif", Georgia, "Times New Roman", serif;
   --font-heading: var(--font-sans);
 
   /* Brand amber sits alongside shadcn's --primary: --primary is the filled

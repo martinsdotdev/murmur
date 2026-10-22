@@ -1620,9 +1620,7 @@ export function MurmurApp() {
             panel does; pl-5 is the sidebar's own inset. */}
         <div className="flex shrink-0 items-center gap-[7px] pl-4 md:w-(--sidebar-width) md:pl-5">
           <BrandMark />
-          <span className="font-serif text-[17px] font-semibold tracking-tight">
-            Murmur
-          </span>
+          <span className="font-serif text-[17px]">Murmur</span>
         </div>
 
         {/* px-6 is the panel's p-6, so the play button and Share sit on the
@@ -2417,9 +2415,7 @@ export function MurmurApp() {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-[7px]">
-                      <span className="font-serif text-base font-semibold">
-                        Murmur
-                      </span>
+                      <span className="font-serif text-base">Murmur</span>
                       <span className="text-xs text-muted-foreground tabular-nums">
                         {__APP_VERSION__}
                       </span>

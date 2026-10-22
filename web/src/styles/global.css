@@ -79,10 +79,10 @@ h6 {
    fill the viewport. */
 .serif-display {
   font-family: var(--font-family-serif);
-  font-weight: 500;
+  font-weight: var(--font-weight-regular);
   font-size: clamp(40px, 6vw, 60px);
   line-height: 1.04;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* Named for the role, not the family, so it survives the next type change the
