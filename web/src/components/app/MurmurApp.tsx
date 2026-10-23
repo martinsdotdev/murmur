@@ -173,6 +173,14 @@ const ytVideoId = (id: string): string | null => {
 }
 
 /**
+ * A sound this device sets the level of itself: on iPhone a YouTube sound
+ * plays at the phone's volume whatever a slider says, so it gets this note
+ * where a slider would be.
+ */
+const deviceSetsLevel = (id: string) => IS_IPHONE && ytVideoId(id) !== null
+const DEVICE_LEVEL_NOTE = "Set with your iPhone’s volume buttons"
+
+/**
  * The free-standing mark: the tile is dropped because the sidebar is already a
  * shape. currentColor rather than the design's fixed amber, so it follows
  * --brand across themes.
@@ -2521,11 +2529,7 @@ export function MurmurApp() {
             }
             name={nameFor(id)}
             level={vols[id] ?? 0}
-            note={
-              IS_IPHONE && ytVideoId(id)
-                ? "Set with your iPhone’s volume buttons"
-                : undefined
-            }
+            note={deviceSetsLevel(id) ? DEVICE_LEVEL_NOTE : undefined}
             onDrag={(v) => dragVolume(id, v)}
             onCommit={(v) => commitVolume(id, v)}
             onTurnOff={() => toggleSound(id)}
@@ -2568,6 +2572,7 @@ export function MurmurApp() {
     const pct = Math.round(volume * 100)
     // A file the browser deleted: the tile stays, says so, and takes it back.
     const lost = missing.has(sound.id)
+    const fixedLevel = deviceSetsLevel(sound.id)
 
     // Stop pointer events from the slider bubbling into the card's toggle.
     const sliderGuard = {
@@ -2650,7 +2655,7 @@ export function MurmurApp() {
         {/* Disabled rather than hidden, as M3 and Windows menus do, so the
             menu keeps its shape and says what it can do. */}
         <ContextMenuItem
-          disabled={!active || volume === DEFAULT_TOGGLE_VOLUME}
+          disabled={fixedLevel || !active || volume === DEFAULT_TOGGLE_VOLUME}
           onClick={() => changeVolume(sound.id, DEFAULT_TOGGLE_VOLUME)}
         >
           <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
@@ -2823,6 +2828,10 @@ export function MurmurApp() {
               aria-hidden="true"
               className="h-1 rounded-full border-t border-dashed border-outline"
             />
+          ) : fixedLevel ? (
+            // An iPhone is always coarse, so this is the bar, not a slider.
+            // Full while on: it plays at whatever the phone's volume is.
+            <LevelBar level={active ? 1 : 0} />
           ) : coarse ? (
             <LevelBar level={volume} />
           ) : (
