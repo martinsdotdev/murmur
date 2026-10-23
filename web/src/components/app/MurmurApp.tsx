@@ -981,6 +981,8 @@ export function MurmurApp() {
   const [nowPlayingOpen, setNowPlayingOpen] = React.useState(false)
   /** The All mixes row whose Rename · Duplicate · Delete strip is open. */
   const [mixActionsFor, setMixActionsFor] = React.useState<string | null>(null)
+  /** Each All mixes row's ··· button, so a Delete can hand focus on. */
+  const mixMoreButtons = React.useRef(new Map<string, HTMLButtonElement>())
   // One sheet at a time, and the next one waits until the first has gone:
   // opened together, their two blurred backdrops stack and flash darker.
   const afterClose = React.useRef<(() => void) | null>(null)
@@ -3504,6 +3506,12 @@ export function MurmurApp() {
                       />
                     </div>
                     <Button
+                      ref={(el) => {
+                        if (el) mixMoreButtons.current.set(mix.name, el)
+                        return () => {
+                          mixMoreButtons.current.delete(mix.name)
+                        }
+                      }}
                       variant="ghost"
                       size="icon"
                       className="size-12 shrink-0 rounded-full text-muted-foreground"
@@ -3583,6 +3591,18 @@ export function MurmurApp() {
                           variant="ghost"
                           className="h-12 px-3 text-destructive hover:text-destructive"
                           onClick={() => {
+                            // Focus moves to the next row, or the one above
+                            // for the last; deleting the only mix closes the
+                            // sheet, since there is nothing left in it.
+                            const at = saved.indexOf(mix)
+                            const neighbour = saved[at + 1] ?? saved[at - 1]
+                            if (neighbour) {
+                              mixMoreButtons.current
+                                .get(neighbour.name)
+                                ?.focus()
+                            } else {
+                              setAllMixesOpen(false)
+                            }
                             removeSaved(mix.name)
                             setMixActionsFor(null)
                           }}
