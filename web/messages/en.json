@@ -305,7 +305,6 @@
   "scheme_violet": "Violet",
   "pref_language_title": "Language",
   "pref_language_description": "Murmur reloads to switch.",
-  "pref_language_auto": "Automatic",
   "pref_black_title": "Pure black at night",
   "pref_black_description": "Black backgrounds when the theme is dark, for OLED screens and dark rooms.",
   "pref_meters_title": "Level meters",

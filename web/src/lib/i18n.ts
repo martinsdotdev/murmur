@@ -47,10 +47,9 @@ export function readLocaleChoice(): Locale | null {
   }
 }
 
-export function writeLocaleChoice(locale: Locale | null) {
+export function writeLocaleChoice(locale: Locale) {
   try {
-    if (locale) localStorage.setItem(STORAGE_KEY, locale)
-    else localStorage.removeItem(STORAGE_KEY)
+    localStorage.setItem(STORAGE_KEY, locale)
   } catch {
     // Private browsing. The choice holds until the page closes.
   }
@@ -81,9 +80,9 @@ export function startAppLocale() {
 
 /** Preferences' Language row. Every string was read in the old language, so
  * a change of language reloads; the mix comes back, paused. */
-export function chooseLocale(choice: Locale | null) {
-  writeLocaleChoice(choice)
-  if ((choice ?? browserLocale()) !== getLocale()) location.reload()
+export function chooseLocale(locale: Locale) {
+  writeLocaleChoice(locale)
+  if (locale !== getLocale()) location.reload()
 }
 
 /** The tag for Intl formatting: the app's language with the browser's region

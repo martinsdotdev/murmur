@@ -137,11 +137,10 @@ import {
   chooseLocale,
   formatLocale,
   fromAnyLocale,
-  readLocaleChoice,
   startAppLocale,
 } from "@/lib/i18n"
 import { m } from "@/paraglide/messages.js"
-import { locales, toLocale } from "@/paraglide/runtime.js"
+import { getLocale, locales, toLocale } from "@/paraglide/runtime.js"
 
 import { DevDataToggle } from "./DevDataToggle"
 import { MiddleTruncate } from "./MiddleTruncate"
@@ -1149,13 +1148,14 @@ function ThemeSwatch({
 }
 
 /**
- * Preferences' language: the browser's, or one picked here. A native select,
- * since five options, some of them long, won't fit a segmented row. It's as
+ * Preferences' language: the one in use, whether the browser's or picked.
+ * Until someone picks, nothing is stored and the app keeps following the
+ * browser. Picking another reloads, so the select needs no state. A native
+ * select, since the names are long and won't fit a segmented row. It's as
  * wide as "Português (Brasil)", so on a phone it drops under the text, as the
  * other rows' actions do.
  */
 function LanguageRow() {
-  const [choice, setChoice] = React.useState(readLocaleChoice)
   return (
     <PrefInfo
       icon={LanguageSquareIcon}
@@ -1164,15 +1164,13 @@ function LanguageRow() {
     >
       <select
         aria-label={m.pref_language_title()}
-        value={choice ?? "auto"}
+        defaultValue={getLocale()}
         onChange={(e) => {
-          const next = toLocale(e.target.value) ?? null
-          setChoice(next)
-          chooseLocale(next)
+          const locale = toLocale(e.target.value)
+          if (locale) chooseLocale(locale)
         }}
         className="h-8 cursor-pointer rounded-md border border-input bg-background px-2 text-sm"
       >
-        <option value="auto">{m.pref_language_auto()}</option>
         {locales.map((locale) => (
           <option key={locale} value={locale} lang={locale}>
             {LOCALE_NAMES[locale]}

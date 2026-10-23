@@ -104,7 +104,8 @@ const [assembledBefore, assembledAfter] = around(m.footer_assembled, "link")
     ".footer-languages a"
   )) {
     link.addEventListener("click", () => {
-      writeLocaleChoice(toLocale(link.dataset.locale) ?? null)
+      const locale = toLocale(link.dataset.locale)
+      if (locale) writeLocaleChoice(locale)
     })
   }
 </script>

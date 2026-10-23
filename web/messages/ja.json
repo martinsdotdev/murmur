@@ -293,7 +293,6 @@
   "scheme_violet": "パープル",
   "pref_language_title": "言語",
   "pref_language_description": "切り替えると Murmur を再読み込みします。",
-  "pref_language_auto": "自動",
   "pref_black_title": "夜は純粋な黒に",
   "pref_black_description": "ダークテーマのときに背景を黒にします。OLED 画面や暗い部屋に。",
   "pref_meters_title": "レベルメーター",
