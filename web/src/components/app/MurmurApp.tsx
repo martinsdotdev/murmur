@@ -967,6 +967,7 @@ export function MurmurApp() {
   const [dirty, setDirty] = React.useState(initial.dirty)
   const [view, setView] = React.useState<View>(initial.view)
   const [pane, setPane] = React.useState(initial.pane)
+  const paneToggle = React.useRef<HTMLButtonElement>(null)
   const paneFits = usePaneFits()
   const [saved, setSaved] = React.useState<SavedMix[]>(initial.saved)
   const [customs, setCustoms] = React.useState<CustomSound[]>(initial.customs)
@@ -1559,12 +1560,6 @@ export function MurmurApp() {
   }
 
   /**
-   * The one delete that asks first, since it takes everything at once: the
-   * first press arms the button and the second clears. Undo stays as well.
-   * The sound files outlive the toast's Undo and are only deleted once it
-   * closes; a tab closed first leaves them to the boot-time sweep.
-   */
-  /**
    * Everything this browser holds for Murmur, as one file: saved mixes, your
    * own sounds with their audio, and preferences. A missing file goes as its
    * record alone and comes back as a missing tile.
@@ -1586,7 +1581,18 @@ export function MurmurApp() {
     link.download = `murmur-backup-${new Date().toISOString().slice(0, 10)}.murmur`
     link.click()
     window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
-    toast.success(`Backup saved (${formatBytes(file.size)})`)
+    // A sound whose file isn't stored goes as its record alone; say so, or
+    // the backup reads as complete when it isn't.
+    const withoutFile = customsRef.current.filter(
+      (c) => c.hasFile && !blobs.has(c.id)
+    ).length
+    if (withoutFile) {
+      toast(
+        `Backup saved (${formatBytes(file.size)}). ${withoutFile} of your own ${withoutFile === 1 ? "sounds has" : "sounds have"} no file to include`
+      )
+    } else {
+      toast.success(`Backup saved (${formatBytes(file.size)})`)
+    }
   }
 
   /**
@@ -1610,9 +1616,12 @@ export function MurmurApp() {
     const incoming = parseBackupData(read.contents)
 
     const current = customsRef.current
-    const added = incoming.customs.filter(
-      (c) => !current.some((x) => x.id === c.id)
-    )
+    const seen = new Set(current.map((c) => c.id))
+    const added = incoming.customs.filter((c) => {
+      if (seen.has(c.id)) return false
+      seen.add(c.id)
+      return true
+    })
     const relinked = incoming.customs
       .filter((c) => missing.has(c.id) && read.blobs.has(c.id))
       .map((c) => c.id)
@@ -1635,9 +1644,19 @@ export function MurmurApp() {
       mixer.unregister(id)
       blobUrls.current.set(id, URL.createObjectURL(blob))
       written.push(id)
-      void putBlob(id, blob)
     }
-    if (written.length) persistStorage()
+    if (written.length) {
+      persistStorage()
+      void Promise.all(
+        written.map((id) => putBlob(id, read.blobs.get(id) as Blob))
+      ).then((stored) => {
+        if (stored.includes(false)) {
+          toast(
+            "Some sound files couldn’t be saved. They’ll play until you close this tab"
+          )
+        }
+      })
+    }
     setMissing((prev) => {
       const next = new Set(prev)
       for (const id of relinked) next.delete(id)
@@ -1685,6 +1704,12 @@ export function MurmurApp() {
     for (const c of sounds) removeCustom(c.id)
   }
 
+  /**
+   * The one delete that asks first, since it takes everything at once: the
+   * first press arms the button and the second clears. Undo stays as well.
+   * The sound files outlive the toast's Undo and are only deleted once it
+   * closes; a tab closed first leaves them to the boot-time sweep.
+   */
   const armClearData = () => {
     setDataArmed(true)
     window.setTimeout(() => setDataArmed(false), 3000)
@@ -2924,6 +2949,7 @@ export function MurmurApp() {
             variant="ghost"
             size="icon-sm"
             className="hidden wide:expanded:inline-flex"
+            ref={paneToggle}
             aria-label="Now playing"
             aria-pressed={pane}
             title={pane ? "Hide Now playing" : "Show Now playing"}
@@ -3303,7 +3329,10 @@ export function MurmurApp() {
                     size="icon-sm"
                     aria-label="Close Now playing"
                     title="Close"
-                    onClick={() => setPane(false)}
+                    onClick={() => {
+                      setPane(false)
+                      paneToggle.current?.focus()
+                    }}
                   >
                     <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
                   </Button>

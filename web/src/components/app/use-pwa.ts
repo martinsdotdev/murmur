@@ -68,7 +68,11 @@ export function usePwa() {
   }, [downloading, audio])
 
   React.useEffect(() => {
-    const sync = () => setOnline(navigator.onLine)
+    const sync = () => {
+      setOnline(navigator.onLine)
+      // A download doesn't survive the connection; a new press starts one.
+      if (!navigator.onLine) setDownloading(false)
+    }
     window.addEventListener("online", sync)
     window.addEventListener("offline", sync)
     return () => {
