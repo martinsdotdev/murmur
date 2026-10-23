@@ -6,6 +6,7 @@ import {
   Archive01Icon,
   ArrowDataTransferHorizontalIcon,
   ArrowUp01Icon,
+  ArrowUpRight01Icon,
   AudioWave01Icon,
   BrowserIcon,
   Cancel01Icon,
@@ -221,9 +222,9 @@ function BrandMark({ size = 18 }: { size?: number }) {
 const prefGroup =
   "segmented-list [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]"
 
-/** Two links and a button sit in one row, so they have to read as one set. */
-const aboutLink =
-  "flex min-h-10 items-center gap-2 rounded px-2 text-body-medium text-foreground/85 state-layer transition-colors hover:text-foreground"
+/** About's links and actions, as rows of the list like every other one. */
+const aboutRow =
+  "flex min-h-14 items-center gap-4 state-layer px-4 py-3 text-left text-body-large transition-colors"
 
 /** A mix's loudest sound stands in for it, so "Rainy café" reads as a café. */
 function mixIconPath(mix: MixerState) {
@@ -4104,48 +4105,56 @@ export function MurmurApp() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5 px-2 py-2">
-                  <a
-                    className={aboutLink}
-                    href={repoUrl}
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    <HugeiconsIcon
-                      icon={GithubIcon}
-                      strokeWidth={2}
-                      className="size-3.5"
-                    />
-                    Source
-                  </a>
-                  {/* The sound attribution table lives on the landing page. */}
-                  <a className={aboutLink} href={`${BASE}/#credits`}>
-                    <HugeiconsIcon
-                      icon={File01Icon}
-                      strokeWidth={2}
-                      className="size-3.5"
-                    />
-                    Credits
-                  </a>
-                  <span className="flex-1" />
-                  <button
-                    type="button"
-                    className={aboutLink}
-                    onClick={copyBuildInfo}
-                  >
-                    <HugeiconsIcon
-                      icon={Copy01Icon}
-                      strokeWidth={2}
-                      className="size-3"
-                    />
-                    Copy build info
-                  </button>
-                </div>
+                <a
+                  className={aboutRow}
+                  href={repoUrl}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <HugeiconsIcon
+                    icon={GithubIcon}
+                    strokeWidth={2}
+                    className="size-5 shrink-0"
+                  />
+                  <span className="flex-1">Source</span>
+                  <HugeiconsIcon
+                    icon={ArrowUpRight01Icon}
+                    strokeWidth={2}
+                    className="size-4 shrink-0 text-muted-foreground"
+                  />
+                </a>
+                {/* The sound attribution table lives on the landing page. */}
+                <a className={aboutRow} href={`${BASE}/#credits`}>
+                  <HugeiconsIcon
+                    icon={File01Icon}
+                    strokeWidth={2}
+                    className="size-5 shrink-0"
+                  />
+                  <span className="flex-1">Credits</span>
+                  <HugeiconsIcon
+                    icon={ArrowUpRight01Icon}
+                    strokeWidth={2}
+                    className="size-4 shrink-0 text-muted-foreground"
+                  />
+                </a>
+                <button
+                  type="button"
+                  className={aboutRow}
+                  onClick={copyBuildInfo}
+                >
+                  <HugeiconsIcon
+                    icon={Copy01Icon}
+                    strokeWidth={2}
+                    className="size-5 shrink-0"
+                  />
+                  Copy build info
+                </button>
 
                 {/* The tint is a gradient layer, so it lies over the tile's
-                    fill rather than replacing it. */}
-                <div className="flex items-center gap-4 bg-linear-to-b from-brand/5 to-brand/5 px-4 py-3">
-                  <div className="min-w-0 flex-1">
+                    fill rather than replacing it. Narrow, the button drops
+                    under the text instead of squeezing it. */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-linear-to-b from-brand/5 to-brand/5 px-4 py-3">
+                  <div className="min-w-0 flex-1 basis-48">
                     <p className="text-body-large">Free, no accounts, no ads</p>
                     <p className="mt-0.5 text-body-medium text-muted-foreground">
                       If Murmur helps you focus or sleep, you can chip in for
@@ -4153,7 +4162,7 @@ export function MurmurApp() {
                     </p>
                   </div>
                   <a
-                    className="flex h-8 shrink-0 items-center gap-2 rounded bg-filled px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-filled-hover"
+                    className="ml-auto flex h-8 shrink-0 items-center gap-2 rounded bg-filled px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-filled-hover"
                     href={sponsorUrl}
                     target="_blank"
                     rel="noopener"
