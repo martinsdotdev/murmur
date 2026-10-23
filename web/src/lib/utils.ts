@@ -15,7 +15,7 @@ const twMerge = extendTailwindMerge({
         "title-small",
         "title-medium",
       ],
-      shadow: ["level-2", "level-3"],
+      shadow: ["level-1", "level-2", "level-3"],
       radius: [
         "m3-xs",
         "m3-sm",

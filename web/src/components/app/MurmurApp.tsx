@@ -196,7 +196,7 @@ function BrandMark({ size = 18 }: { size?: number }) {
 
 /** Two links and a button sit in one row, so they have to read as one set. */
 const aboutLink =
-  "flex min-h-[1.875rem] items-center gap-[7px] rounded-[5px] px-2.5 text-xs font-semibold text-foreground/85 state-layer transition-colors hover:text-foreground"
+  "flex min-h-8 items-center gap-2 rounded px-2.5 text-xs font-semibold text-foreground/85 state-layer transition-colors hover:text-foreground"
 
 /** A mix's loudest sound stands in for it, so "Rainy café" reads as a café. */
 function mixIconPath(mix: MixerState) {
@@ -267,7 +267,7 @@ function MixRow({
         className={cn(
           // data-active:font-semibold because the variant's data-active sets
           // font-medium, and the row's weight is fixed at 600 by the design.
-          "h-auto min-h-[2.125rem] gap-[7px] rounded-[7px] px-2.5 text-[0.8125rem] leading-[1.0625rem] font-semibold data-active:font-semibold",
+          "h-auto min-h-8 gap-2 rounded px-2.5 py-1.5 text-label-large font-semibold data-active:font-semibold",
           !loaded && "text-foreground/85",
           className
         )}
@@ -279,7 +279,7 @@ function MixRow({
       </SidebarMenuButton>
       {/* The component centres itself with top-*, keyed to the peer button's
           data-size. top-2 centres a 20px action in the default 36px row. This
-          row is 34 with a 22px action, so the override has to be that same peer
+          row is 32 with a 22px action, so the override has to be that same peer
           variant: a plain top-* loses to it, and a translate on top of the 8px
           it resolves to lifts the × clean out of the row. */}
       {onRemove && (
@@ -288,7 +288,7 @@ function MixRow({
           // [&>svg]:size-3 rather than a size on the icon: the base sets
           // [&>svg]:size-4 with no opt-out, and a descendant rule outranks a
           // class on the child. Same utility family, so cn() dedupes it.
-          className="right-1 size-[22px] w-[22px] rounded-[5px] state-layer text-muted-foreground peer-data-[size=default]/menu-button:top-1.5 hover:text-foreground [&>svg]:size-3"
+          className="right-1 size-[22px] w-[22px] rounded state-layer text-muted-foreground peer-data-[size=default]/menu-button:top-[5px] hover:text-foreground [&>svg]:size-3"
           aria-label={`Delete ${name}`}
           title="Delete mix"
           onClick={onRemove}
@@ -377,7 +377,7 @@ function MixChip({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "flex h-10 max-w-[14rem] shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-[0.8125rem] font-semibold whitespace-nowrap transition-colors pointer-coarse:hit-target",
+        "flex h-10 max-w-[14rem] shrink-0 items-center gap-2 rounded-lg border px-3.5 text-label-large font-semibold whitespace-nowrap transition-colors pointer-coarse:hit-target",
         active
           ? "border-brand bg-secondary text-foreground"
           : "bg-muted state-layer text-foreground/85"
@@ -387,7 +387,7 @@ function MixChip({
       {active ? (
         <HugeiconsIcon
           icon={Tick02Icon}
-          strokeWidth={2.2}
+          strokeWidth={2}
           className="size-[13px] shrink-0 text-brand"
         />
       ) : (
@@ -510,7 +510,7 @@ function NowPlayingRow({
         >
           <HugeiconsIcon
             icon={MinusSignCircleIcon}
-            strokeWidth={1.8}
+            strokeWidth={2}
             className="size-5"
           />
         </Button>
@@ -699,7 +699,7 @@ function ThemeSwatch({
       </span>
       <span
         className={cn(
-          "mt-[7px] block text-xs font-semibold",
+          "mt-2 block text-xs font-semibold",
           active ? "text-brand" : "text-muted-foreground"
         )}
       >
@@ -873,7 +873,7 @@ function RemoveSoundButton({
       aria-label={`Remove ${name}`}
       title="Remove"
       className={cn(
-        "relative size-[22px] shrink-0 rounded-[5px] state-layer text-muted-foreground hover:text-foreground pointer-coarse:after:absolute pointer-coarse:after:-inset-[11px]",
+        "relative size-[22px] shrink-0 rounded state-layer text-muted-foreground hover:text-foreground pointer-coarse:after:absolute pointer-coarse:after:-inset-[11px]",
         className
       )}
       onClick={(e) => {
@@ -2278,7 +2278,7 @@ export function MurmurApp() {
     // While its menu is open the card holds M3's 10% pressed layer, so the
     // menu reads as belonging to it.
     const tileState = cn(
-      "[transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] data-popup-open:bg-[color-mix(in_srgb,var(--tile-bg),currentColor_10%)] pointer-coarse:motion-safe:active:scale-[0.98]",
+      "rounded-lg shadow-level-1 [transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] data-popup-open:bg-[color-mix(in_srgb,var(--tile-bg),currentColor_10%)] pointer-coarse:motion-safe:active:scale-[0.98]",
       active
         ? "bg-secondary ring-ring [--tile-bg:var(--secondary)] dark:ring-ring"
         : "[--tile-bg:var(--card)] hover:ring-brand/40 dark:hover:ring-brand/40"
@@ -2511,7 +2511,7 @@ export function MurmurApp() {
       <header className="@container flex shrink-0 items-center border-b bg-background py-3 wide:border-b-0 wide:bg-transparent">
         {/* Exactly the sidebar's width, so the controls start where the
             panel does; pl-5 is the sidebar's own inset. */}
-        <div className="flex shrink-0 items-center gap-[7px] pl-4 @max-5xl:w-auto! wide:w-(--sidebar-width) wide:pl-5">
+        <div className="flex shrink-0 items-center gap-2 pl-4 @max-5xl:w-auto! wide:w-(--sidebar-width) wide:pl-5">
           <BrandMark />
           <span className="font-serif text-[1.0625rem]">Murmur</span>
         </div>
@@ -2524,7 +2524,7 @@ export function MurmurApp() {
               where the labelled buttons' darker fill is for text. */}
           <Button
             size="icon-lg"
-            className="hidden rounded-full bg-primary hover:bg-primary/80 wide:inline-flex"
+            className="hidden size-12 rounded-full bg-primary hover:bg-primary/80 wide:inline-flex"
             disabled={!playing && activeIds.length === 0}
             aria-label={playing ? "Pause" : "Play"}
             onClick={togglePlay}
@@ -2532,7 +2532,7 @@ export function MurmurApp() {
             <HugeiconsIcon
               icon={playing ? PauseIcon : PlayIcon}
               strokeWidth={2}
-              className="size-4"
+              className="size-5"
             />
           </Button>
 
@@ -2695,7 +2695,7 @@ export function MurmurApp() {
             >
               <HugeiconsIcon
                 icon={Share01Icon}
-                strokeWidth={1.8}
+                strokeWidth={2}
                 className="size-5"
               />
             </Button>
@@ -2708,7 +2708,7 @@ export function MurmurApp() {
             >
               <HugeiconsIcon
                 icon={Settings01Icon}
-                strokeWidth={1.8}
+                strokeWidth={2}
                 className="size-5"
               />
             </Button>
@@ -3018,7 +3018,7 @@ export function MurmurApp() {
           <div className="flex shrink-0 items-center gap-2.5 rounded-t-m3-xl border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] wide:hidden">
             <Button
               size="icon"
-              className="size-12 shrink-0 rounded-full bg-primary shadow-md hover:bg-primary/80"
+              className="size-12 shrink-0 rounded-full bg-primary shadow-level-2 hover:bg-primary/80"
               disabled={!playing && activeIds.length === 0}
               aria-label={playing ? "Pause" : "Play"}
               onClick={togglePlay}
@@ -3622,7 +3622,7 @@ export function MurmurApp() {
                     className="block shrink-0 rounded-[7px]"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-[7px]">
+                    <div className="flex items-baseline gap-2">
                       <span className="font-serif text-base">Murmur</span>
                       <span className="text-xs text-muted-foreground tabular-nums">
                         {__APP_VERSION__}
@@ -3683,7 +3683,7 @@ export function MurmurApp() {
                     </p>
                   </div>
                   <a
-                    className="flex h-8 shrink-0 items-center gap-[7px] rounded bg-filled px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-filled-hover"
+                    className="flex h-8 shrink-0 items-center gap-2 rounded bg-filled px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-filled-hover"
                     href={sponsorUrl}
                     target="_blank"
                     rel="noopener"
