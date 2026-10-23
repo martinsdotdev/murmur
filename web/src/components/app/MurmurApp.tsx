@@ -141,6 +141,9 @@ const YT_PREFIX = "yt_"
 /** Stands in until the player is live and can report the real title. */
 const YT_PLACEHOLDER_NAME = "YouTube sound"
 
+/** What a list row says where a missing sound's slider would be. */
+const MISSING_NOTE = "File missing from this browser. Choose it again"
+
 const ytSoundId = (videoId: string) => `${YT_PREFIX}${videoId}`
 
 const ytVideoId = (id: string): string | null => {
@@ -976,6 +979,16 @@ export function MurmurApp() {
   const menuOpenedAt = React.useRef(0)
   const [renameValue, setRenameValue] = React.useState("")
   const [removing, setRemoving] = React.useState<CustomSound | null>(null)
+  /**
+   * Your own sounds whose file the browser has deleted to free space. The
+   * record stays, so the tile can say so and take the file back under the
+   * same id, and every saved mix that names it works again.
+   */
+  const [missing, setMissing] = React.useState<ReadonlySet<string>>(
+    () => new Set()
+  )
+  const relinkInput = React.useRef<HTMLInputElement>(null)
+  const relinkTarget = React.useRef<string | null>(null)
   /** Finishes the last Clear all, if its toast is still open. */
   const pendingClear = React.useRef<(() => void) | null>(null)
 
@@ -1172,6 +1185,20 @@ export function MurmurApp() {
     changeVolume(id, DEFAULT_TOGGLE_VOLUME, { keepName: true })
   }
 
+  /** A missing sound takes its file back under the same id. */
+  const relinkFile = (id: string, file: File) => {
+    blobUrls.current.set(id, URL.createObjectURL(file))
+    setMissing((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+    void putBlob(id, file).then((stored) => {
+      if (stored) persistStorage()
+    })
+    toast.success(`${isolate(nameFor(id))} is back`)
+  }
+
   const addFromFile = (file: File) => {
     const id = `cf${Date.now()}`
     blobUrls.current.set(id, URL.createObjectURL(file))
@@ -1208,6 +1235,12 @@ export function MurmurApp() {
       blobUrls.current.delete(id)
     }
     void deleteBlob(id)
+    setMissing((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
     commitCustoms(customsRef.current.filter((c) => c.id !== id))
     setVols((prev) => {
       const next = { ...prev }
@@ -1259,15 +1292,36 @@ export function MurmurApp() {
   }
 
   const applyMix = (name: string, mix: MixerState) => {
+    // Only what can play is asked to: not a file the browser deleted (its
+    // tile says so), nor a sound removed since the mix was saved.
+    const playable: MixerState = {}
+    const lost: string[] = []
+    for (const [id, v] of Object.entries(mix)) {
+      if (missing.has(id)) lost.push(id)
+      else if (
+        CATALOG_IDS.has(id) ||
+        customsRef.current.some((c) => c.id === id)
+      )
+        playable[id] = v
+    }
     ensureAudio()
     // Walk the union so sounds dropped by the incoming mix are actively zeroed.
-    const union = new Set([...Object.keys(vols), ...Object.keys(mix)])
-    setVols({ ...mix })
+    const union = new Set([...Object.keys(vols), ...Object.keys(playable)])
+    setVols({ ...playable })
     setMixName(name)
     setDirty(false)
-    setPlaying(true)
-    union.forEach((id) => void applyVolume(id, mix[id] ?? 0, "fade"))
-    mixer.setPlaying(true)
+    const audible = Object.keys(playable).length > 0
+    if (audible) setPlaying(true)
+    union.forEach((id) => void applyVolume(id, playable[id] ?? 0, "fade"))
+    if (audible) mixer.setPlaying(true)
+    if (lost.length) {
+      toast(
+        lost.length === 1
+          ? `${isolate(nameFor(lost[0]))} is missing from this browser. Add the file again from its tile`
+          : `${lost.length} of this mix's sounds are missing from this browser. Add their files again from their tiles`,
+        { id: "sound-missing" }
+      )
+    }
   }
 
   const allMixes = saved
@@ -1734,8 +1788,8 @@ export function MurmurApp() {
     })
   }, [boot.link])
 
-  // Restore file imports from IndexedDB, healing both directions: metadata
-  // whose blob is gone is dropped, blobs with no metadata are deleted.
+  // Restore file imports from IndexedDB. Blobs with no metadata are deleted;
+  // metadata whose blob is gone (the browser evicted it) stays, marked missing.
   React.useEffect(() => {
     let cancelled = false
     void getAllBlobs().then((blobs) => {
@@ -1746,19 +1800,17 @@ export function MurmurApp() {
           if (!customsRef.current.some((c) => c.id === id)) void deleteBlob(id)
         }
       }
-      const restored = customsRef.current.filter((c) => {
-        if (!c.hasFile) return true
+      const lost = new Set<string>()
+      for (const c of customsRef.current) {
+        if (!c.hasFile) continue
         const blob = blobs.get(c.id)
-        if (!blob) return false
-        blobUrls.current.set(c.id, URL.createObjectURL(blob))
-        return true
-      })
-      if (restored.length === customsRef.current.length) return
-      commitCustoms(restored)
-      const known = (id: string) =>
-        CATALOG_IDS.has(id) || restored.some((c) => c.id === id)
+        if (blob) blobUrls.current.set(c.id, URL.createObjectURL(blob))
+        else lost.add(c.id)
+      }
+      if (!lost.size) return
+      setMissing(lost)
       setVols((prev) =>
-        Object.fromEntries(Object.entries(prev).filter(([id]) => known(id)))
+        Object.fromEntries(Object.entries(prev).filter(([id]) => !lost.has(id)))
       )
     })
     return () => {
@@ -2092,6 +2144,8 @@ export function MurmurApp() {
     const volume = vols[sound.id] ?? 0
     const active = volume > 0
     const pct = Math.round(volume * 100)
+    // A file the browser deleted: the tile stays, says so, and takes it back.
+    const lost = missing.has(sound.id)
 
     // Stop pointer events from the slider bubbling into the card's toggle.
     const sliderGuard = {
@@ -2166,7 +2220,7 @@ export function MurmurApp() {
       <ContextMenuContent>
         <ContextMenuItem
           // Already the only sound playing, so there is nothing to turn off.
-          disabled={playing && active && activeIds.length === 1}
+          disabled={lost || (playing && active && activeIds.length === 1)}
           onClick={() => playOnly(sound.id)}
         >
           <HugeiconsIcon icon={HeadphonesIcon} strokeWidth={2} />
@@ -2220,6 +2274,11 @@ export function MurmurApp() {
     // the card ignores one that lands just after its menu opened.
     const toggle = () => {
       if (performance.now() - menuOpenedAt.current < 600) return
+      if (lost) {
+        relinkTarget.current = sound.id
+        relinkInput.current?.click()
+        return
+      }
       toggleSound(sound.id)
     }
     const noteMenuOpen = (open: boolean) => {
@@ -2257,10 +2316,18 @@ export function MurmurApp() {
             >
               {sound.name}
             </span>
-            <div className="min-w-0 flex-1" {...sliderGuard}>
-              {slider}
-            </div>
-            {readout}
+            {lost ? (
+              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                {MISSING_NOTE}
+              </span>
+            ) : (
+              <>
+                <div className="min-w-0 flex-1" {...sliderGuard}>
+                  {slider}
+                </div>
+                {readout}
+              </>
+            )}
             {removable && (
               <RemoveSoundButton name={sound.name} onRemove={askRemove} />
             )}
@@ -2317,9 +2384,21 @@ export function MurmurApp() {
             >
               {sound.name}
             </span>
-            {!coarse && readout}
+            {lost ? (
+              <span className="shrink-0 text-[0.6875rem] text-destructive">
+                Missing
+              </span>
+            ) : (
+              !coarse && readout
+            )}
           </div>
-          {coarse ? (
+          {lost ? (
+            // The slider's own 4px box, so the card keeps its height.
+            <div
+              aria-hidden="true"
+              className="h-1 rounded-full border-t border-dashed border-outline"
+            />
+          ) : coarse ? (
             <LevelBar level={volume} />
           ) : (
             <div {...sliderGuard}>{slider}</div>
@@ -3634,6 +3713,20 @@ export function MurmurApp() {
         offset={{ bottom: "var(--toast-bottom)" }}
         mobileOffset={{ bottom: "var(--toast-bottom)" }}
         className="toaster group [--toast-bottom:calc(67px_+_max(12px,env(safe-area-inset-bottom)))] wide:[--toast-bottom:24px]"
+      />
+      <input
+        ref={relinkInput}
+        type="file"
+        accept="audio/*"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          const id = relinkTarget.current
+          e.target.value = ""
+          if (file && id) relinkFile(id, file)
+        }}
       />
       {import.meta.env.DEV && <DevDataToggle />}
     </SidebarProvider>
