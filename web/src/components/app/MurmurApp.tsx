@@ -3957,8 +3957,10 @@ export function MurmurApp() {
                       ? `${saved.length} saved ${saved.length === 1 ? "mix" : "mixes"} and ${customs.length} ${customs.length === 1 ? "sound" : "sounds"} of your own, kept in this browser.`
                       : "Nothing saved yet."}
                   </p>
-                  {/* Armed, it turns destructive red, and its short label keeps
-                    the row from reflowing on a phone. */}
+                  {/* Armed, it turns destructive red. Both labels share one
+                    grid cell and the hidden one keeps its width, so the
+                    button holds the wider label's size and the text beside it
+                    doesn't reflow. */}
                   <Button
                     variant={dataArmed ? "destructive" : "outline"}
                     size="sm"
@@ -3966,7 +3968,24 @@ export function MurmurApp() {
                     disabled={saved.length === 0 && customs.length === 0}
                     onClick={dataArmed ? clearData : armClearData}
                   >
-                    {dataArmed ? "Sure?" : "Clear all"}
+                    <span className="grid justify-items-center">
+                      <span
+                        className={cn(
+                          "col-start-1 row-start-1",
+                          dataArmed && "invisible"
+                        )}
+                      >
+                        Clear all
+                      </span>
+                      <span
+                        className={cn(
+                          "col-start-1 row-start-1",
+                          !dataArmed && "invisible"
+                        )}
+                      >
+                        Sure?
+                      </span>
+                    </span>
                   </Button>
                 </div>
                 <div className="flex items-center gap-3 px-3.5 py-3">
