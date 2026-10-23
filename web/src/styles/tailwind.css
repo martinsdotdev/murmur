@@ -212,6 +212,9 @@
   /* A segmented list's tiles on a dialog: one step lighter than the dialog in
      both themes, so the 2px between them reads as a gap. */
   --grouped: var(--background);
+  /* The brand amber as a selection tint. Literal rgba, for the reason the
+     scrollbar colours below give. */
+  --selection: rgba(138, 76, 16, 0.22);
   /* M3's black at 30% and 15% read as smudges on cream. Light shadows take
      the text's warm ink at about a third of that; dark keeps M3's. */
   --shadow-ink: 33 18 14;
@@ -270,6 +273,7 @@
   --elevated: #3a3527; /* neutral-background-4 */
   --dialog: #2c281e; /* neutral-background-3 */
   --grouped: var(--elevated);
+  --selection: rgba(245, 195, 117, 0.3);
   --shadow-ink: 0 0 0;
   --shadow-key: 0.3;
   --shadow-ambient: 0.15;
@@ -518,6 +522,11 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Selected text takes a tint of the brand amber rather than the browser's
+     blue, translucent so the text keeps its own colour and contrast. */
+  ::selection {
+    background-color: var(--selection);
   }
 }
 
