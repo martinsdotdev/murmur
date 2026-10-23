@@ -111,13 +111,17 @@
 
   /* M3 elevation levels 2 and 3 (key plus ambient). Tone still carries the
        layering; these are the shadow half of M3's pairing, level 2 for menus
-       and toasts, level 3 for dialogs and sheets. */
+       and toasts, level 3 for dialogs and sheets. The ink and its two
+       strengths are per theme (see --shadow-ink below). */
   --shadow-level-1:
-    0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 3px 1px rgb(0 0 0 / 0.15);
+    0 1px 2px 0 rgb(var(--shadow-ink) / var(--shadow-key)),
+    0 1px 3px 1px rgb(var(--shadow-ink) / var(--shadow-ambient));
   --shadow-level-2:
-    0 1px 2px 0 rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+    0 1px 2px 0 rgb(var(--shadow-ink) / var(--shadow-key)),
+    0 2px 6px 2px rgb(var(--shadow-ink) / var(--shadow-ambient));
   --shadow-level-3:
-    0 1px 3px 0 rgb(0 0 0 / 0.3), 0 4px 8px 3px rgb(0 0 0 / 0.15);
+    0 1px 3px 0 rgb(var(--shadow-ink) / var(--shadow-key)),
+    0 4px 8px 3px rgb(var(--shadow-ink) / var(--shadow-ambient));
 
   /* M3's corner scale, prefixed so it never shadows shadcn's radii above,
        which derive from Fluent's 8px. Desktop keeps Fluent's assignments;
@@ -208,6 +212,11 @@
   /* A segmented list's tiles on a dialog: one step lighter than the dialog in
      both themes, so the 2px between them reads as a gap. */
   --grouped: var(--background);
+  /* M3's black at 30% and 15% read as smudges on cream. Light shadows take
+     the text's warm ink at about a third of that; dark keeps M3's. */
+  --shadow-ink: 33 18 14;
+  --shadow-key: 0.1;
+  --shadow-ambient: 0.06;
   --scrollbar: rgba(33, 18, 14, 0.24);
   --scrollbar-hover: rgba(33, 18, 14, 0.4);
   --chart-1: #b86d20;
@@ -261,6 +270,9 @@
   --elevated: #3a3527; /* neutral-background-4 */
   --dialog: #2c281e; /* neutral-background-3 */
   --grouped: var(--elevated);
+  --shadow-ink: 0 0 0;
+  --shadow-key: 0.3;
+  --shadow-ambient: 0.15;
   --scrollbar: rgba(250, 246, 238, 0.22);
   --scrollbar-hover: rgba(250, 246, 238, 0.38);
   --chart-1: #f5c375;
