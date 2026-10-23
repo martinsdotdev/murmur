@@ -234,6 +234,10 @@ function BrandMark({ size = 18 }: { size?: number }) {
 const prefGroup =
   "segmented-list [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]"
 
+/** A cell of All mixes' action shelf: an icon over its label, as a segment. */
+const shelfCell =
+  "flex h-16 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-m3-xs bg-grouped px-0.5 text-center text-label-small state-layer transition-[background-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px"
+
 /** About's links and actions, as rows of the list like every other one. */
 const aboutRow =
   "flex min-h-14 items-center gap-4 state-layer px-4 py-3 text-left text-body-large transition-colors"
@@ -251,11 +255,39 @@ function mixIconPath(mix: MixerState) {
   return sounds.find((s) => s.id === top)?.iconPath ?? MUSIC_ICON
 }
 
+/**
+ * What a mix is made of, loudest first: "Rain", "Rain and Fireplace",
+ * "Rain, Fireplace and Birds", "Rain, Fireplace and 3 more". Two mixes can
+ * share a name; they rarely share their sounds. A sound since removed is
+ * left out rather than named "that sound".
+ */
+function mixSummary(
+  mix: MixerState,
+  nameOf: (id: string) => string | undefined
+) {
+  const names = Object.entries(mix)
+    .sort(([, a], [, b]) => b - a)
+    .map(([id]) => nameOf(id))
+    .filter((name): name is string => name !== undefined)
+    .map(isolate)
+  if (names.length <= 1) return names[0] ?? ""
+  if (names.length <= 3) {
+    return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`
+  }
+  return `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`
+}
+
 interface MixRowProps {
   name: string
   mix: MixerState
   loaded: boolean
   dirty?: boolean
+  /**
+   * A line under the name, which also makes the row the phone sheet's
+   * comfortable one: 20px icon and M3 list type, where the sidebar's is
+   * compact.
+   */
+  detail?: string
   onApply: () => void
   onRemove?: () => void
   /** On the button, e.g. a taller row where a finger has to hit it. */
@@ -282,6 +314,7 @@ function MixRow({
   mix,
   loaded,
   dirty,
+  detail,
   onApply,
   onRemove,
   className,
@@ -309,13 +342,35 @@ function MixRow({
           // font-medium, and the row's weight is fixed at 600 by the design.
           "h-auto min-h-8 gap-2 rounded px-2.5 py-1.5 text-label-large font-semibold data-active:font-semibold",
           !loaded && "text-foreground/85",
+          detail !== undefined &&
+            "min-h-14 gap-4 py-2 text-body-large font-normal data-active:font-normal",
           className
         )}
       >
-        <span className="flex size-3.5 shrink-0 items-center justify-center">
-          <SoundIcon path={mixIconPath(mix)} size={13} strokeWidth={1.9} />
+        <span
+          className={cn(
+            "flex shrink-0 items-center justify-center",
+            detail !== undefined ? "size-5" : "size-3.5"
+          )}
+        >
+          <SoundIcon
+            path={mixIconPath(mix)}
+            size={detail !== undefined ? 20 : 13}
+            strokeWidth={detail !== undefined ? 2 : 1.9}
+          />
         </span>
-        <MiddleTruncate text={name} />
+        {detail !== undefined ? (
+          <span className="min-w-0 flex-1">
+            <MiddleTruncate text={name} />
+            {/* An English sentence around isolated names, so it keeps the
+                page's direction; dir="auto" would take an Arabic name's. */}
+            <span className="block truncate text-body-medium text-muted-foreground">
+              {detail}
+            </span>
+          </span>
+        ) : (
+          <MiddleTruncate text={name} />
+        )}
       </SidebarMenuButton>
       {/* The component centres itself with top-*, keyed to the peer button's
           data-size. top-2 centres a 20px action in the default 36px row. This
@@ -1182,10 +1237,11 @@ export function MurmurApp() {
     }
   }, [mixer, master, vols])
 
-  const nameFor = (id: string) =>
+  /** Undefined for a sound since removed, which a mix can still list. */
+  const soundName = (id: string) =>
     sounds.find((s) => s.id === id)?.name ??
-    customsRef.current.find((c) => c.id === id)?.name ??
-    "that sound"
+    customsRef.current.find((c) => c.id === id)?.name
+  const nameFor = (id: string) => soundName(id) ?? "that sound"
 
   /**
    * setVolume reports a failed fetch or decode by silently returning the volume
@@ -3598,9 +3654,11 @@ export function MurmurApp() {
       </Dialog>
 
       {/* The phone's stand-in for both the sidebar list and the right-click
-          menu it can't offer: every mix, and behind each one's ··· the same
-          Rename, Duplicate and Delete. A context menu is hidden by default, so
-          its actions need a visible way in as well. */}
+          menu it can't offer: every mix with what's in it, and behind each
+          one's ··· a shelf of the menu's actions. A context menu is hidden by
+          default, so its actions need a visible way in as well. A clipping
+          column, as Now playing is: the list takes the sheet's height and
+          scrolls under a fade, and the title stays put. */}
       <Dialog
         open={allMixesOpen}
         onOpenChange={(open) => {
@@ -3609,15 +3667,15 @@ export function MurmurApp() {
         }}
         onOpenChangeComplete={(open) => !open && runAfterClose()}
       >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
+        <DialogContent className="flex flex-col overflow-hidden sm:max-w-sm">
+          <DialogHeader className="shrink-0">
             <DialogTitle>All mixes</DialogTitle>
             <DialogDescription>
-              Tap a mix to play it, or the dots beside it to rename, duplicate
-              or delete it.
+              {saved.length} {saved.length === 1 ? "mix" : "mixes"}, kept in
+              this browser.
             </DialogDescription>
           </DialogHeader>
-          <SidebarMenu className="max-h-[50vh] scroll-fade overflow-y-auto scroll-fade-5">
+          <SidebarMenu className="-mx-6 min-h-0 w-auto flex-1 scroll-fade overflow-y-auto px-6 scroll-fade-5">
             {saved.map((mix) => {
               const open = mixActionsFor === mix.name
               return (
@@ -3629,7 +3687,7 @@ export function MurmurApp() {
                         mix={mix.mix}
                         loaded={mix.name === mixName}
                         dirty={mix.name === mixName && dirty}
-                        className="h-12"
+                        detail={mixSummary(mix.mix, soundName)}
                         onApply={() => {
                           applyMix(mix.name, mix.mix)
                           setAllMixesOpen(false)
@@ -3671,32 +3729,45 @@ export function MurmurApp() {
                     )}
                   >
                     <div className="min-h-0 overflow-hidden">
-                      <div className="flex flex-wrap gap-1 pb-1 pl-8">
+                      {/* A segmented row, as the theme swatches are: the
+                          desktop menu's actions, icons and order, one equal
+                          cell each so none wraps onto a line of its own. */}
+                      <div className="grid auto-cols-fr grid-flow-col gap-0.5 pt-1 pb-2 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]">
                         {mix.name === mixName && dirty && (
-                          <Button
-                            variant="ghost"
-                            className="h-12 px-3"
+                          <button
+                            type="button"
+                            className={shelfCell}
                             onClick={() => {
                               saveChanges(mix.name)
                               setMixActionsFor(null)
                             }}
                           >
+                            <HugeiconsIcon
+                              icon={FloppyDiskIcon}
+                              strokeWidth={2}
+                              className="size-5"
+                            />
                             Save changes
-                          </Button>
+                          </button>
                         )}
-                        <Button
-                          variant="ghost"
-                          className="h-12 px-3"
+                        <button
+                          type="button"
+                          className={shelfCell}
                           onClick={() => {
                             shareMix(mix.name, mix.mix, false)
                             setMixActionsFor(null)
                           }}
                         >
+                          <HugeiconsIcon
+                            icon={Share01Icon}
+                            strokeWidth={2}
+                            className="size-5"
+                          />
                           Share
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="h-12 px-3"
+                        </button>
+                        <button
+                          type="button"
+                          className={shelfCell}
                           onClick={() => {
                             afterClose.current = () => {
                               setRenameValue(mix.name)
@@ -3706,21 +3777,31 @@ export function MurmurApp() {
                             setMixActionsFor(null)
                           }}
                         >
+                          <HugeiconsIcon
+                            icon={PencilEdit02Icon}
+                            strokeWidth={2}
+                            className="size-5"
+                          />
                           Rename…
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="h-12 px-3"
+                        </button>
+                        <button
+                          type="button"
+                          className={shelfCell}
                           onClick={() => {
                             duplicateMix(mix)
                             setMixActionsFor(null)
                           }}
                         >
+                          <HugeiconsIcon
+                            icon={Copy01Icon}
+                            strokeWidth={2}
+                            className="size-5"
+                          />
                           Duplicate
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="h-12 px-3 text-destructive hover:text-destructive"
+                        </button>
+                        <button
+                          type="button"
+                          className={cn(shelfCell, "text-destructive")}
                           onClick={() => {
                             // Focus moves to the next row, or the one above
                             // for the last; deleting the only mix closes the
@@ -3738,8 +3819,13 @@ export function MurmurApp() {
                             setMixActionsFor(null)
                           }}
                         >
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            strokeWidth={2}
+                            className="size-5"
+                          />
                           Delete
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   </div>

@@ -7,6 +7,7 @@ const twMerge = extendTailwindMerge({
   extend: {
     theme: {
       text: [
+        "body-large",
         "body-medium",
         "body-small",
         "label-large",
