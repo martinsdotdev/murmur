@@ -14,6 +14,7 @@ import {
   Cancel01Icon,
   Delete02Icon,
   Copy01Icon,
+  DarkModeIcon,
   Database01Icon,
   Download04Icon,
   FavouriteIcon,
@@ -117,6 +118,15 @@ import {
   readThemeMode,
   writeThemeMode,
   type ThemeMode,
+  SCHEMES,
+  SCHEME_TURNS,
+  type Scheme,
+  readScheme,
+  writeScheme,
+  applyScheme,
+  readBlackNight,
+  writeBlackNight,
+  applyBlackNight,
 } from "@/lib/theme"
 import { clampName, isolate, nameFromFile } from "@/lib/text"
 import { cn } from "@/lib/utils"
@@ -979,6 +989,58 @@ function EqBars({ phase, paused }: { phase: number; paused: boolean }) {
   )
 }
 
+/** Whether this browser can turn the tokens (see scripts/schemes.ts). */
+const SCHEMES_SUPPORTED =
+  typeof CSS !== "undefined" && CSS.supports("color", "oklch(from red l c h)")
+
+const SCHEME_LABEL: Record<Scheme, string> = {
+  amber: "Amber",
+  rose: "Rose",
+  sage: "Sage",
+  sky: "Sky",
+  violet: "Violet",
+}
+
+/**
+ * A colour scheme in Preferences, beside the theme swatches and built like
+ * them. Its dot is the scheme's own accent whatever scheme is active: the
+ * dark accent, turned by the scheme's angle, which reads on both themes.
+ */
+function SchemeSwatch({
+  scheme,
+  active,
+  onSelect,
+}: {
+  scheme: Scheme
+  active: boolean
+  onSelect: () => void
+}) {
+  const turn = scheme === "amber" ? 0 : SCHEME_TURNS[scheme]
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      className={cn(
+        "flex cursor-pointer flex-col items-center gap-1.5 rounded-m3-xs border state-layer px-1 pt-2.5 pb-2 transition-[color,background-color,border-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px",
+        active
+          ? "border-brand bg-secondary text-brand"
+          : "border-transparent bg-grouped text-muted-foreground"
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className="size-5 rounded-full ring-1 ring-foreground/10"
+        style={{
+          // Unitless: h is a number here, and an angle would void it.
+          background: `oklch(from #d18a2c l c calc(h + ${turn}))`,
+        }}
+      />
+      <span className="text-xs font-semibold">{SCHEME_LABEL[scheme]}</span>
+    </button>
+  )
+}
+
 function ThemeSwatch({
   mode,
   active,
@@ -992,22 +1054,17 @@ function ThemeSwatch({
   const pane = (tone: "light" | "dark", half: boolean) => (
     <div
       className="flex flex-1 flex-col justify-end gap-[3px] p-1"
-      style={{ background: tone === "light" ? "#faf6ee" : "#232017" }}
+      style={{ background: `var(--swatch-${tone}-bg)` }}
     >
       {!half && (
         <span
           className="h-1 w-3/5 rounded-full"
-          style={{
-            background:
-              tone === "light"
-                ? "rgba(33,18,14,0.18)"
-                : "rgba(250,246,238,0.18)",
-          }}
+          style={{ background: `var(--swatch-${tone}-line)` }}
         />
       )}
       <span
         className="h-1 w-full rounded-full"
-        style={{ background: tone === "light" ? "#b86d20" : "#f5c375" }}
+        style={{ background: `var(--swatch-${tone}-accent)` }}
       />
     </div>
   )
@@ -1359,6 +1416,23 @@ export function MurmurApp() {
       flushSync(() => setThemeMode(mode))
       writeThemeMode(mode)
     })
+  // The app's colour scheme and pure black night, each under its own key as
+  // the theme is, and changed the same way, inside the crossfade.
+  const [scheme, setScheme] = React.useState<Scheme>(readScheme)
+  const [blackNight, setBlackNight] = React.useState(readBlackNight)
+  const selectScheme = (next: Scheme) =>
+    crossfadeTheme(() => {
+      applyScheme(next)
+      flushSync(() => setScheme(next))
+      writeScheme(next)
+    })
+  const changeBlackNight = (on: boolean) =>
+    crossfadeTheme(() => {
+      applyBlackNight(on)
+      flushSync(() => setBlackNight(on))
+      writeBlackNight(on)
+    })
+  const appearanceIsDefault = scheme === "amber" && !blackNight
   const [settingsOpen, setSettingsOpen] = React.useState(false)
   // A dialog a shortcut opened or closed comes and goes without motion: the
   // keyboard is the fast path, and animating it reads as lag. Any pointer
@@ -4361,7 +4435,32 @@ export function MurmurApp() {
                   />
                 ))}
               </div>
+              {/* Schemes are relative colour, so a browser without it is
+                  offered none rather than five that do nothing. */}
+              {SCHEMES_SUPPORTED && (
+                <div
+                  role="group"
+                  aria-label="Colour"
+                  className="mb-2 grid grid-cols-5 gap-0.5 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]"
+                >
+                  {SCHEMES.map((s) => (
+                    <SchemeSwatch
+                      key={s}
+                      scheme={s}
+                      active={scheme === s}
+                      onSelect={() => selectScheme(s)}
+                    />
+                  ))}
+                </div>
+              )}
               <div className={prefGroup}>
+                <PrefRow
+                  icon={DarkModeIcon}
+                  title="Pure black at night"
+                  description="Black backgrounds when the theme is dark, for OLED screens and dark rooms."
+                  checked={blackNight}
+                  onChange={changeBlackNight}
+                />
                 <PrefRow
                   icon={AudioWave01Icon}
                   title="Level meters"
@@ -4701,13 +4800,35 @@ export function MurmurApp() {
             <Button
               variant="ghost"
               size="sm"
-              disabled={prefsAreDefault}
+              disabled={prefsAreDefault && appearanceIsDefault}
               onClick={() => {
-                const previous = prefs
+                // The colour scheme and pure black are rows above as well, so
+                // they reset and undo with the rest. The theme mode doesn't:
+                // it's the site's, shared with the landing page's toggle.
+                const previous = { prefs, scheme, blackNight }
                 setPrefs({ ...DEFAULT_PREFS })
+                if (!appearanceIsDefault) {
+                  crossfadeTheme(() => {
+                    applyScheme("amber")
+                    applyBlackNight(false)
+                    flushSync(() => {
+                      setScheme("amber")
+                      setBlackNight(false)
+                    })
+                    writeScheme("amber")
+                    writeBlackNight(false)
+                  })
+                }
                 toast.success("Preferences restored to defaults", {
                   id: "prefs-restored",
-                  action: { label: "Undo", onClick: () => setPrefs(previous) },
+                  action: {
+                    label: "Undo",
+                    onClick: () => {
+                      setPrefs(previous.prefs)
+                      selectScheme(previous.scheme)
+                      changeBlackNight(previous.blackNight)
+                    },
+                  },
                 })
               }}
             >

@@ -54,3 +54,75 @@ export function applyTheme(mode: ThemeMode): void {
       window.matchMedia("(prefers-color-scheme: dark)").matches)
   document.documentElement.dataset.theme = dark ? "dark" : "light"
 }
+
+/**
+ * The app's colour scheme, beside the theme: Amber, or Amber turned round
+ * the hue wheel (see scripts/schemes.ts). It sits in data-scheme, which only
+ * the app's stylesheet reads, so the landing page keeps Murmur's amber.
+ * ThemeBootstrap.astro applies it before paint, as it does the theme.
+ */
+export const SCHEMES = ["amber", "rose", "sage", "sky", "violet"] as const
+export type Scheme = (typeof SCHEMES)[number]
+
+/**
+ * Degrees each scheme turns Amber's hues, measured from its accent at about
+ * 62°: Rose to about 10°, Sage 145°, Sky 230°, Violet 290°. The generator and
+ * the Preferences swatches both read this.
+ */
+export const SCHEME_TURNS: Record<Exclude<Scheme, "amber">, number> = {
+  rose: -52,
+  sage: 83,
+  sky: 168,
+  violet: -132,
+}
+
+const SCHEME_KEY = "scheme"
+/** "black" or absent: pure black surfaces whenever the theme is dark. */
+const NIGHT_KEY = "night"
+
+export function readScheme(): Scheme {
+  try {
+    const v = localStorage.getItem(SCHEME_KEY)
+    if ((SCHEMES as readonly string[]).includes(v ?? "")) return v as Scheme
+  } catch {
+    /* Private mode, so Amber. */
+  }
+  return "amber"
+}
+
+export function writeScheme(scheme: Scheme): void {
+  try {
+    if (scheme === "amber") localStorage.removeItem(SCHEME_KEY)
+    else localStorage.setItem(SCHEME_KEY, scheme)
+  } catch {
+    /* The choice holds for this session only. */
+  }
+}
+
+/** Amber is the absence of the attribute: its tokens are the originals. */
+export function applyScheme(scheme: Scheme): void {
+  if (scheme === "amber") delete document.documentElement.dataset.scheme
+  else document.documentElement.dataset.scheme = scheme
+}
+
+export function readBlackNight(): boolean {
+  try {
+    return localStorage.getItem(NIGHT_KEY) === "black"
+  } catch {
+    return false
+  }
+}
+
+export function writeBlackNight(on: boolean): void {
+  try {
+    if (on) localStorage.setItem(NIGHT_KEY, "black")
+    else localStorage.removeItem(NIGHT_KEY)
+  } catch {
+    /* The choice holds for this session only. */
+  }
+}
+
+export function applyBlackNight(on: boolean): void {
+  if (on) document.documentElement.dataset.night = "black"
+  else delete document.documentElement.dataset.night
+}

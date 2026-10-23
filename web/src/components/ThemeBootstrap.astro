@@ -11,6 +11,14 @@
  * The same observer switches transitions off for the frame the theme changes
  * in. Left on, anything that transitions colour fades for 150ms while the rest
  * of the page snaps, and the switch arrives as a visible stagger.
+ *
+ * It also restores the app's colour scheme and pure black night (lib/theme.ts)
+ * before paint, so a Sky user never sees a frame of Amber. The landing page's
+ * stylesheet doesn't read either attribute. Where a stylesheet defines
+ * --theme-color (the app's, which follows both), the meta takes that instead
+ * of its own fixed pair, re-read once the page has loaded. A scheme's value
+ * is an oklch(from …) expression, which a custom property hands back
+ * unresolved, so it's painted to a pixel and read back as a hex.
  */
 ---
 
@@ -18,10 +26,38 @@
   ;(function () {
     const root = document.documentElement
     const meta = document.querySelector('meta[name="theme-color"]')
+    const probe = document.createElement("i")
+    probe.style.cssText = "display:none;color:var(--theme-color)"
+    const pixel = document
+      .createElement("canvas")
+      .getContext("2d", { willReadFrequently: true })
+    const themeColor = () => {
+      const token = getComputedStyle(root).getPropertyValue("--theme-color")
+      if (!token.trim() || !document.body || !pixel) return ""
+      document.body.append(probe)
+      pixel.fillStyle = getComputedStyle(probe).color
+      probe.remove()
+      pixel.fillRect(0, 0, 1, 1)
+      const [r, g, b] = pixel.getImageData(0, 0, 1, 1).data
+      return (
+        "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")
+      )
+    }
     const paint = () => {
-      const value = meta && meta.dataset[root.dataset.theme || "dark"]
+      if (!meta) return
+      const value = themeColor() || meta.dataset[root.dataset.theme || "dark"]
       if (value) meta.setAttribute("content", value)
     }
+
+    try {
+      // SCHEMES in lib/theme.ts, less Amber, which is no attribute at all.
+      const scheme = localStorage.getItem("scheme")
+      if (["rose", "sage", "sky", "violet"].includes(scheme)) {
+        root.dataset.scheme = scheme
+      }
+      if (localStorage.getItem("night") === "black")
+        root.dataset.night = "black"
+    } catch {}
 
     let resolved = null
     try {
@@ -47,7 +83,8 @@
       setTimeout(() => freeze.remove())
       paint()
     }).observe(root, {
-      attributeFilter: ["data-theme"],
+      attributeFilter: ["data-theme", "data-scheme", "data-night"],
     })
+    window.addEventListener("load", paint)
   })()
 </script>
