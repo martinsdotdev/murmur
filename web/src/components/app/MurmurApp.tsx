@@ -196,7 +196,7 @@ function BrandMark({ size = 18 }: { size?: number }) {
 
 /** Two links and a button sit in one row, so they have to read as one set. */
 const aboutLink =
-  "flex min-h-[1.875rem] items-center gap-[7px] rounded-[5px] px-2.5 text-xs font-semibold text-foreground/85 transition-colors hover:bg-accent hover:text-foreground"
+  "flex min-h-[1.875rem] items-center gap-[7px] rounded-[5px] px-2.5 text-xs font-semibold text-foreground/85 state-layer transition-colors hover:text-foreground"
 
 /** A mix's loudest sound stands in for it, so "Rainy café" reads as a café. */
 function mixIconPath(mix: MixerState) {
@@ -288,7 +288,7 @@ function MixRow({
           // [&>svg]:size-3 rather than a size on the icon: the base sets
           // [&>svg]:size-4 with no opt-out, and a descendant rule outranks a
           // class on the child. Same utility family, so cn() dedupes it.
-          className="right-1 size-[22px] w-[22px] rounded-[5px] text-muted-foreground peer-data-[size=default]/menu-button:top-1.5 hover:bg-elevated hover:text-foreground [&>svg]:size-3"
+          className="right-1 size-[22px] w-[22px] rounded-[5px] state-layer text-muted-foreground peer-data-[size=default]/menu-button:top-1.5 hover:text-foreground [&>svg]:size-3"
           aria-label={`Delete ${name}`}
           title="Delete mix"
           onClick={onRemove}
@@ -683,7 +683,8 @@ function ThemeSwatch({
       aria-pressed={active}
       className={cn(
         "rounded-md border p-[9px_9px_8px] text-left transition-colors hover:border-brand",
-        active ? "border-brand bg-brand/10" : "border-border"
+        // Selected as everywhere else: the raised container plus amber.
+        active ? "border-brand bg-secondary" : "border-border"
       )}
     >
       <span className="flex h-8 overflow-hidden rounded border border-border">
@@ -872,7 +873,7 @@ function RemoveSoundButton({
       aria-label={`Remove ${name}`}
       title="Remove"
       className={cn(
-        "relative size-[22px] shrink-0 rounded-[5px] text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:after:absolute pointer-coarse:after:-inset-[11px]",
+        "relative size-[22px] shrink-0 rounded-[5px] state-layer text-muted-foreground hover:text-foreground pointer-coarse:after:absolute pointer-coarse:after:-inset-[11px]",
         className
       )}
       onClick={(e) => {
@@ -3410,7 +3411,7 @@ export function MurmurApp() {
                   "w-full justify-start",
                   !timerOn &&
                     minutes === 0 &&
-                    "bg-brand/12 text-brand hover:bg-brand/15 hover:text-brand"
+                    "bg-secondary text-brand hover:text-brand"
                 )}
                 onClick={() => startTimer(minutes)}
               >
