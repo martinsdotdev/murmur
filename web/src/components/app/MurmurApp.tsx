@@ -527,12 +527,6 @@ interface RenderableSound {
   iconPath: string
 }
 
-/**
- * What opening a shared link changed. Nothing in a link needs a warning up
- * front: volumes are bounded, ids are held to the catalog and to YouTube's
- * alphabet, and the app boots paused. What it can do is overwrite the mix on
- * screen and add sounds to the mixer, so arrival is announced with an Undo.
- */
 /** What Clear all took, held for its Undo. */
 interface ClearedData {
   saved: SavedMix[]
@@ -540,6 +534,12 @@ interface ClearedData {
   vols: MixerState
 }
 
+/**
+ * What opening a shared link changed. Nothing in a link needs a warning up
+ * front: volumes are bounded, ids are held to the catalog and to YouTube's
+ * alphabet, and the app boots paused. What it can do is overwrite the mix on
+ * screen and add sounds to the mixer, so arrival is announced with an Undo.
+ */
 interface LinkArrival {
   /** The mix that was on before the link, which Undo puts back. */
   previous: Pick<PersistedState, "vols" | "mixName" | "dirty">
@@ -990,6 +990,8 @@ export function MurmurApp() {
   const relinkTarget = React.useRef<string | null>(null)
   /** Finishes the last Clear all, if its toast is still open. */
   const pendingClear = React.useRef<(() => void) | null>(null)
+  /** Clear all's first press arms it; it disarms itself after 3s. */
+  const [dataArmed, setDataArmed] = React.useState(false)
 
   const pwa = usePwa()
   // Where installing is possible at all: a prompt to show, or a touch device
@@ -1500,11 +1502,18 @@ export function MurmurApp() {
   }
 
   /**
-   * Undo rather than a confirmation, like every other delete. The sound files
-   * outlive the toast's Undo and are only deleted once it closes. A tab closed
-   * first leaves them orphaned, and the boot-time sweep deletes them then.
+   * The one delete that asks first, since it takes everything at once: the
+   * first press arms the button and the second clears. Undo stays as well.
+   * The sound files outlive the toast's Undo and are only deleted once it
+   * closes; a tab closed first leaves them to the boot-time sweep.
    */
+  const armClearData = () => {
+    setDataArmed(true)
+    window.setTimeout(() => setDataArmed(false), 3000)
+  }
+
   const clearData = () => {
+    setDataArmed(false)
     // A second clear replaces the first one's toast without closing it, so
     // the first is settled here or its files would stay until the next boot.
     pendingClear.current?.()
@@ -3588,14 +3597,16 @@ export function MurmurApp() {
                     ? `${saved.length} saved ${saved.length === 1 ? "mix" : "mixes"} and ${customs.length} ${customs.length === 1 ? "sound" : "sounds"} of your own, kept in this browser.`
                     : "Nothing saved yet."}
                 </p>
+                {/* Armed, it turns destructive red, and its short label keeps
+                    the row from reflowing on a phone. */}
                 <Button
-                  variant="outline"
+                  variant={dataArmed ? "destructive" : "outline"}
                   size="sm"
                   className="shrink-0"
                   disabled={saved.length === 0 && customs.length === 0}
-                  onClick={clearData}
+                  onClick={dataArmed ? clearData : armClearData}
                 >
-                  Clear all
+                  {dataArmed ? "Sure?" : "Clear all"}
                 </Button>
               </div>
             </PrefSection>
