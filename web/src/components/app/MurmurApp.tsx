@@ -12,7 +12,6 @@ import {
   BrowserIcon,
   Cancel01Icon,
   Delete02Icon,
-  Clock01Icon,
   Copy01Icon,
   Database01Icon,
   Download04Icon,
@@ -3523,26 +3522,31 @@ export function MurmurApp() {
           </SidebarContent>
 
           <SidebarFooter className="gap-0 px-3 pb-3">
+            {/* The moon, as the phone bar and the dialog have it. Idle it is
+                just the button, with no "Off" to say so. Running it takes the
+                app's "on", the raised fill with amber inside as a playing card
+                has, and the countdown in the dialog's tabular figures. */}
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-start"
+              className={cn(
+                "w-full justify-start",
+                timerOn && "bg-secondary dark:bg-secondary"
+              )}
+              aria-keyshortcuts="T"
               onClick={() => setTimerOpen(true)}
             >
               <HugeiconsIcon
-                icon={Clock01Icon}
+                icon={Moon02Icon}
                 strokeWidth={2}
-                className="size-3.5"
+                className={cn("size-3.5", timerOn && "text-brand")}
               />
               Sleep timer
-              <span
-                className={cn(
-                  "ml-auto font-mono text-xs tabular-nums",
-                  timerOn ? "text-brand" : "text-muted-foreground"
-                )}
-              >
-                {timerOn ? formatClock(timerLeft) : "Off"}
-              </span>
+              {timerOn && (
+                <span className="ml-auto text-xs font-semibold text-brand tabular-nums">
+                  {formatClock(timerLeft)}
+                </span>
+              )}
             </Button>
 
             <div className="mt-3 flex items-center gap-2 px-1">
@@ -3812,9 +3816,13 @@ export function MurmurApp() {
 
             <Button
               variant="outline"
+              // The sidebar button's states: plain while idle, the raised fill
+              // and amber while running.
               className={cn(
-                "h-11 shrink-0 gap-1.5 rounded-full bg-transparent pointer-coarse:hit-target",
-                timerOn ? "px-3.5" : "w-11 px-0"
+                "h-11 shrink-0 gap-1.5 rounded-full pointer-coarse:hit-target",
+                timerOn
+                  ? "bg-secondary px-3.5 dark:bg-secondary"
+                  : "w-11 bg-transparent px-0"
               )}
               aria-label={
                 timerOn
@@ -3826,10 +3834,10 @@ export function MurmurApp() {
               <HugeiconsIcon
                 icon={Moon02Icon}
                 strokeWidth={2}
-                className="size-4 text-brand"
+                className={cn("size-4", timerOn && "text-brand")}
               />
               {timerOn && (
-                <span className="text-sm font-semibold tabular-nums">
+                <span className="text-sm font-semibold text-brand tabular-nums">
                   {formatClock(timerLeft)}
                 </span>
               )}
