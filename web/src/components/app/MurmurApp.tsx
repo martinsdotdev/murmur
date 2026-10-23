@@ -77,6 +77,7 @@ import { repoUrl, sponsorUrl } from "@/data/site"
 import {
   DEFAULT_MASTER,
   DEFAULT_PREFS,
+  DEV_FIXTURE,
   loadPersisted,
   savePersisted,
   type CustomSound,
@@ -103,6 +104,7 @@ import {
 } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 
+import { DevDataToggle } from "./DevDataToggle"
 import { SoundIcon } from "./SoundIcon"
 import { useCoarsePointer } from "./use-coarse-pointer"
 import { persistStorage, usePwa } from "./use-pwa"
@@ -1713,8 +1715,11 @@ export function MurmurApp() {
     let cancelled = false
     void getAllBlobs().then((blobs) => {
       if (cancelled) return
-      for (const id of blobs.keys()) {
-        if (!customsRef.current.some((c) => c.id === id)) void deleteBlob(id)
+      // A dev fixture's customs aren't the user's, so its blobs aren't orphans.
+      if (!DEV_FIXTURE) {
+        for (const id of blobs.keys()) {
+          if (!customsRef.current.some((c) => c.id === id)) void deleteBlob(id)
+        }
       }
       const restored = customsRef.current.filter((c) => {
         if (!c.hasFile) return true
@@ -3589,6 +3594,7 @@ export function MurmurApp() {
         mobileOffset={{ bottom: "var(--toast-bottom)" }}
         className="toaster group [--toast-bottom:calc(67px_+_max(12px,env(safe-area-inset-bottom)))] wide:[--toast-bottom:24px]"
       />
+      {import.meta.env.DEV && <DevDataToggle />}
     </SidebarProvider>
   )
 }

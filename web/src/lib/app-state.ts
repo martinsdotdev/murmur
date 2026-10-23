@@ -12,12 +12,23 @@
  * effect. Moving that call into an effect reintroduces the data loss.
  */
 
+import { devFixtures } from "@/data/dev-fixtures"
 import { presets } from "@/data/presets"
 
 import type { MixerState } from "./mixer"
 import { isVideoId } from "./youtube"
 
 export const STORAGE_KEY = "murmur-app-v2"
+
+/**
+ * Dev only: `?data=worst|empty|one|huge` boots from a fixture in
+ * data/dev-fixtures.ts instead of storage, and nothing is written back, so the
+ * user's own state survives. Always null in production builds.
+ */
+export const DEV_FIXTURE: string | null =
+  import.meta.env.DEV && typeof location !== "undefined"
+    ? new URLSearchParams(location.search).get("data")
+    : null
 
 const V1_STATE = "murmur-app-state"
 const V1_SAVED = "murmur-app-saved"
@@ -240,12 +251,18 @@ function migrateV1(): PersistedState | null {
  * appearing in a list they already curated would be presumptuous.
  */
 export function loadPersisted(): PersistedState {
+  // import.meta.env.DEV inline, not just via DEV_FIXTURE: a literal false is
+  // what lets the production build drop the fixtures module.
+  if (import.meta.env.DEV && DEV_FIXTURE && DEV_FIXTURE in devFixtures) {
+    return coerce(devFixtures[DEV_FIXTURE](), DEFAULT_MASTER)
+  }
   const current = readJson(STORAGE_KEY)
   if (isRecord(current)) return coerce(current, DEFAULT_MASTER)
   return migrateV1() ?? coerce({ saved: presets }, DEFAULT_MASTER)
 }
 
 export function savePersisted(state: PersistedState): void {
+  if (DEV_FIXTURE) return
   try {
     localStorage.setItem(
       STORAGE_KEY,
