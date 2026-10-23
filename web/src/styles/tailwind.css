@@ -215,6 +215,15 @@
   /* The brand amber as a selection tint. Literal rgba, for the reason the
      scrollbar colours below give. */
   --selection: rgba(138, 76, 16, 0.22);
+  /* Toasts are always night-coloured: a warm dark surface, cream text and an
+     amber action, in both themes. In light that is M3's inverse surface. In
+     dark it stays dark, a step above the page, rather than M3's cream: a
+     bright flash in a dark bedroom is the one thing a sleep app shouldn't do. */
+  --toast: #2c281e;
+  --toast-foreground: #faf6ee;
+  --toast-muted: rgba(250, 246, 238, 0.72);
+  --toast-action: #f5c375;
+  --toast-border: transparent;
   /* M3's black at 30% and 15% read as smudges on cream. Light shadows take
      the text's warm ink at about a third of that; dark keeps M3's. */
   --shadow-ink: 33 18 14;
@@ -274,6 +283,11 @@
   --dialog: #2c281e; /* neutral-background-3 */
   --grouped: var(--elevated);
   --selection: rgba(245, 195, 117, 0.3);
+  --toast: #3a3527; /* neutral-background-4, a step above the page */
+  --toast-foreground: #faf6ee;
+  --toast-muted: rgba(250, 246, 238, 0.72);
+  --toast-action: #f5c375;
+  --toast-border: rgba(250, 246, 238, 0.08);
   --shadow-ink: 0 0 0;
   --shadow-key: 0.3;
   --shadow-ambient: 0.15;
