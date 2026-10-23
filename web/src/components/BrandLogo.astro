@@ -4,15 +4,18 @@
  *
  * Per Fluent 2 motion guidelines, this component does NOT include any infinite
  * decorative animations, Fluent reserves motion for state transitions and
- * deliberate entrances/exits. The icon is rendered as a static product mark.
+ * deliberate entrances/exits. The icon is rendered as a static product mark,
+ * except that the hero's, given `rise`, makes one entrance (see below).
  */
 
 interface Props {
   size?: number
   class?: string
+  /** The hero's mark: its three bars rise once on load, a meter coming up. */
+  rise?: boolean
 }
 
-const { size = 56, class: className = "" } = Astro.props
+const { size = 56, class: className = "", rise = false } = Astro.props
 ---
 
 <svg
@@ -20,7 +23,7 @@ const { size = 56, class: className = "" } = Astro.props
   viewBox="0 0 768 768"
   width={size}
   height={size}
-  class={`brand-logo ${className}`}
+  class={`brand-logo ${rise ? "rise" : ""} ${className}`}
   aria-label="Murmur"
   role="img"
 >
@@ -33,9 +36,33 @@ const { size = 56, class: className = "" } = Astro.props
   </defs>
   <rect width="768" height="768" rx="144" fill="#A85820"></rect>
   <rect width="768" height="744" rx="144" fill="url(#bl-tile)"></rect>
-  <rect x="192" y="216" width="96" height="312" rx="48" fill="#FFFFFF"></rect>
-  <rect x="336" y="384" width="96" height="144" rx="48" fill="#FFFFFF"></rect>
-  <rect x="480" y="216" width="96" height="312" rx="48" fill="#FFFFFF"></rect>
+  <rect
+    class="bar"
+    style="--i: 0"
+    x="192"
+    y="216"
+    width="96"
+    height="312"
+    rx="48"
+    fill="#FFFFFF"></rect>
+  <rect
+    class="bar"
+    style="--i: 1"
+    x="336"
+    y="384"
+    width="96"
+    height="144"
+    rx="48"
+    fill="#FFFFFF"></rect>
+  <rect
+    class="bar"
+    style="--i: 2"
+    x="480"
+    y="216"
+    width="96"
+    height="312"
+    rx="48"
+    fill="#FFFFFF"></rect>
 </svg>
 
 <style>
@@ -43,5 +70,26 @@ const { size = 56, class: className = "" } = Astro.props
      radius with a floor clipped the corners off the 16px hero mark. */
   .brand-logo {
     display: block;
+  }
+
+  /* The hero's one entrance: the bars rise from their baseline, staggered,
+     so the mark shows what it is, a level meter coming up. A clip rather than
+     a scale, rounded to the bars' own radius, so the caps never squash. The
+     app's --ease-out curve; 500ms, since this is the landing page and not a
+     control. Nothing moves under reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .rise .bar {
+      animation: murmur-logo-rise 500ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      animation-delay: calc(var(--i) * 60ms);
+    }
+  }
+
+  @keyframes murmur-logo-rise {
+    from {
+      clip-path: inset(70% 0 0 0 round 48px);
+    }
+    to {
+      clip-path: inset(0 0 0 0 round 48px);
+    }
   }
 </style>
