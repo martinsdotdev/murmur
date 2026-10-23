@@ -4,6 +4,9 @@
 /* Self-hosted @font-face only. The one stylesheet both surfaces share; see the
    header of fonts.css for why that is safe. */
 @import "./fonts.css";
+/* Generated Material 3 roles: the outline stroke and the prefers-contrast set.
+   See scripts/m3-colors.ts. */
+@import "./m3-colors.css";
 
 /* The site owns the theme, not this stylesheet. ThemeBootstrap.astro resolves
    localStorage['theme'] to a concrete data-theme before paint; ThemeToggle on
@@ -78,6 +81,69 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Material 3 role names. Three vocabularies, one value each: the Fluent
+       names below hold the values, shadcn names serve the components, and M3
+       names describe intent (which surface tier, which stroke). */
+  --color-surface: var(--md-surface);
+  --color-surface-container: var(--md-surface-container);
+  --color-surface-container-high: var(--md-surface-container-high);
+  --color-surface-container-highest: var(--md-surface-container-highest);
+  --color-on-surface: var(--foreground);
+  --color-on-surface-variant: var(--muted-foreground);
+  /* outline is the 3:1 stroke (slider end stops, the active tile);
+       outline-variant is the decorative hairline Murmur calls --border. */
+  --color-outline: var(--md-outline);
+  --color-outline-variant: var(--border);
+  --color-primary-container: var(--primary);
+
+  /* M3 elevation levels 2 and 3 (key plus ambient). Tone still carries the
+       layering; these are the shadow half of M3's pairing, level 2 for menus
+       and toasts, level 3 for dialogs and sheets. */
+  --shadow-level-2:
+    0 1px 2px 0 rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+  --shadow-level-3:
+    0 1px 3px 0 rgb(0 0 0 / 0.3), 0 4px 8px 3px rgb(0 0 0 / 0.15);
+
+  /* M3's corner scale, prefixed so it never shadows shadcn's radii above,
+       which derive from Fluent's 8px. Desktop keeps Fluent's assignments;
+       these are for phone-only surfaces with no Windows counterpart. */
+  --radius-m3-xs: 4px;
+  --radius-m3-sm: 8px;
+  --radius-m3-md: 12px;
+  --radius-m3-lg: 16px;
+  --radius-m3-xl: 28px;
+  --radius-m3-xxl: 48px;
+  --radius-m3-full: 9999px;
+
+  /* M3 breakpoints, added beside Tailwind's rather than replacing them:
+       medium (600) is where margins grow to 24px, expanded (840) and large
+       (1200) are M3's pane edges. */
+  --breakpoint-medium: 37.5rem;
+  --breakpoint-expanded: 52.5rem;
+  --breakpoint-large: 75rem;
+
+  /* M3's type scale, the subset a dense mixer uses. Sizes and line heights
+       are M3's; its tracking is tuned for Roboto and is left at zero here. */
+  --text-body-medium: 0.875rem;
+  --text-body-medium--line-height: 1.25rem;
+  --text-body-small: 0.75rem;
+  --text-body-small--line-height: 1rem;
+  --text-label-large: 0.875rem;
+  --text-label-large--line-height: 1.25rem;
+  --text-label-large--font-weight: 500;
+  --text-label-medium: 0.75rem;
+  --text-label-medium--line-height: 1rem;
+  --text-label-medium--font-weight: 500;
+  --text-label-small: 0.6875rem;
+  --text-label-small--line-height: 1rem;
+  --text-label-small--font-weight: 500;
+  --text-title-small: 0.875rem;
+  --text-title-small--line-height: 1.25rem;
+  --text-title-small--font-weight: 500;
+  --text-title-medium: 1rem;
+  --text-title-medium--line-height: 1.5rem;
+  --text-title-medium--font-weight: 500;
 }
 
 /*
@@ -133,6 +199,13 @@
   --sidebar-accent-foreground: #1f1311;
   --sidebar-border: rgba(33, 18, 14, 0.06); /* neutral-stroke-2 */
   --sidebar-ring: #b86d20;
+
+  /* M3 surface tiers, by tone: page 97, popover 94, dialog 91. The dialog
+     tone sits between M3's high (92) and highest (90), so it is both. */
+  --md-surface: var(--background);
+  --md-surface-container: var(--popover);
+  --md-surface-container-high: var(--dialog);
+  --md-surface-container-highest: var(--dialog);
 }
 
 [data-theme="dark"] {
@@ -174,6 +247,14 @@
   --sidebar-accent-foreground: #faf6ee;
   --sidebar-border: rgba(250, 246, 238, 0.06);
   --sidebar-ring: #f5c375;
+
+  /* Dark tiers by tone: sidebar 6, page 12, dialog 16, raised 22, which is
+     M3's surface, container, high and highest. Lighter means nearer, as in
+     M3 and as Windows itself has it. */
+  --md-surface: var(--sidebar);
+  --md-surface-container: var(--background);
+  --md-surface-container-high: var(--dialog);
+  --md-surface-container-highest: var(--elevated);
 }
 
 /* A dialog's surface is background-3, the layer these four already use for
@@ -294,6 +375,35 @@
 [data-slot="dialog-overlay"][data-instant],
 [data-slot="dialog-content"][data-instant] {
   transition: none;
+}
+
+/*
+ * M3 state layers, computed into the fill instead of overlaid: mixing an
+ * opaque container with its content colour at 8% is the same pixel as an 8%
+ * overlay, without the extra element (the Windows app swaps brushes for the
+ * same reason). Set --state-base for the container; hover is 8%, focus and
+ * press 10%, and a menu trigger holds the press while its menu is open.
+ */
+@utility state-layer {
+  background-color: var(--state-base, transparent);
+  @media (hover: hover) {
+    &:hover {
+      background-color: color-mix(
+        in srgb,
+        var(--state-base, transparent),
+        currentColor 8%
+      );
+    }
+  }
+  &:focus-visible,
+  &:active,
+  &[data-popup-open] {
+    background-color: color-mix(
+      in srgb,
+      var(--state-base, transparent),
+      currentColor 10%
+    );
+  }
 }
 
 @layer base {

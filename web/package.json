@@ -14,7 +14,8 @@
     "astro": "astro",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,astro,css,json,md,mjs}\"",
-    "typecheck": "astro check"
+    "typecheck": "astro check",
+    "tokens": "tsx scripts/m3-colors.ts"
   },
   "dependencies": {
     "@astrojs/react": "^5",
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9",
     "@eslint/js": "^10",
+    "@material/material-color-utilities": "0.4.0",
     "eslint": "^10",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -52,6 +54,7 @@
     "prettier": "^3.8.3",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.8.0",
+    "tsx": "4.23.15",
     "typescript": "~6",
     "typescript-eslint": "^8"
   }
