@@ -3460,7 +3460,10 @@ export function MurmurApp() {
                     <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
                   </Button>
                 </div>
-                <ScrollArea className="min-h-0 flex-1" viewportClassName="px-5">
+                <ScrollArea
+                  className="min-h-0 flex-1"
+                  viewportClassName="scroll-fade px-5 scroll-fade-5"
+                >
                   {nowPlayingRows}
                 </ScrollArea>
                 <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border px-5 py-3">
@@ -3572,16 +3575,20 @@ export function MurmurApp() {
           runAfterClose()
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        {/* A column that clips, as Preferences is: only the rows scroll, under
+            a fade, and the title and the actions stay put. */}
+        <DialogContent className="flex flex-col overflow-hidden sm:max-w-md">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="text-lg">Now playing</DialogTitle>
             <DialogDescription>
               {mixName}
               {dirty && " (edited)"}
             </DialogDescription>
           </DialogHeader>
-          {nowPlayingRows}
-          <DialogFooter className="flex-row justify-between sm:justify-between">
+          <div className="-mx-6 min-h-0 flex-1 scroll-fade overflow-y-auto px-6 scroll-fade-5">
+            {nowPlayingRows}
+          </div>
+          <DialogFooter className="shrink-0 flex-row justify-between sm:justify-between">
             {nowPlayingActions(() => {
               afterClose.current = openSaveDialog
               setNowPlayingOpen(false)
