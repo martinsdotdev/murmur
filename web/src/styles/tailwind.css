@@ -139,6 +139,8 @@
 
   /* M3's type scale, the subset a dense mixer uses. Sizes and line heights
        are M3's; its tracking is tuned for Roboto and is left at zero here. */
+  --text-body-large: 1rem;
+  --text-body-large--line-height: 1.5rem;
   --text-body-medium: 0.875rem;
   --text-body-medium--line-height: 1.25rem;
   --text-body-small: 0.75rem;
@@ -203,8 +205,8 @@
   --track: rgba(33, 18, 14, 0.16);
   --elevated: #d8cdb5; /* neutral-background-4 */
   --dialog: #ece4d2; /* neutral-background-3 */
-  /* A grouped list's card on a dialog: one step lighter than the dialog in
-     both themes, as the Claude app and iOS settings fill theirs. */
+  /* A segmented list's tiles on a dialog: one step lighter than the dialog in
+     both themes, so the 2px between them reads as a gap. */
   --grouped: var(--background);
   --scrollbar: rgba(33, 18, 14, 0.24);
   --scrollbar-hover: rgba(33, 18, 14, 0.4);
@@ -431,22 +433,25 @@
 }
 
 /*
- * A grouped list's rows, split by hairlines that start where the text does
- * rather than at the card's edge. A pseudo-element, because the rows'
- * state-layer already owns background-image.
+ * M3 Expressive's segmented list, as Android settings and the Claude app draw
+ * theirs: each row its own filled tile, 2px apart, the joins at 4px and the
+ * group's outer corners at --segment-radius, which the caller sets.
  */
-@utility grouped-rows {
-  & > * + * {
-    position: relative;
+@utility segmented-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  & > * {
+    border-radius: var(--radius-m3-xs);
+    background-color: var(--color-grouped);
   }
-  & > * + *::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: --spacing(3.5);
-    height: 1px;
-    background: var(--color-border);
+  & > :first-child {
+    border-start-start-radius: var(--segment-radius);
+    border-start-end-radius: var(--segment-radius);
+  }
+  & > :last-child {
+    border-end-start-radius: var(--segment-radius);
+    border-end-end-radius: var(--segment-radius);
   }
 }
 

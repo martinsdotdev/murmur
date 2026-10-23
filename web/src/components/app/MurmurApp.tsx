@@ -3,7 +3,11 @@
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
+  Archive01Icon,
+  ArrowDataTransferHorizontalIcon,
   ArrowUp01Icon,
+  AudioWave01Icon,
+  BrowserIcon,
   Cancel01Icon,
   Delete02Icon,
   Clock01Icon,
@@ -16,11 +20,13 @@ import {
   GithubIcon,
   GridViewIcon,
   HeadphonesIcon,
-  InformationCircleIcon,
+  InstallingUpdates01Icon,
+  KeyboardIcon,
   LeftToRightListBulletIcon,
   MinusSignCircleIcon,
   Moon02Icon,
   MoreHorizontalIcon,
+  MusicNote01Icon,
   PauseIcon,
   PanelRightIcon,
   PencilEdit02Icon,
@@ -29,6 +35,7 @@ import {
   RefreshIcon,
   Settings01Icon,
   Share01Icon,
+  Sun03Icon,
   Tick02Icon,
   Upload04Icon,
   VolumeHighIcon,
@@ -206,18 +213,17 @@ function BrandMark({ size = 18 }: { size?: number }) {
   )
 }
 
-/** Two links and a button sit in one row, so they have to read as one set. */
 /**
- * Preferences' grouped lists, filled as the Claude app and iOS settings fill
- * theirs: one step up from the dialog, no outline, hairlines from the text.
- * 12px inside the phone sheet's 28px corners; 8px in the desktop dialog, so a
- * card never rounds more than the frame around it.
+ * Preferences' lists, segmented as the Claude app and Android settings draw
+ * theirs. The group's outer corners are 16px inside the phone sheet's 28px,
+ * and 8px in the desktop dialog, so a group never rounds more than its frame.
  */
 const prefGroup =
-  "grouped-rows overflow-hidden rounded-m3-md bg-grouped sm:rounded-lg"
+  "segmented-list [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]"
 
+/** Two links and a button sit in one row, so they have to read as one set. */
 const aboutLink =
-  "flex min-h-8 items-center gap-2 rounded px-2.5 text-xs font-semibold text-foreground/85 state-layer transition-colors hover:text-foreground"
+  "flex min-h-10 items-center gap-2 rounded px-2 text-body-medium text-foreground/85 state-layer transition-colors hover:text-foreground"
 
 /** A mix's loudest sound stands in for it, so "Rainy café" reads as a café. */
 function mixIconPath(mix: MixerState) {
@@ -740,9 +746,9 @@ function ThemeSwatch({
       onClick={onSelect}
       aria-pressed={active}
       className={cn(
-        "rounded-m3-md border p-[9px_9px_8px] text-left transition-colors hover:border-brand sm:rounded-lg",
+        "rounded-m3-xs border p-[9px_9px_8px] text-left transition-colors first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) hover:border-brand",
         // Selected as everywhere else: the raised container plus amber. The
-        // rest are filled like the lists beneath them, with no outline.
+        // rest are tiles like the list beneath them, with no outline.
         active ? "border-brand bg-secondary" : "border-transparent bg-grouped"
       )}
     >
@@ -769,22 +775,24 @@ function ThemeSwatch({
 }
 
 function PrefRow({
+  icon,
   title,
   description,
   checked,
   onChange,
 }: {
+  icon: typeof PlayIcon
   title: string
   description: string
   checked: boolean
   onChange: (value: boolean) => void
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3.5 state-layer px-3.5 py-3 transition-colors">
+    <label className="flex min-h-14 cursor-pointer items-center gap-4 state-layer px-4 py-3 transition-colors">
+      <HugeiconsIcon icon={icon} strokeWidth={2} className="size-5 shrink-0" />
       <span className="min-w-0 flex-1">
-        <span className="block text-sm">{title}</span>
-        {/* 150%: these are sentences, and 133% packed them too tight. */}
-        <span className="mt-0.5 block text-xs leading-[1.125rem] text-muted-foreground">
+        <span className="block text-body-large">{title}</span>
+        <span className="mt-0.5 block text-body-medium text-muted-foreground">
           {description}
         </span>
       </span>
@@ -793,7 +801,37 @@ function PrefRow({
   )
 }
 
+/**
+ * A Preferences row that reports a state rather than switching one, with its
+ * actions trailing. They wrap under the text when the row is too narrow.
+ */
+function PrefInfo({
+  icon,
+  title,
+  description,
+  children,
+}: {
+  icon: typeof PlayIcon
+  title: string
+  description: React.ReactNode
+  children?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
+      <HugeiconsIcon icon={icon} strokeWidth={2} className="size-5 shrink-0" />
+      <div className="min-w-0 flex-1 basis-40">
+        <p className="text-body-large">{title}</p>
+        <p className="mt-0.5 text-body-medium text-muted-foreground">
+          {description}
+        </p>
+      </div>
+      {children && <div className="ml-auto flex gap-2">{children}</div>}
+    </div>
+  )
+}
+
 function PrefSlider({
+  icon,
   title,
   value,
   display,
@@ -804,6 +842,7 @@ function PrefSlider({
   resetValue,
   onChange,
 }: {
+  icon: typeof PlayIcon
   title: string
   value: number
   display: string
@@ -815,29 +854,36 @@ function PrefSlider({
   onChange: (value: number) => void
 }) {
   return (
-    <div className="px-3.5 pt-3 pb-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm">{title}</span>
-        <span className="text-sm text-muted-foreground tabular-nums">
-          {display}
-        </span>
-      </div>
-      <div className="mt-4">
-        <Slider
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          largeStep={largeStep}
-          wheelStep={step}
-          resetValue={resetValue}
-          aria-label={title}
-          // These values are milliseconds and seconds, so the bare number a
-          // screen reader would otherwise announce is a lie. `display` is the
-          // same string shown above the track.
-          aria-valuetext={display}
-          onValueChange={(v) => onChange(v as number)}
-        />
+    <div className="flex gap-4 px-4 pt-3 pb-4">
+      <HugeiconsIcon
+        icon={icon}
+        strokeWidth={2}
+        className="mt-0.5 size-5 shrink-0"
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-body-large">{title}</span>
+          <span className="text-body-medium text-muted-foreground tabular-nums">
+            {display}
+          </span>
+        </div>
+        <div className="mt-4">
+          <Slider
+            value={value}
+            min={min}
+            max={max}
+            step={step}
+            largeStep={largeStep}
+            wheelStep={step}
+            resetValue={resetValue}
+            aria-label={title}
+            // These values are milliseconds and seconds, so the bare number a
+            // screen reader would otherwise announce is a lie. `display` is the
+            // same string shown above the track.
+            aria-valuetext={display}
+            onValueChange={(v) => onChange(v as number)}
+          />
+        </div>
       </div>
     </div>
   )
@@ -885,18 +931,15 @@ function useFrameQueue() {
 }
 
 function PrefSection({
-  icon,
   title,
   children,
 }: {
-  icon: typeof PlayIcon
   title: string
   children: React.ReactNode
 }) {
   return (
     <section>
-      <h3 className="mb-2.5 flex items-center gap-2 px-3.5 text-label-small text-muted-foreground">
-        <HugeiconsIcon icon={icon} strokeWidth={2} className="size-3" />
+      <h3 className="mb-2 px-4 text-label-small text-muted-foreground">
         {title}
       </h3>
       {children}
@@ -3807,8 +3850,8 @@ export function MurmurApp() {
               and reserving it at all stops the jump when a pref toggle changes
               the content past the scroll threshold. */}
           <div className="flex max-h-[min(60vh,520px)] min-h-0 flex-1 scroll-fade [scrollbar-gutter:stable_both-edges] flex-col gap-5 overflow-y-auto px-5 py-4 scroll-fade-5">
-            <PrefSection icon={Moon02Icon} title="Appearance">
-              <div className="mb-2.5 grid grid-cols-3 gap-2">
+            <PrefSection title="Appearance">
+              <div className="mb-2 grid grid-cols-3 gap-0.5 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]">
                 {(["system", "light", "dark"] as ThemeMode[]).map((mode) => (
                   <ThemeSwatch
                     key={mode}
@@ -3820,6 +3863,7 @@ export function MurmurApp() {
               </div>
               <div className={prefGroup}>
                 <PrefRow
+                  icon={AudioWave01Icon}
                   title="Level meters"
                   description="Animated bars on playing sounds."
                   checked={prefs.eq}
@@ -3827,6 +3871,7 @@ export function MurmurApp() {
                 />
                 {!coarse && (
                   <PrefRow
+                    icon={KeyboardIcon}
                     title="Keyboard hints"
                     description="Shortcut strip along the bottom."
                     checked={prefs.hints}
@@ -3836,9 +3881,10 @@ export function MurmurApp() {
               </div>
             </PrefSection>
 
-            <PrefSection icon={PlayIcon} title="Playback">
+            <PrefSection title="Playback">
               <div className={prefGroup}>
                 <PrefSlider
+                  icon={ArrowDataTransferHorizontalIcon}
                   title="Fade between sounds"
                   value={prefs.fadeMs}
                   display={
@@ -3856,6 +3902,7 @@ export function MurmurApp() {
                   onChange={(v) => setPref("fadeMs", v)}
                 />
                 <PrefSlider
+                  icon={Moon02Icon}
                   title="Sleep timer fade-out"
                   value={prefs.sleepFade}
                   display={`${prefs.sleepFade}s`}
@@ -3866,12 +3913,14 @@ export function MurmurApp() {
                   onChange={(v) => setPref("sleepFade", v)}
                 />
                 <PrefRow
+                  icon={BrowserIcon}
                   title="Pause in background tabs"
                   description="Stops when you switch away or lock the screen, resumes on return."
                   checked={prefs.pauseHidden}
                   onChange={(v) => setPref("pauseHidden", v)}
                 />
                 <PrefRow
+                  icon={Sun03Icon}
                   title="Keep the screen awake"
                   description="Stops the screen dimming while sounds play."
                   checked={prefs.keepAwake}
@@ -3879,6 +3928,7 @@ export function MurmurApp() {
                 />
                 {"audioSession" in navigator && (
                   <PrefRow
+                    icon={MusicNote01Icon}
                     title="Play alongside other apps"
                     description="Music keeps playing. The silent switch mutes Murmur, and it stops when the screen locks."
                     checked={prefs.mixWithOthers}
@@ -3895,23 +3945,27 @@ export function MurmurApp() {
                 that needs a connection) already appear where they matter. */
             }
             {(pwa.audio || installRow) && (
-              <PrefSection icon={Download04Icon} title="Offline">
+              <PrefSection title="Offline">
                 <div className={prefGroup}>
                   {pwa.audio && (
-                    <div className="flex items-center gap-3 px-3.5 py-3">
-                      <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-                        {pwa.audio.cached} of {pwa.audio.total} built-in sounds
-                        saved for offline use.
-                        {/* Offline there is nothing to press, so say why. */}
-                        {!pwa.online &&
-                          pwa.audio.cached < pwa.audio.total &&
-                          " Reconnect to download the rest."}
-                      </p>
+                    <PrefInfo
+                      icon={Download04Icon}
+                      title="Built-in sounds"
+                      description={
+                        <>
+                          {pwa.audio.cached} of {pwa.audio.total} saved for
+                          offline use.
+                          {/* Offline there is nothing to press, so say why. */}
+                          {!pwa.online &&
+                            pwa.audio.cached < pwa.audio.total &&
+                            " Reconnect to download the rest."}
+                        </>
+                      }
+                    >
                       {pwa.online && pwa.audio.cached < pwa.audio.total && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="shrink-0"
                           disabled={pwa.downloading}
                           onClick={pwa.downloadSounds}
                         >
@@ -3920,41 +3974,46 @@ export function MurmurApp() {
                             : `Download (${formatBytes(pwa.audio.remainingBytes)})`}
                         </Button>
                       )}
-                    </div>
+                    </PrefInfo>
                   )}
                   {installRow && (
-                    <div className="flex items-center gap-3 px-3.5 py-3">
-                      <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-                        {pwa.canInstall
-                          ? "Install Murmur to launch it from your dock or home screen."
+                    <PrefInfo
+                      icon={InstallingUpdates01Icon}
+                      title="Install Murmur"
+                      description={
+                        pwa.canInstall
+                          ? "Launch it from your dock or home screen."
                           : IS_APPLE_TOUCH
-                            ? "To install, tap Share, then Add to Home Screen."
-                            : "To install, use your browser’s menu, then Install app or Add to Home screen."}
-                      </p>
+                            ? "Tap Share, then Add to Home Screen."
+                            : "Use your browser’s menu, then Install app or Add to Home screen."
+                      }
+                    >
                       {pwa.canInstall && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="shrink-0"
                           onClick={() => void pwa.install()}
                         >
                           Install
                         </Button>
                       )}
-                    </div>
+                    </PrefInfo>
                   )}
                 </div>
               </PrefSection>
             )}
 
-            <PrefSection icon={Database01Icon} title="Your data">
+            <PrefSection title="Your data">
               <div className={prefGroup}>
-                <div className="flex items-center gap-3 px-3.5 py-3">
-                  <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-                    {saved.length || customs.length
-                      ? `${saved.length} saved ${saved.length === 1 ? "mix" : "mixes"} and ${customs.length} ${customs.length === 1 ? "sound" : "sounds"} of your own, kept in this browser.`
-                      : "Nothing saved yet."}
-                  </p>
+                <PrefInfo
+                  icon={Database01Icon}
+                  title="Kept in this browser"
+                  description={
+                    saved.length || customs.length
+                      ? `${saved.length} saved ${saved.length === 1 ? "mix" : "mixes"} and ${customs.length} ${customs.length === 1 ? "sound" : "sounds"} of your own.`
+                      : "Nothing saved yet."
+                  }
+                >
                   {/* Armed, it turns destructive red. Both labels share one
                     grid cell and the hidden one keeps its width, so the
                     button holds the wider label's size and the text beside it
@@ -3962,7 +4021,6 @@ export function MurmurApp() {
                   <Button
                     variant={dataArmed ? "destructive" : "outline"}
                     size="sm"
-                    className="shrink-0"
                     disabled={saved.length === 0 && customs.length === 0}
                     onClick={dataArmed ? clearData : armClearData}
                   >
@@ -3985,15 +4043,15 @@ export function MurmurApp() {
                       </span>
                     </span>
                   </Button>
-                </div>
-                <div className="flex items-center gap-3 px-3.5 py-3">
-                  <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-                    Save your mixes and sounds to a file, or add them from one.
-                  </p>
+                </PrefInfo>
+                <PrefInfo
+                  icon={Archive01Icon}
+                  title="Backup"
+                  description="Save your mixes and sounds to a file, or add them from one."
+                >
                   <Button
                     variant="outline"
                     size="sm"
-                    className="shrink-0"
                     disabled={saved.length === 0 && customs.length === 0}
                     onClick={() => void exportBackup()}
                   >
@@ -4002,7 +4060,6 @@ export function MurmurApp() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="shrink-0"
                     onClick={() => importInput.current?.click()}
                   >
                     Import
@@ -4020,13 +4077,13 @@ export function MurmurApp() {
                       if (file) void importBackup(file)
                     }}
                   />
-                </div>
+                </PrefInfo>
               </div>
             </PrefSection>
 
-            <PrefSection icon={InformationCircleIcon} title="About">
+            <PrefSection title="About">
               <div className={prefGroup}>
-                <div className="flex items-center gap-3 p-3.5">
+                <div className="flex items-center gap-4 px-4 py-3">
                   <img
                     src={`${BASE}/icon.svg`}
                     alt=""
@@ -4036,18 +4093,18 @@ export function MurmurApp() {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="font-serif text-base">Murmur</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">
+                      <span className="font-serif text-lg">Murmur</span>
+                      <span className="text-body-medium text-muted-foreground tabular-nums">
                         {__APP_VERSION__}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-body-medium text-muted-foreground">
                       Ambient sound mixer that runs in your browser.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5 p-2.5">
+                <div className="flex flex-wrap items-center gap-1.5 px-2 py-2">
                   <a
                     className={aboutLink}
                     href={repoUrl}
@@ -4085,12 +4142,10 @@ export function MurmurApp() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-3 bg-brand/5 p-3">
+                <div className="flex items-center gap-4 px-4 py-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">
-                      Free, no accounts, no ads
-                    </p>
-                    <p className="mt-0.5 text-xs leading-[1.45] text-muted-foreground">
+                    <p className="text-body-large">Free, no accounts, no ads</p>
+                    <p className="mt-0.5 text-body-medium text-muted-foreground">
                       If Murmur helps you focus or sleep, you can chip in for
                       the hosting.
                     </p>
