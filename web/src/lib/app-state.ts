@@ -80,13 +80,13 @@ export interface Prefs {
   mixWithOthers: boolean
 }
 
-/** fadeMs and sleepFade reproduce v1's hard-coded constants, so a migrating
- *  user hears no change. */
+/** A second's fade-in, so a sound swells in rather than popping on, and half
+ *  a minute's fade-out at the end of a sleep timer, for someone drifting off. */
 export const DEFAULT_PREFS: Prefs = {
   eq: true,
   hints: false,
-  fadeMs: 200,
-  sleepFade: 10,
+  fadeMs: 1000,
+  sleepFade: 30,
   pauseHidden: false,
   keepAwake: false,
   mixWithOthers: false,
@@ -192,6 +192,25 @@ function cleanPrefs(v: unknown): Prefs {
   }
 }
 
+/** Bumped when a default changes; storage records the rev it was written at. */
+const PREFS_REV = 2
+
+/**
+ * Rev 2 lengthened the fades from 0.2s and 10s. Prefs are stored in full on
+ * every visit, so a value still at the old default was almost certainly never
+ * touched: it moves to the new one, once. Anything else was a choice and stays,
+ * and a stored rev of 2 means a later 0.2s or 10s was chosen too.
+ */
+function upgradePrefs(prefs: Prefs, rev: unknown): Prefs {
+  if (typeof rev === "number" && rev >= PREFS_REV) return prefs
+  return {
+    ...prefs,
+    fadeMs: prefs.fadeMs === 200 ? DEFAULT_PREFS.fadeMs : prefs.fadeMs,
+    sleepFade:
+      prefs.sleepFade === 10 ? DEFAULT_PREFS.sleepFade : prefs.sleepFade,
+  }
+}
+
 function coerce(raw: unknown, defaultMaster: number): PersistedState {
   const r = isRecord(raw) ? raw : {}
   const vols = cleanVols(r.vols)
@@ -214,7 +233,7 @@ function coerce(raw: unknown, defaultMaster: number): PersistedState {
     pane: r.pane === true,
     saved: cleanSaved(r.saved),
     customs: cleanCustoms(r.customs),
-    prefs: cleanPrefs(r.prefs),
+    prefs: upgradePrefs(cleanPrefs(r.prefs), r.prefsRev),
   }
 }
 
@@ -293,6 +312,7 @@ export function savePersisted(state: PersistedState): void {
       STORAGE_KEY,
       JSON.stringify({
         ...state,
+        prefsRev: PREFS_REV,
         // A failed putBlob leaves a record pointing at nothing; drop it here
         // rather than persisting a custom that can never play.
         customs: state.customs.filter((c) => c.url || c.hasFile || c.videoId),
