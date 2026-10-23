@@ -135,9 +135,11 @@ export default defineConfig({
           // manifest.webmanifest is not listed: the integration precaches it
           // itself, and naming it here produced a duplicate entry.
         ],
-        // Astro names page CSS after the page, and index.*.css is the landing
-        // page's, which /app never loads.
-        globIgnores: ["_astro/index.*.css"],
+        // Astro names a page's CSS and scripts after the page or component.
+        // The landing page is [...locale].astro, whose CSS comes out as
+        // _..<hash>.css, and its footer's language links have a script of
+        // their own. /app loads neither.
+        globIgnores: ["_astro/_..*.css", "_astro/Footer.*.js"],
         // Supplying this suppresses the integration's own transform. See
         // APP_SHELL above for what that one would do.
         manifestTransforms: [
