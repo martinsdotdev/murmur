@@ -481,7 +481,10 @@ function NowPlayingRow({
   icon: React.ReactNode
   name: string
   level: number
-  /** A line under the name, for what the slider can't do on this device. */
+  /**
+   * Shown in place of the slider, for a sound whose level this device sets
+   * itself: a slider there would move and change nothing.
+   */
   note?: string
   onDrag: (level: number) => void
   onCommit: (level: number) => void
@@ -502,32 +505,33 @@ function NowPlayingRow({
         >
           {name}
         </span>
-        {note && (
-          <span className="block text-[0.6875rem] leading-tight text-muted-foreground">
-            {note}
+      </span>
+      {note ? (
+        <p className="min-w-0 flex-1 text-xs text-muted-foreground">{note}</p>
+      ) : (
+        <>
+          {/* Width on a wrapper: the Slider root's own data-horizontal:w-full
+              outranks any sizing passed to it. */}
+          <div className="min-w-0 flex-1">
+            <Slider
+              value={pct}
+              min={0}
+              max={100}
+              step={1}
+              aria-label={`${name} volume`}
+              aria-valuetext={`${pct}%`}
+              onValueChange={(value) => onDrag((value as number) / 100)}
+              onValueCommitted={(value) => onCommit((value as number) / 100)}
+            />
+          </div>
+          <span
+            aria-hidden="true"
+            className="w-7 shrink-0 text-right font-mono text-xs text-muted-foreground tabular-nums"
+          >
+            {pct}
           </span>
-        )}
-      </span>
-      {/* Width on a wrapper: the Slider root's own data-horizontal:w-full
-          outranks any sizing passed to it. */}
-      <div className="min-w-0 flex-1">
-        <Slider
-          value={pct}
-          min={0}
-          max={100}
-          step={1}
-          aria-label={`${name} volume`}
-          aria-valuetext={`${pct}%`}
-          onValueChange={(value) => onDrag((value as number) / 100)}
-          onValueCommitted={(value) => onCommit((value as number) / 100)}
-        />
-      </div>
-      <span
-        aria-hidden="true"
-        className="w-7 shrink-0 text-right font-mono text-xs text-muted-foreground tabular-nums"
-      >
-        {pct}
-      </span>
+        </>
+      )}
       {onTurnOff ? (
         <Button
           variant="ghost"
@@ -2519,7 +2523,7 @@ export function MurmurApp() {
             level={vols[id] ?? 0}
             note={
               IS_IPHONE && ytVideoId(id)
-                ? "Uses your iPhone’s volume"
+                ? "Set with your iPhone’s volume buttons"
                 : undefined
             }
             onDrag={(v) => dragVolume(id, v)}
