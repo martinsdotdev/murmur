@@ -393,8 +393,13 @@ function LevelBar({ level }: { level: number }) {
     <div
       aria-hidden="true"
       className={cn(
-        "h-1 overflow-hidden rounded-full transition-colors",
-        level > 0 ? "bg-track" : "bg-transparent"
+        "relative h-1 overflow-hidden rounded-full transition-colors",
+        level > 0 ? "bg-track" : "bg-transparent",
+        // M3's stop indicator: the track alone is 1.4:1, so its end gets a
+        // 3:1 dot until the fill reaches it.
+        level > 0 &&
+          level < 1 &&
+          "after:absolute after:inset-y-0 after:right-0 after:w-1 after:rounded-full after:bg-outline"
       )}
     >
       {/* Full width and slid into place rather than sized: a transform
@@ -2281,9 +2286,11 @@ export function MurmurApp() {
             grid's content edges. */}
         <div className="flex min-w-0 flex-1 items-center gap-3 px-4 md:px-6">
           {/* Play, title and status move to the phone transport bar. */}
+          {/* Play keeps the amber itself: an icon needs 3:1, which it clears,
+              where the labelled buttons' darker fill is for text. */}
           <Button
             size="icon-lg"
-            className="hidden rounded-full md:inline-flex"
+            className="hidden rounded-full bg-primary hover:bg-primary/80 md:inline-flex"
             aria-label={playing ? "Pause" : "Play"}
             onClick={togglePlay}
           >
@@ -2762,7 +2769,7 @@ export function MurmurApp() {
           <div className="flex shrink-0 items-center gap-2.5 rounded-t-[24px] border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
             <Button
               size="icon"
-              className="size-11 shrink-0 rounded-full shadow-md"
+              className="size-11 shrink-0 rounded-full bg-primary shadow-md hover:bg-primary/80"
               aria-label={playing ? "Pause" : "Play"}
               onClick={togglePlay}
             >
@@ -3100,7 +3107,7 @@ export function MurmurApp() {
             <Separator className="flex-1" />
           </div>
 
-          <label className="flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground">
+          <label className="flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring">
             <HugeiconsIcon
               icon={Upload04Icon}
               strokeWidth={2}
@@ -3396,7 +3403,7 @@ export function MurmurApp() {
                     </p>
                   </div>
                   <a
-                    className="flex h-8 shrink-0 items-center gap-[7px] rounded bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                    className="flex h-8 shrink-0 items-center gap-[7px] rounded bg-filled px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-filled-hover"
                     href={sponsorUrl}
                     target="_blank"
                     rel="noopener"

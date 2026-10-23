@@ -234,7 +234,7 @@ function Slider({
       >
         <SliderPrimitive.Track
           data-slot="slider-track"
-          className="relative grow overflow-hidden rounded-full bg-track select-none data-horizontal:h-1 data-horizontal:w-full pointer-coarse:data-horizontal:h-1.5 data-vertical:h-full data-vertical:w-1"
+          className="relative grow overflow-hidden rounded-full bg-track select-none data-horizontal:h-1 data-horizontal:w-full data-horizontal:after:absolute data-horizontal:after:top-1/2 data-horizontal:after:right-0 data-horizontal:after:size-1 data-horizontal:after:-translate-y-1/2 data-horizontal:after:rounded-full data-horizontal:after:bg-outline pointer-coarse:data-horizontal:h-1.5 data-vertical:h-full data-vertical:w-1"
         >
           <SliderPrimitive.Indicator
             data-slot="slider-range"
@@ -254,7 +254,7 @@ function Slider({
             // Murmur's thumb: a brand-filled circle cut out of the surface it
             // sits on by a 3px border, growing slightly on hover and while held.
             // A finger gets a 24px one, a size it can see past its own tip.
-            className="block size-4 shrink-0 cursor-grab rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform select-none focus-visible:ring-4 focus-visible:ring-ring/30 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-dragging:ring-4 data-dragging:ring-ring/25 motion-safe:hover:scale-[1.15] motion-safe:data-dragging:scale-[1.15] pointer-coarse:size-6 pointer-coarse:border-4"
+            className="block size-4 shrink-0 cursor-grab rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform select-none disabled:pointer-events-none disabled:opacity-50 has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring data-dragging:ring-4 data-dragging:ring-ring/25 motion-safe:hover:scale-[1.15] motion-safe:data-dragging:scale-[1.15] pointer-coarse:size-6 pointer-coarse:border-4"
           />
         ))}
       </SliderPrimitive.Control>

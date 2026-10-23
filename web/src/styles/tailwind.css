@@ -31,11 +31,16 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
-  /* Brand amber sits alongside shadcn's --primary: --primary is the filled
-       button colour, --color-brand the lighter accent used for active icons,
-       eq bars and highlighted text (Fluent's brandForeground vs brandBackground). */
+  /* Brand amber sits alongside shadcn's --primary: --primary is the amber
+       fill for icons and controls (Play, sliders, switches, level bars),
+       --color-brand the accent used for active icons, eq bars and highlighted
+       text (Fluent's brandForeground vs brandBackground). --filled is the
+       fill behind text labels, which needs 4.5:1 with white; in light mode
+       that is M3's primary tone, a step darker than the amber. */
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
+  --color-filled: var(--filled);
+  --color-filled-hover: var(--filled-hover);
   --color-track: var(--track);
   /* neutral-background-4: the highest Fluent layer, used for controls that
        need to lift off an already-tinted row (the saved-mix delete button). */
@@ -178,8 +183,14 @@
   --border: rgba(33, 18, 14, 0.1); /* neutral-stroke-1 */
   --input: rgba(33, 18, 14, 0.1);
   --ring: #b86d20;
-  --brand: #a86018; /* brand-foreground */
-  --brand-hover: #8a4c10;
+  /* brand-foreground, at M3's primary tone: the old #a86018 fell to 4.17:1 on
+     the popover surface and 3.81:1 on dialogs. This clears 5.3:1 on all three. */
+  --brand: #8a4c10;
+  --brand-hover: #6c3a00;
+  /* White on the amber #b86d20 is 4.0:1, under AA for text, so labelled fills
+     take the brand-foreground tone (6.7:1) and darken on hover as Fluent does. */
+  --filled: #8a4c10;
+  --filled-hover: #6c3a00;
   --track: rgba(33, 18, 14, 0.16);
   --elevated: #d8cdb5; /* neutral-background-4 */
   --dialog: #ece4d2; /* neutral-background-3 */
@@ -229,6 +240,9 @@
   --ring: #f5c375;
   --brand: #f5c375; /* brand-foreground, the tile amber */
   --brand-hover: #ffedc8;
+  /* Dark text on the amber is already 6.6:1, so labelled fills stay amber. */
+  --filled: var(--primary);
+  --filled-hover: color-mix(in srgb, var(--primary) 80%, transparent);
   --track: rgba(250, 246, 238, 0.14);
   --elevated: #3a3527; /* neutral-background-4 */
   --dialog: #2c281e; /* neutral-background-3 */
@@ -408,7 +422,15 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
+  }
+  /* M3's focus indicator: a solid 3px ring 2px outside the control,
+     following its shape. Solid, because a 30% halo measured 1.4:1 on the
+     light page; the amber ring clears 3:1 on every surface. List rows that
+     sit in a clipping scroller draw it inward instead. */
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
   }
   body {
     @apply bg-background text-foreground;
