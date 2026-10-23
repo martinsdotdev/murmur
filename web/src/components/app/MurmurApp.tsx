@@ -50,6 +50,13 @@ import {
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -4603,9 +4610,34 @@ export function MurmurApp() {
                 >
                   <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
                 </Button>
-                <DialogTitle className="text-lg">
-                  {m.pref_language_title()}
-                </DialogTitle>
+                {/* Where this page sits, at the title's size: the parent
+                    muted and a way back too, the page itself the title. */}
+                <Breadcrumb aria-label={m.breadcrumb()} className="min-w-0">
+                  <BreadcrumbList className="gap-1.5 font-heading text-lg leading-none font-medium sm:gap-1.5">
+                    <BreadcrumbItem>
+                      <BreadcrumbLink
+                        render={
+                          <button
+                            type="button"
+                            className="cursor-pointer rounded-sm pointer-coarse:hit-target"
+                            onClick={closeLanguagePage}
+                          />
+                        }
+                      >
+                        {m.preferences()}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="text-muted-foreground [&>svg]:size-4" />
+                    <BreadcrumbItem>
+                      <DialogTitle
+                        aria-current="page"
+                        className="text-lg text-foreground"
+                      >
+                        {m.pref_language_title()}
+                      </DialogTitle>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
               </div>
             ) : (
               <DialogTitle

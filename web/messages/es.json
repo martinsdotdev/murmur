@@ -77,6 +77,7 @@
   "preset_seaside_evening": "Tarde junto al mar",
   "action_add": "Añadir",
   "action_back": "Atrás",
+  "breadcrumb": "Ruta de navegación",
   "action_cancel": "Cancelar",
   "action_close": "Cerrar",
   "action_delete": "Eliminar",
