@@ -768,7 +768,7 @@ function ThemeSwatch({
       onClick={onSelect}
       aria-pressed={active}
       className={cn(
-        "rounded-m3-xs border p-[9px_9px_8px] text-left transition-colors first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) hover:border-brand",
+        "cursor-pointer rounded-m3-xs border p-[9px_9px_8px] text-left transition-colors first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) hover:border-brand",
         // Selected as everywhere else: the raised container plus amber. The
         // rest are tiles like the list beneath them, with no outline.
         active ? "border-brand bg-secondary" : "border-transparent bg-grouped"
@@ -2612,7 +2612,7 @@ export function MurmurApp() {
       )}
       <Button
         variant="ghost"
-        className="h-11 rounded-full px-4"
+        className="h-11 rounded-full px-5"
         disabled={activeIds.length === 0}
         onClick={turnAllOff}
       >
@@ -3441,9 +3441,11 @@ export function MurmurApp() {
                       )}
                     </p>
                   </div>
+                  {/* The dialogs' close button, so every close looks alike. */}
                   <Button
                     variant="ghost"
                     size="icon-sm"
+                    className="rounded-full bg-secondary"
                     aria-label="Close Now playing"
                     title="Close"
                     onClick={() => {
@@ -3632,7 +3634,7 @@ export function MurmurApp() {
                       }}
                       variant="ghost"
                       size="icon"
-                      className="size-12 shrink-0 rounded-full text-muted-foreground"
+                      className="size-11 shrink-0 rounded-full text-muted-foreground"
                       aria-label={`More for ${mix.name}`}
                       aria-expanded={open}
                       onClick={() => setMixActionsFor(open ? null : mix.name)}
