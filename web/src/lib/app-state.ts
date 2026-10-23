@@ -100,6 +100,8 @@ export interface PersistedState {
   view: View
   /** The Now playing pane beside the grid, on screens wide enough for it. */
   pane: boolean
+  /** The sleep timer's last length in minutes, offered first next time. */
+  timerChoice: number
   saved: SavedMix[]
   customs: CustomSound[]
   prefs: Prefs
@@ -231,6 +233,8 @@ function coerce(raw: unknown, defaultMaster: number): PersistedState {
         : false,
     view: r.view === "list" ? "list" : "grid",
     pane: r.pane === true,
+    // The slider's own range and step, so a stored value is one it can show.
+    timerChoice: Math.round(clamp(r.timerChoice, 5, 240, 30) / 5) * 5,
     saved: cleanSaved(r.saved),
     customs: cleanCustoms(r.customs),
     prefs: upgradePrefs(cleanPrefs(r.prefs), r.prefsRev),

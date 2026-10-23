@@ -129,7 +129,7 @@ import { persistStorage, usePwa } from "./use-pwa"
 /** Vite inlines this at build time, in client islands as well as .astro files. */
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "")
 
-const TIMER_OPTIONS = [0, 15, 30, 45, 60, 90]
+const TIMER_PRESETS = [15, 30, 45, 60, 90]
 const CATEGORIES: SoundCategory[] = ["nature", "urban", "generated"]
 /** The built-in sounds in the grid's order, which Now playing lists in too. */
 const CATALOG_ORDER = CATEGORIES.flatMap((category) =>
@@ -755,9 +755,13 @@ function readInitialState(): {
   return { state, link }
 }
 
+/** A countdown: "9:05", and from an hour "1:04:59" rather than "64:59". */
 function formatClock(totalSeconds: number): string {
   const s = Math.ceil(totalSeconds)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const h = Math.floor(s / 3600)
+  const m = Math.floor(s / 60) % 60
+  return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`
 }
 
 /** Where the Now playing pane fits: the desktop shell, from 840px. */
@@ -795,6 +799,154 @@ function formatDuration(minutes: number): string {
   const m = minutes % 60
   if (!h) return `${m} min`
   return m ? `${h} h ${m} min` : `${h} h`
+}
+
+/** A preset as a chip can hold it: "45 min", "1 h", "1½ h". */
+function presetLabel(minutes: number): string {
+  return minutes === 90 ? "1½ h" : formatDuration(minutes)
+}
+
+const clockTime = new Intl.DateTimeFormat(undefined, {
+  hour: "numeric",
+  minute: "2-digit",
+})
+
+/**
+ * The wall clock, for "Stops at", read through a store so rendering stays
+ * pure. It ticks only while something shows it.
+ */
+let clockNow = Date.now()
+function subscribeClock(onChange: () => void) {
+  clockNow = Date.now()
+  const id = window.setInterval(() => {
+    clockNow = Date.now()
+    onChange()
+  }, 15_000)
+  return () => window.clearInterval(id)
+}
+function useClock() {
+  return React.useSyncExternalStore(
+    subscribeClock,
+    () => clockNow,
+    () => clockNow
+  )
+}
+
+/**
+ * The sleep timer's dialog body. Idle: one length, set by a chip for the usual
+ * ones or the slider for any other, shown large with when it would stop, and
+ * Start. Running: the time left and when that is, with more time or off, and
+ * nothing that restarts it by accident. Its own component so the clock behind
+ * "Stops at" ticks only while the dialog is open.
+ */
+function SleepTimerPanel({
+  running,
+  left,
+  end,
+  choice,
+  fadeSeconds,
+  onChoose,
+  onStart,
+  onExtend,
+  onStop,
+}: {
+  running: boolean
+  /** Seconds left, while running. */
+  left: number
+  /** When it stops, in ms, while running. */
+  end: number
+  /** The length in minutes to start, while idle. */
+  choice: number
+  fadeSeconds: number
+  onChoose: (minutes: number) => void
+  onStart: () => void
+  onExtend: () => void
+  onStop: () => void
+}) {
+  const now = useClock()
+  // The one large thing: tabular figures, so a ticking countdown holds still.
+  const readout = (value: string, caption: string) => (
+    <div className="py-1 text-center">
+      <p className="text-5xl font-medium tracking-tight tabular-nums">
+        {value}
+      </p>
+      <p className="mt-1.5 text-body-medium text-muted-foreground">{caption}</p>
+    </div>
+  )
+
+  if (running) {
+    return (
+      <>
+        {readout(
+          formatClock(left),
+          left <= fadeSeconds
+            ? "Fading out"
+            : `Stops at ${clockTime.format(end)}`
+        )}
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            className="h-11 rounded-full"
+            onClick={onExtend}
+          >
+            +15 min
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-11 rounded-full"
+            onClick={onStop}
+          >
+            Turn off
+          </Button>
+        </div>
+      </>
+    )
+  }
+
+  return (
+    <>
+      {readout(
+        formatDuration(choice),
+        `Stops at ${clockTime.format(now + choice * 60_000)}`
+      )}
+      <div className="flex flex-col gap-5">
+        {/* A segmented row, as the theme swatches are. A chip reads as chosen
+            whenever the slider sits on its length. */}
+        <div className="grid grid-cols-5 gap-0.5 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]">
+          {TIMER_PRESETS.map((minutes) => (
+            <button
+              key={minutes}
+              type="button"
+              aria-pressed={choice === minutes}
+              onClick={() => onChoose(minutes)}
+              className={cn(
+                "h-11 cursor-pointer rounded-m3-xs border state-layer text-sm font-medium whitespace-nowrap transition-[background-color,border-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px",
+                choice === minutes
+                  ? "border-brand bg-secondary text-brand"
+                  : "border-transparent bg-grouped"
+              )}
+            >
+              {presetLabel(minutes)}
+            </button>
+          ))}
+        </div>
+        <Slider
+          value={choice}
+          min={5}
+          max={240}
+          step={5}
+          wheelStep={5}
+          resetValue={30}
+          aria-label="Timer length"
+          aria-valuetext={formatDuration(choice)}
+          onValueChange={(value) => onChoose(value as number)}
+        />
+      </div>
+      <Button className="h-11 w-full rounded-full" onClick={onStart}>
+        Start
+      </Button>
+    </>
+  )
 }
 
 /**
@@ -1183,10 +1335,7 @@ export function MurmurApp() {
     next?.()
   }
   const [timerOpen, setTimerOpen] = React.useState(false)
-  /** The length the running timer was started with, to mark its preset. */
-  const [timerMinutes, setTimerMinutes] = React.useState(0)
-  /** The Custom slider's length, kept between openings of the dialog. */
-  const [customMinutes, setCustomMinutes] = React.useState(60)
+  const [timerChoice, setTimerChoice] = React.useState(initial.timerChoice)
   const [addOpen, setAddOpen] = React.useState(false)
   const [saveName, setSaveName] = React.useState("")
   const [addName, setAddName] = React.useState("")
@@ -2068,15 +2217,17 @@ export function MurmurApp() {
   const startTimer = (minutes: number) => {
     fadeMult.current = 1
     setTimerOpen(false)
-    setTimerMinutes(minutes)
-    if (!minutes) {
-      setTimerEnd(0)
-      setTimerLeft(0)
-      if (audioStarted.current) mixer.setMasterVolume(master)
-      return
-    }
     setTimerEnd(Date.now() + minutes * 60_000)
     setTimerLeft(minutes * 60)
+  }
+
+  /** Off before its time: the level comes back if the fade had begun. */
+  const stopTimer = () => {
+    fadeMult.current = 1
+    setTimerOpen(false)
+    setTimerEnd(0)
+    setTimerLeft(0)
+    if (audioStarted.current) mixer.setMasterVolume(master)
   }
 
   /**
@@ -2086,8 +2237,6 @@ export function MurmurApp() {
   const extendTimer = (minutes: number) => {
     setTimerEnd((end) => end + minutes * 60_000)
     setTimerLeft((left) => left + minutes * 60)
-    // No longer one of the presets, so none of them reads as chosen.
-    setTimerMinutes(-1)
   }
 
   React.useEffect(() => {
@@ -2327,13 +2476,25 @@ export function MurmurApp() {
         dirty,
         view,
         pane,
+        timerChoice,
         saved,
         customs,
         prefs,
       })
     }, 250)
     return () => window.clearTimeout(id)
-  }, [vols, master, mixName, dirty, view, pane, saved, customs, prefs])
+  }, [
+    vols,
+    master,
+    mixName,
+    dirty,
+    view,
+    pane,
+    timerChoice,
+    saved,
+    customs,
+    prefs,
+  ])
 
   // ThemeBootstrap resolved the theme before paint, so this only re-resolves
   // after a picker change, and tracks the OS while the preference is 'system'.
@@ -4017,73 +4178,30 @@ export function MurmurApp() {
       </Dialog>
 
       <Dialog open={timerOpen} onOpenChange={setTimerOpen}>
-        <DialogContent className="sm:max-w-xs" instant={keyDriven}>
+        <DialogContent className="sm:max-w-sm" instant={keyDriven}>
           <DialogHeader>
             <DialogTitle className="text-lg">Sleep timer</DialogTitle>
-            <DialogDescription>Fades out, then pauses.</DialogDescription>
+            <DialogDescription>
+              Fades out over the last{" "}
+              {prefs.sleepFade === 60
+                ? "1 minute"
+                : `${prefs.sleepFade} seconds`}
+              , then pauses.
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-1">
-            {/* Running, the first row stops it and the button beside it adds
-                time, which also lifts a fade already under way. */}
-            {timerOn && (
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  className="flex-1 justify-start"
-                  onClick={() => startTimer(0)}
-                >
-                  Turn off ({formatClock(timerLeft)} left)
-                </Button>
-                <Button variant="outline" onClick={() => extendTimer(15)}>
-                  +15 min
-                </Button>
-              </div>
-            )}
-            {TIMER_OPTIONS.filter((minutes) => minutes > 0 || !timerOn).map(
-              (minutes) => {
-                const chosen = timerOn ? timerMinutes === minutes : !minutes
-                return (
-                  <Button
-                    key={minutes}
-                    variant="ghost"
-                    aria-pressed={chosen}
-                    className={cn(
-                      "w-full justify-start",
-                      chosen && "bg-secondary text-brand hover:text-brand"
-                    )}
-                    onClick={() => startTimer(minutes)}
-                  >
-                    {minutes === 0 ? "Off" : formatDuration(minutes)}
-                  </Button>
-                )
-              }
-            )}
-          </div>
-          <div className="flex flex-col gap-3 border-t border-border pt-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm font-medium">Custom</span>
-              <span className="font-mono text-xs text-brand tabular-nums">
-                {formatDuration(customMinutes)}
-              </span>
-            </div>
-            <Slider
-              value={customMinutes}
-              min={5}
-              max={240}
-              step={5}
-              wheelStep={5}
-              resetValue={60}
-              aria-label="Custom length"
-              aria-valuetext={formatDuration(customMinutes)}
-              onValueChange={(value) => setCustomMinutes(value as number)}
-            />
-            <Button onClick={() => startTimer(customMinutes)}>
-              Start {formatDuration(customMinutes)}
-            </Button>
-          </div>
+          <SleepTimerPanel
+            running={timerOn}
+            left={timerLeft}
+            end={timerEnd}
+            choice={timerChoice}
+            fadeSeconds={prefs.sleepFade}
+            onChoose={setTimerChoice}
+            onStart={() => startTimer(timerChoice)}
+            onExtend={() => extendTimer(15)}
+            onStop={stopTimer}
+          />
         </DialogContent>
       </Dialog>
-
       {/* Opens with "," per the design; Ctrl+P also works, per the desktop. */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         {/* A column that clips: the base DialogContent scrolls itself, which
