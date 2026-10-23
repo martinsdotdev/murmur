@@ -150,9 +150,10 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
         line-height: 1;
       }
 
+      /* Right-aligned, so the links sit with the icon actions as one group. */
       .nav-links {
         display: flex;
-        justify-content: center;
+        justify-content: flex-end;
         gap: var(--space-s);
       }
 
