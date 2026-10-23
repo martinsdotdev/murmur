@@ -4142,7 +4142,9 @@ export function MurmurApp() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-4 px-4 py-3">
+                {/* The tint is a gradient layer, so it lies over the tile's
+                    fill rather than replacing it. */}
+                <div className="flex items-center gap-4 bg-linear-to-b from-brand/5 to-brand/5 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-body-large">Free, no accounts, no ads</p>
                     <p className="mt-0.5 text-body-medium text-muted-foreground">
