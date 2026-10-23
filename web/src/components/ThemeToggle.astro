@@ -6,14 +6,15 @@
  */
 import Icon from "./Icon.astro"
 import { Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons"
+import { m } from "@/paraglide/messages.js"
 ---
 
 <button
   type="button"
   id="theme-toggle"
   class="theme-toggle"
-  aria-label="Toggle color theme"
-  title="Toggle color theme"
+  aria-label={m.theme_toggle()}
+  title={m.theme_toggle()}
 >
   <span class="sun"><Icon icon={Sun03Icon} size={16} /></span>
   <span class="moon"><Icon icon={Moon02Icon} size={16} /></span>

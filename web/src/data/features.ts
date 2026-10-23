@@ -4,6 +4,9 @@
  *
  * Icons come from @hugeicons/core-free-icons, the same set the app imports, so
  * the two halves of the site draw from one vocabulary.
+ *
+ * Text is read through the message functions at render, not stored: the build
+ * imports this module once and renders it for every locale.
  */
 import {
   Bookmark01Icon,
@@ -14,42 +17,43 @@ import {
   Upload04Icon,
 } from "@hugeicons/core-free-icons"
 import type { IconSvgElement } from "@hugeicons/react"
+import { m } from "@/paraglide/messages.js"
 
 export interface Feature {
   icon: IconSvgElement
-  title: string
-  sub: string
+  title: () => string
+  sub: () => string
 }
 
 export const features: Feature[] = [
   {
     icon: SlidersVerticalIcon,
-    title: "Layer sounds at any volume",
-    sub: "A storm over a coffee shop",
+    title: m.feature_layer_title,
+    sub: m.feature_layer_sub,
   },
   {
     icon: Bookmark01Icon,
-    title: "Save blends as presets",
-    sub: "Every slider back where you left it",
+    title: m.feature_presets_title,
+    sub: m.feature_presets_sub,
   },
   {
     icon: Upload04Icon,
-    title: "Bring your own audio",
-    sub: "An audio file, or a YouTube link",
+    title: m.feature_import_title,
+    sub: m.feature_import_sub,
   },
   {
     icon: ComputerIcon,
-    title: "Closes to the tray, keeps playing",
-    sub: "Your media keys still work, and it can launch at startup",
+    title: m.feature_tray_title,
+    sub: m.feature_tray_sub,
   },
   {
     icon: ContrastIcon,
-    title: "Follows your system theme",
-    sub: "No flashbang at 2am",
+    title: m.feature_theme_title,
+    sub: m.feature_theme_sub,
   },
   {
     icon: FavouriteIcon,
-    title: "Free, GPLv3, no telemetry",
-    sub: "No account, no ads",
+    title: m.feature_free_title,
+    sub: m.feature_free_sub,
   },
 ]

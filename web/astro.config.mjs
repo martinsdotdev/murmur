@@ -4,6 +4,7 @@ import sitemap from "@astrojs/sitemap"
 import react from "@astrojs/react"
 import tailwindcss from "@tailwindcss/vite"
 import AstroPWA from "@vite-pwa/astro"
+import { paraglideVitePlugin } from "@inlang/paraglide-js"
 
 // Inlined rather than imported from the component, so the client bundle gets
 // the string and not the whole manifest.
@@ -34,7 +35,14 @@ export default defineConfig({
   compressHTML: true,
 
   integrations: [
-    sitemap(),
+    // Keys are path segments, values hreflang tags. Pages outside a locale
+    // segment, the app among them, count as English.
+    sitemap({
+      i18n: {
+        defaultLocale: "en",
+        locales: { en: "en", "pt-br": "pt-BR", es: "es", ja: "ja" },
+      },
+    }),
     react(),
     // Last, so its astro:build:done runs after every other integration has
     // finished writing dist, which is when the precache glob is taken.
@@ -147,7 +155,19 @@ export default defineConfig({
     inlineStylesheets: "auto",
   },
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss(),
+      // Paraglide only holds the locale. src/lib/i18n.ts decides it: the
+      // middleware from a built page's path, the app from a stored choice or
+      // the browser. See that file for why the built-in strategies are not
+      // used.
+      paraglideVitePlugin({
+        project: "./project.inlang",
+        outdir: "./src/paraglide",
+        emitTsDeclarations: true,
+        strategy: ["globalVariable", "baseLocale"],
+      }),
+    ],
     define: {
       __APP_VERSION__: JSON.stringify(version),
     },

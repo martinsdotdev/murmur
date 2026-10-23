@@ -29,6 +29,13 @@ html {
   }
 }
 
+/* Japanese has no spaces, so browsers break lines between any two characters,
+   splitting words. auto-phrase breaks between phrases instead, where Chrome
+   supports it. Mirrors tailwind.css. */
+:lang(ja) {
+  word-break: auto-phrase;
+}
+
 body {
   background: var(--color-neutral-background-1);
   color: var(--color-neutral-foreground-1);

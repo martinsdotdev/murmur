@@ -1,0 +1,93 @@
+/**
+ * Which language the site speaks. The landing page is built once per locale and
+ * takes it from its path. The app reads the visitor's stored choice, else the
+ * browser's languages.
+ *
+ * Paraglide's own localStorage and preferredLanguage strategies are not used:
+ * the first getLocale() writes whatever it detected back to storage, which
+ * would turn "follow the browser" into a choice nobody made. So Paraglide only
+ * holds the locale (globalVariable), and this module decides it.
+ */
+import {
+  baseLocale,
+  locales,
+  setLocale,
+  toLocale,
+  type Locale,
+} from "@/paraglide/runtime.js"
+
+/** Each language in its own name, which is how people find theirs in a list. */
+export const LOCALE_NAMES: Record<Locale, string> = {
+  en: "English",
+  "pt-BR": "Português (Brasil)",
+  es: "Español",
+  ja: "日本語",
+}
+
+/** "/" for English, "/pt-br" for the rest: lowercase, as paths are. */
+export function localePath(locale: Locale): string {
+  return locale === baseLocale ? "/" : `/${locale.toLowerCase()}`
+}
+
+/** The locale a built page is for, from the first segment of its path. */
+export function localeFromPath(pathname: string): Locale {
+  return toLocale(pathname.split("/")[1]) ?? baseLocale
+}
+
+const STORAGE_KEY = "locale"
+
+/** The language picked in Preferences or the landing page's footer, or null
+ * to follow the browser. */
+export function readLocaleChoice(): Locale | null {
+  try {
+    return toLocale(localStorage.getItem(STORAGE_KEY)) ?? null
+  } catch {
+    return null
+  }
+}
+
+export function writeLocaleChoice(locale: Locale | null) {
+  try {
+    if (locale) localStorage.setItem(STORAGE_KEY, locale)
+    else localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Private browsing. The choice holds until the page closes.
+  }
+}
+
+/** The first of the browser's languages we have: its exact tag, else any
+ * locale of the same language, so pt-PT gets pt-BR and es-MX gets es. */
+export function browserLocale(
+  languages: readonly string[] = navigator.languages
+): Locale {
+  for (const tag of languages) {
+    const language = tag.split("-")[0].toLowerCase()
+    const match =
+      toLocale(tag) ??
+      locales.find((l) => l.split("-")[0].toLowerCase() === language)
+    if (match) return match
+  }
+  return baseLocale
+}
+
+/** Points every message at the app's language. Runs before the first render,
+ * since messages read the locale when they're called. */
+export function startAppLocale() {
+  const locale = readLocaleChoice() ?? browserLocale()
+  setLocale(locale, { reload: false })
+  document.documentElement.lang = locale
+}
+
+/** Splits a message around one placeholder, so markup can go between the two
+ * halves without passing HTML through a translation. */
+export function around<K extends string>(
+  message: (inputs: Record<K, string>) => string,
+  key: K
+): [before: string, after: string] {
+  const mark = "\u0000"
+  const [before, after = ""] = message({ [key]: mark } as Record<
+    K,
+    string
+  >).split(mark)
+  return [before, after]
+}

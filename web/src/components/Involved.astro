@@ -1,21 +1,22 @@
 ---
 import { repoUrl, issuesUrl, sponsorUrl } from "../data/site.ts"
+import { m } from "@/paraglide/messages.js"
 
 const cards = [
   {
     href: repoUrl,
-    title: "Contribute",
-    body: "The code is on GitHub. Pull requests welcome.",
+    title: m.involved_contribute_title(),
+    body: m.involved_contribute_body(),
   },
   {
     href: issuesUrl,
-    title: "Give feedback",
-    body: "Report a bug or suggest a sound on the issue tracker.",
+    title: m.involved_feedback_title(),
+    body: m.involved_feedback_body(),
   },
   {
     href: sponsorUrl,
-    title: "Support the project",
-    body: "Chip in for the hosting.",
+    title: m.involved_support_title(),
+    body: m.involved_support_body(),
   },
 ]
 ---
@@ -23,7 +24,7 @@ const cards = [
 <section class="involved" id="involved" aria-labelledby="involved-heading">
   <div class="container">
     <h2 id="involved-heading" class="section-h2 involved-heading">
-      Get involved
+      {m.involved_heading()}
     </h2>
     <div class="involved-grid">
       {

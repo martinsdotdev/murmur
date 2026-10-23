@@ -7,22 +7,32 @@ import Icon from "../components/Icon.astro"
 import { GithubIcon } from "@hugeicons/core-free-icons"
 import Footer from "../components/Footer.astro"
 import { repoUrl } from "../data/site.ts"
+import { m } from "@/paraglide/messages.js"
+import {
+  baseLocale,
+  getLocale,
+  locales,
+  type Locale,
+} from "@/paraglide/runtime.js"
+import { localePath } from "@/lib/i18n"
 
 interface Props {
   title?: string
   description?: string
 }
 
-const {
-  title = "Murmur · Ambient sound mixer for Windows",
-  description = "Layer rain over a fireplace, or a train over white noise. A free, open-source ambient sound mixer for Windows.",
-} = Astro.props
+const { title = m.site_title(), description = m.site_description() } =
+  Astro.props
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
+const locale = getLocale()
+// Every language's copy of this page, for search engines to offer the right
+// one. x-default is where someone whose language isn't here should land.
+const alternate = (l: Locale) => new URL(localePath(l), Astro.site).href
 ---
 
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang={locale} data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -37,6 +47,13 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
 
     <link rel="icon" type="image/x-icon" href={`${baseUrl}/favicon.ico`} />
     <link rel="canonical" href={Astro.url.href} />
+    {
+      locales.map((l) => (
+        <link rel="alternate" hreflang={l} href={alternate(l)} />
+      ))
+    }
+    <link rel="alternate" hreflang="x-default" href={alternate(baseLocale)} />
+    <meta property="og:locale" content={locale.replace("-", "_")} />
 
     {
       /* The landing page's own surface, which is not the app's. See the same
@@ -62,20 +79,24 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
     }
     <header class="commandbar">
       <div class="commandbar-grid container">
-        <a href={`${baseUrl}/`} class="wordmark" aria-label="Murmur home">
+        <a
+          href={`${baseUrl}${localePath(locale)}`}
+          class="wordmark"
+          aria-label={m.nav_home()}
+        >
           <BrandLogo size={28} />
           <span class="wordmark-text">Murmur</span>
         </a>
-        <nav class="nav-links" aria-label="Primary">
-          <a href={`${baseUrl}/app`}>Try it</a>
-          <a href="#features">Features</a>
-          <a href="#download">Download</a>
+        <nav class="nav-links" aria-label={m.nav_primary()}>
+          <a href={`${baseUrl}/app`}>{m.nav_try()}</a>
+          <a href="#features">{m.nav_features()}</a>
+          <a href="#download">{m.nav_download()}</a>
         </nav>
         <div class="nav-actions">
           <a
             href={repoUrl}
             class="nav-icon"
-            aria-label="View source on GitHub"
+            aria-label={m.nav_source()}
             target="_blank"
             rel="noopener"
           >

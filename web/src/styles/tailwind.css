@@ -553,6 +553,13 @@
   html {
     @apply font-sans;
   }
+  /* Japanese has no spaces, so browsers break lines between any two
+     characters, splitting words. auto-phrase breaks between phrases instead,
+     where Chrome supports it. Instrument Sans has no kana, so the system's
+     Japanese face sets them. */
+  :lang(ja) {
+    word-break: auto-phrase;
+  }
   /* Selected text takes a tint of the brand amber rather than the browser's
      blue, translucent so the text keeps its own colour and contrast. */
   ::selection {

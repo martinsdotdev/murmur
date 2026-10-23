@@ -9,14 +9,15 @@
   },
   "scripts": {
     "dev": "node scripts/copy-assets.mjs && astro dev",
-    "build": "node scripts/copy-assets.mjs && astro build",
+    "build": "node scripts/copy-assets.mjs && tsx scripts/check-messages.ts && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,astro,css,json,md,mjs}\"",
     "typecheck": "astro check",
     "tokens": "tsx scripts/m3-colors.ts",
-    "schemes": "tsx scripts/schemes.ts && prettier --write src/styles/schemes.css"
+    "schemes": "tsx scripts/schemes.ts && prettier --write src/styles/schemes.css",
+    "messages": "tsx scripts/check-messages.ts"
   },
   "dependencies": {
     "@astrojs/react": "^5",
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9",
     "@eslint/js": "^10",
+    "@inlang/paraglide-js": "2.29.1",
     "@material/material-color-utilities": "0.4.0",
     "eslint": "^10",
     "eslint-plugin-react-hooks": "^7.1.1",

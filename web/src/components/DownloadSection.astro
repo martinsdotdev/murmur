@@ -2,6 +2,8 @@
 import { repoUrl, releasesUrl, latestReleaseApi } from "../data/site.ts"
 import Icon from "./Icon.astro"
 import { Download04Icon } from "@hugeicons/core-free-icons"
+import { m } from "@/paraglide/messages.js"
+import { around } from "@/lib/i18n"
 
 interface Release {
   tag_name: string
@@ -17,16 +19,17 @@ try {
 } catch {
   // Offline build / API rate limited, fall through to placeholder.
 }
+
+const [soonBefore, soonAfter] = around(m.download_soon, "link")
+const [grabBefore, grabAfter] = around(m.cert_download_body, "file")
+const [runBefore, runAfter] = around(m.cert_run_body, "file")
 ---
 
 <section class="download" id="download" aria-labelledby="download-heading">
   <div class="download-grid container">
     <div class="download-pitch">
-      <h2 id="download-heading" class="section-h2">Get Murmur</h2>
-      <p class="download-reqs">
-        Runs on Windows 10 (build 19041 or later) and Windows 11, on x64 and
-        ARM64.
-      </p>
+      <h2 id="download-heading" class="section-h2">{m.download_heading()}</h2>
+      <p class="download-reqs">{m.download_reqs()}</p>
       <a
         href={release?.html_url ?? releasesUrl}
         class="btn btn-primary btn-large"
@@ -34,48 +37,36 @@ try {
         rel="noopener"
       >
         <Icon icon={Download04Icon} size={17} />
-        Latest release
+        {m.download_latest()}
       </a>
       {
-        !release && (
-          <p class="download-soon">
-            No build published yet? Watch the
-            <a href={repoUrl} target="_blank" rel="noopener">
-              GitHub repo
-            </a>{" "}
-            to hear when v1.0.0 lands.
-          </p>
-        )
+        /* Kept on one line: inside an expression a line break between the
+          halves and the link becomes a space, which Japanese doesn't use. */
+      }
+      {
+        !release &&
+          // prettier-ignore
+          <p class="download-soon">{soonBefore}<a href={repoUrl} target="_blank" rel="noopener">{m.download_soon_link()}</a>{soonAfter}</p>
       }
     </div>
 
     <div class="cert-card">
-      <p class="cert-lead">
-        The first install asks you to trust a certificate. Updates after that
-        are a double-click.
-      </p>
+      <p class="cert-lead">{m.cert_lead()}</p>
       <ol class="cert-steps">
         <li>
-          <strong>Download the certificate</strong>
-          <p>
-            Grab <code>Murmur.cer</code> from the release you’re installing.
-          </p>
+          <strong>{m.cert_download_title()}</strong>
+          <p>{grabBefore}<code>Murmur.cer</code>{grabAfter}</p>
         </li>
         <li>
-          <strong>Trust it once</strong>
-          <p>
-            Install it to Local Machine → Trusted People. Windows asks for admin
-            approval.
-          </p>
+          <strong>{m.cert_trust_title()}</strong>
+          <p>{m.cert_trust_body()}</p>
         </li>
         <li>
-          <strong>Run the bundle</strong>
-          <p>Double-click the <code>.msixbundle</code>.</p>
+          <strong>{m.cert_run_title()}</strong>
+          <p>{runBefore}<code>.msixbundle</code>{runAfter}</p>
         </li>
       </ol>
-      <p class="cert-note">
-        A Microsoft Store release may remove this step later.
-      </p>
+      <p class="cert-note">{m.cert_note()}</p>
     </div>
   </div>
 </section>

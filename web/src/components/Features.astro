@@ -1,16 +1,15 @@
 ---
 import { features } from "../data/features.ts"
 import Icon from "./Icon.astro"
+import { m } from "@/paraglide/messages.js"
 ---
 
 <section class="features" id="features" aria-labelledby="features-heading">
   <div class="container">
     <h2 id="features-heading" class="section-h2 features-heading">
-      What it does
+      {m.features_heading()}
     </h2>
-    <p class="features-sub">
-      It remembers your blends.
-    </p>
+    <p class="features-sub">{m.features_sub()}</p>
 
     <div class="features-grid">
       {
@@ -20,8 +19,8 @@ import Icon from "./Icon.astro"
               <Icon icon={f.icon} size={21} />
             </div>
             <div class="card-text">
-              <h3 class="card-title">{f.title}</h3>
-              <p class="card-sub">{f.sub}</p>
+              <h3 class="card-title">{f.title()}</h3>
+              <p class="card-sub">{f.sub()}</p>
             </div>
           </article>
         ))

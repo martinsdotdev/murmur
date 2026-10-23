@@ -2,6 +2,7 @@
 import BrandLogo from "./BrandLogo.astro"
 import Icon from "./Icon.astro"
 import { Download04Icon, PlayIcon } from "@hugeicons/core-free-icons"
+import { m } from "@/paraglide/messages.js"
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
 ---
@@ -12,23 +13,20 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
 
     <h1 id="hero-heading" class="serif-display hero-title">Murmur</h1>
 
-    <p class="hero-sub">
-      Play ambient sounds while you work, read, or fall asleep. Layer rain over
-      a fireplace and save the blend.
-    </p>
+    <p class="hero-sub">{m.hero_sub()}</p>
 
     <div class="hero-ctas">
       <a href="#download" class="btn btn-primary btn-large hero-download">
         <Icon icon={Download04Icon} size={17} />
-        Download for Windows
+        {m.hero_download()}
       </a>
       <a href={`${baseUrl}/app`} class="btn btn-secondary btn-large hero-try">
         <Icon icon={PlayIcon} size={17} />
-        Mix in the browser
+        {m.hero_try()}
       </a>
     </div>
 
-    <p class="hero-meta">Free · GPLv3 · No telemetry · Windows 10 and 11</p>
+    <p class="hero-meta">{m.hero_meta()}</p>
   </div>
 </header>
 

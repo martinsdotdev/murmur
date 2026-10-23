@@ -2,6 +2,12 @@
 import { sounds } from "../data/sounds.ts"
 import BrandLogo from "./BrandLogo.astro"
 import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
+import { m } from "@/paraglide/messages.js"
+import { getLocale, locales } from "@/paraglide/runtime.js"
+import { around, LOCALE_NAMES, localePath } from "@/lib/i18n"
+
+const current = getLocale()
+const [assembledBefore, assembledAfter] = around(m.footer_assembled, "link")
 ---
 
 <footer class="site-footer">
@@ -12,24 +18,25 @@ import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
           <BrandLogo size={22} />
           <span class="footer-mark-text">Murmur</span>
         </div>
-        <p class="footer-blurb">
-          Murmur is a free, open-source ambient sound mixer for Windows and the
-          web.
-        </p>
+        <p class="footer-blurb">{m.footer_blurb()}</p>
         <div class="footer-links">
           <a href={repoUrl} target="_blank" rel="noopener">GitHub</a>
-          <a href={releasesUrl} target="_blank" rel="noopener">Releases</a>
-          <a href={issuesUrl} target="_blank" rel="noopener">Issues</a>
+          <a href={releasesUrl} target="_blank" rel="noopener"
+            >{m.footer_releases()}</a
+          >
+          <a href={issuesUrl} target="_blank" rel="noopener"
+            >{m.footer_issues()}</a
+          >
           <a
             href={`${repoUrl}/blob/master/Murmur/Sounds/SOUNDS_LICENSING.md`}
             target="_blank"
-            rel="noopener">Sound licenses</a
+            rel="noopener">{m.footer_licenses()}</a
           >
         </div>
       </div>
 
       <div class="footer-attr" id="credits">
-        <h3 class="attr-heading">Sound attribution</h3>
+        <h3 class="attr-heading">{m.footer_attribution()}</h3>
         <div class="attr-grid">
           {
             sounds.map((s) => (
@@ -56,18 +63,51 @@ import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
             that gathered them into one set. */
         }
         <p class="attr-note">
-          Sound set assembled by <a
-            href={blanketUrl}
-            target="_blank"
-            rel="noopener">Blanket</a
-          >.
+          {assembledBefore}<a href={blanketUrl} target="_blank" rel="noopener"
+            >Blanket</a
+          >{assembledAfter}
         </p>
       </div>
     </div>
 
-    <p class="footer-base">GPLv3 · No telemetry, no account, no ads</p>
+    <div class="footer-base">
+      <p>{m.footer_base()}</p>
+      {
+        /* Each language in its own name and tagged with it, so a screen reader
+          says "Español" in Spanish. Following one also stores it, which is
+          what tells the app which language to open in. */
+      }
+      <nav class="footer-languages" aria-label={m.footer_language()}>
+        {
+          locales.map((locale) => (
+            <a
+              href={localePath(locale)}
+              lang={locale}
+              hreflang={locale}
+              data-locale={locale}
+              aria-current={locale === current ? "page" : undefined}
+            >
+              {LOCALE_NAMES[locale]}
+            </a>
+          ))
+        }
+      </nav>
+    </div>
   </div>
 </footer>
+
+<script>
+  import { writeLocaleChoice } from "@/lib/i18n"
+  import { toLocale } from "@/paraglide/runtime.js"
+
+  for (const link of document.querySelectorAll<HTMLAnchorElement>(
+    ".footer-languages a"
+  )) {
+    link.addEventListener("click", () => {
+      writeLocaleChoice(toLocale(link.dataset.locale) ?? null)
+    })
+  }
+</script>
 
 <style>
   .site-footer {
@@ -177,11 +217,33 @@ import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
   }
 
   .footer-base {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px 24px;
     font-size: 13px;
     color: var(--color-neutral-foreground-3);
     margin-top: 40px;
     padding-top: 18px;
     border-top: var(--stroke-width-thin) solid var(--color-neutral-stroke-2);
+  }
+
+  .footer-base p {
     max-width: none;
+  }
+
+  .footer-languages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+  }
+
+  /* The page you're on reads as where you are, not somewhere to go. */
+  .footer-languages a[aria-current="page"] {
+    color: var(--color-neutral-foreground-1);
+  }
+
+  .footer-languages a[aria-current="page"]:hover {
+    text-decoration: none;
   }
 </style>

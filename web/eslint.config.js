@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint"
 import { defineConfig, globalIgnores } from "eslint/config"
 
 export default defineConfig([
-  globalIgnores(["dist", ".astro", "node_modules", "public"]),
+  globalIgnores(["dist", ".astro", "node_modules", "public", "src/paraglide"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [
