@@ -395,11 +395,12 @@
  * M3 state layers, computed into the fill instead of overlaid: mixing an
  * opaque container with its content colour at 8% is the same pixel as an 8%
  * overlay, without the extra element (the Windows app swaps brushes for the
- * same reason). Set --state-base for the container; hover is 8%, focus and
- * press 10%, and a menu trigger holds the press while its menu is open.
+ * same reason). Set --state-base to the control's resting fill (none by
+ * default) alongside its bg utility; hover is 8%, focus and press 10%, and a
+ * menu trigger holds the press while its menu is open. The resting fill stays
+ * with the bg utility, so a caller's own bg or hover: class still wins.
  */
 @utility state-layer {
-  background-color: var(--state-base, transparent);
   @media (hover: hover) {
     &:hover {
       background-color: color-mix(

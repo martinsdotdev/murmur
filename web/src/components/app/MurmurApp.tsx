@@ -27,6 +27,7 @@ import {
   RefreshIcon,
   Settings01Icon,
   Share01Icon,
+  Tick02Icon,
   Upload04Icon,
   VolumeHighIcon,
   VolumeOffIcon,
@@ -365,16 +366,25 @@ function MixChip({
         "flex h-10 shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors",
         active
           ? "border-brand bg-secondary text-foreground"
-          : "bg-muted text-foreground/85 hover:bg-accent"
+          : "state-layer bg-muted text-foreground/85 [--state-base:var(--muted)]"
       )}
     >
-      {iconPath && (
-        <SoundIcon
-          path={iconPath}
-          size={13}
-          strokeWidth={1.9}
-          className={cn("size-[13px] shrink-0", active && "text-brand")}
+      {/* M3's filter chip: a check replaces the leading icon once selected. */}
+      {active ? (
+        <HugeiconsIcon
+          icon={Tick02Icon}
+          strokeWidth={2.2}
+          className="size-[13px] shrink-0 text-brand"
         />
+      ) : (
+        iconPath && (
+          <SoundIcon
+            path={iconPath}
+            size={13}
+            strokeWidth={1.9}
+            className="size-[13px] shrink-0"
+          />
+        )
       )}
       {label}
     </button>
@@ -690,7 +700,7 @@ function PrefRow({
   onChange: (value: boolean) => void
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3.5 px-3.5 py-3 transition-colors hover:bg-accent/60">
+    <label className="flex cursor-pointer items-center gap-3.5 state-layer px-3.5 py-3 transition-colors">
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold">{title}</span>
         <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -2088,9 +2098,13 @@ export function MurmurApp() {
     // Card draws its edge as a ring, not a border, so hover goes on the ring.
     // The press is touch only, where nothing else answers a tap until the
     // sound arrives; a mouse already has hover.
+    // While its menu is open the card holds M3's 10% pressed layer, so the
+    // menu reads as belonging to it.
     const tileState = cn(
-      "[transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] pointer-coarse:motion-safe:active:scale-[0.98]",
-      active ? "bg-secondary" : "hover:ring-brand/40 dark:hover:ring-brand/40"
+      "[transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] pointer-coarse:motion-safe:active:scale-[0.98] data-popup-open:bg-[color-mix(in_srgb,var(--state-base),currentColor_10%)]",
+      active
+        ? "bg-secondary [--state-base:var(--secondary)]"
+        : "[--state-base:var(--card)] hover:ring-brand/40 dark:hover:ring-brand/40"
     )
     // With the card, not after it: an icon that snaps while its card fades
     // reads as two changes.
@@ -2112,14 +2126,15 @@ export function MurmurApp() {
           <HugeiconsIcon icon={HeadphonesIcon} strokeWidth={2} />
           Play only this
         </ContextMenuItem>
-        {active && volume !== DEFAULT_TOGGLE_VOLUME && (
-          <ContextMenuItem
-            onClick={() => changeVolume(sound.id, DEFAULT_TOGGLE_VOLUME)}
-          >
-            <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
-            Reset level
-          </ContextMenuItem>
-        )}
+        {/* Disabled rather than hidden, as M3 and Windows menus do, so the
+            menu keeps its shape and says what it can do. */}
+        <ContextMenuItem
+          disabled={!active || volume === DEFAULT_TOGGLE_VOLUME}
+          onClick={() => changeVolume(sound.id, DEFAULT_TOGGLE_VOLUME)}
+        >
+          <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
+          Reset level
+        </ContextMenuItem>
         {removable && (
           <>
             <ContextMenuSeparator />
@@ -2497,7 +2512,11 @@ export function MurmurApp() {
                     <ContextMenu key={mix.name}>
                       {/* The <li> is the trigger: a trigger wrapped around the item
                       would sit between the <ul> and its children. */}
-                      <ContextMenuTrigger render={<SidebarMenuItem />}>
+                      <ContextMenuTrigger
+                        render={
+                          <SidebarMenuItem className="data-popup-open:[&>[data-sidebar=menu-button]]:bg-sidebar-accent" />
+                        }
+                      >
                         <MixRow
                           name={mix.name}
                           mix={mix.mix}
@@ -2508,17 +2527,16 @@ export function MurmurApp() {
                         />
                       </ContextMenuTrigger>
                       <ContextMenuContent>
-                        {loaded && dirty && (
-                          <ContextMenuItem
-                            onClick={() => saveChanges(mix.name)}
-                          >
-                            <HugeiconsIcon
-                              icon={FloppyDiskIcon}
-                              strokeWidth={2}
-                            />
-                            Save changes
-                          </ContextMenuItem>
-                        )}
+                        <ContextMenuItem
+                          disabled={!(loaded && dirty)}
+                          onClick={() => saveChanges(mix.name)}
+                        >
+                          <HugeiconsIcon
+                            icon={FloppyDiskIcon}
+                            strokeWidth={2}
+                          />
+                          Save changes
+                        </ContextMenuItem>
                         <ContextMenuItem
                           onClick={() => shareMix(mix.name, mix.mix, false)}
                         >

@@ -230,7 +230,7 @@ function Slider({
         // a pixel a phone cannot start a scroll from. That is why touch screens
         // get no sliders in the grid (MurmurApp draws a LevelBar there), and
         // why, everywhere else on touch, the band can grow to a full 44px.
-        className="relative flex w-full touch-none items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] pointer-coarse:before:-inset-y-5 data-disabled:opacity-50 data-dragging:cursor-grabbing data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:before:inset-y-0 data-vertical:before:-inset-x-3"
+        className="relative flex w-full touch-none items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] pointer-coarse:before:-inset-y-5 data-disabled:opacity-38 data-dragging:cursor-grabbing data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:before:inset-y-0 data-vertical:before:-inset-x-3"
       >
         <SliderPrimitive.Track
           data-slot="slider-track"
@@ -254,7 +254,7 @@ function Slider({
             // Murmur's thumb: a brand-filled circle cut out of the surface it
             // sits on by a 3px border, growing slightly on hover and while held.
             // A finger gets a 24px one, a size it can see past its own tip.
-            className="block size-4 shrink-0 cursor-grab rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform select-none disabled:pointer-events-none disabled:opacity-50 has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring data-dragging:ring-4 data-dragging:ring-ring/25 motion-safe:hover:scale-[1.15] motion-safe:data-dragging:scale-[1.15] pointer-coarse:size-6 pointer-coarse:border-4"
+            className="block size-4 shrink-0 cursor-grab rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform select-none disabled:pointer-events-none disabled:opacity-38 has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring data-dragging:ring-4 data-dragging:ring-ring/25 motion-safe:hover:scale-[1.15] motion-safe:data-dragging:scale-[1.15] pointer-coarse:size-6 pointer-coarse:border-4"
           />
         ))}
       </SliderPrimitive.Control>

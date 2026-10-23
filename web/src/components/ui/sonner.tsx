@@ -60,6 +60,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
+      // M3 elevation level 2, the same as menus: a toast is a transient
+      // surface over the content.
+      toastOptions={{ classNames: { toast: "shadow-level-2!" } }}
       {...props}
     />
   )
