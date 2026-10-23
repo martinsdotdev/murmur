@@ -177,10 +177,14 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
         text-decoration: none;
       }
 
+      /* The mirror of the wordmark's pull-back: each icon is centred in a 32px
+         target, so the last one is pulled out by its 8px of inset and its
+         glyph lines up with the container edge. */
       .nav-actions {
         display: inline-flex;
         align-items: center;
         gap: var(--space-xs);
+        margin-right: -8px;
       }
 
       .nav-icon {
