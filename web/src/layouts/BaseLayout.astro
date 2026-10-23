@@ -181,6 +181,9 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
          target, so the last one is pulled out by its 8px of inset and its
          glyph lines up with the container edge. */
       .nav-actions {
+        /* Pinned to the last column: on a phone the links are hidden, and
+           auto-placement would otherwise drop the icons into the middle one. */
+        grid-column: 3;
         display: inline-flex;
         align-items: center;
         gap: var(--space-xs);
