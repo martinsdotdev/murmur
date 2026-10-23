@@ -3925,10 +3925,6 @@ export function MurmurApp() {
               {activeIds.length
                 ? `${activeIds.length} sound${activeIds.length === 1 ? "" : "s"} at their current levels.`
                 : "Nothing is playing, so the mix will be empty."}
-              {/* A placeholder reads as a hint and some screen readers skip
-                  it, so the default it shows is said here as well. */}
-              {saveSuggestion &&
-                ` Leave the name blank to save it as “${isolate(saveSuggestion)}”.`}
             </DialogDescription>
           </DialogHeader>
           <Input
