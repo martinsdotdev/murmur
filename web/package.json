@@ -15,7 +15,8 @@
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,astro,css,json,md,mjs}\"",
     "typecheck": "astro check",
-    "tokens": "tsx scripts/m3-colors.ts"
+    "tokens": "tsx scripts/m3-colors.ts",
+    "schemes": "tsx scripts/schemes.ts && prettier --write src/styles/schemes.css"
   },
   "dependencies": {
     "@astrojs/react": "^5",

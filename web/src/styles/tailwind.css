@@ -7,6 +7,9 @@
 /* Generated Material 3 roles: the outline stroke and the prefers-contrast set.
    See scripts/m3-colors.ts. */
 @import "./m3-colors.css";
+/* Generated colour schemes and pure black, from the tokens below. See
+   scripts/schemes.ts. */
+@import "./schemes.css";
 
 /* The site owns the theme, not this stylesheet. ThemeBootstrap.astro resolves
    localStorage['theme'] to a concrete data-theme before paint; ThemeToggle on
@@ -223,7 +226,19 @@
   --toast-foreground: #faf6ee;
   --toast-muted: rgba(250, 246, 238, 0.72);
   --toast-action: #f5c375;
+  --toast-action-hover: rgba(245, 195, 117, 0.12);
   --toast-border: transparent;
+  /* The browser bar's colour, read by ThemeBootstrap, so it follows a scheme
+     and pure black rather than the meta tag's fixed pair. */
+  --theme-color: #faf6ee;
+  /* The theme swatches preview both modes at once, so they can't use the live
+     tokens; these are the two modes' page, line and accent. */
+  --swatch-light-bg: #faf6ee;
+  --swatch-light-line: rgba(33, 18, 14, 0.18);
+  --swatch-light-accent: #b86d20;
+  --swatch-dark-bg: #232017;
+  --swatch-dark-line: rgba(250, 246, 238, 0.18);
+  --swatch-dark-accent: #f5c375;
   /* M3's black at 30% and 15% read as smudges on cream. Light shadows take
      the text's warm ink at about a third of that; dark keeps M3's. */
   --shadow-ink: 33 18 14;
@@ -288,6 +303,7 @@
   --toast-muted: rgba(250, 246, 238, 0.72);
   --toast-action: #f5c375;
   --toast-border: rgba(250, 246, 238, 0.08);
+  --theme-color: #232017;
   --shadow-ink: 0 0 0;
   --shadow-key: 0.3;
   --shadow-ambient: 0.15;

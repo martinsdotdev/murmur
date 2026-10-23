@@ -73,7 +73,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           toast: "gap-3! text-sm! shadow-level-2!",
           description: "text-(--toast-muted)!",
           actionButton:
-            "h-8! rounded-full! bg-transparent! px-3! text-sm! font-semibold! text-(--toast-action)! hover:bg-[rgba(245,195,117,0.12)]! focus-visible:outline-3! focus-visible:outline-offset-2! focus-visible:outline-ring!",
+            "h-8! rounded-full! bg-transparent! px-3! text-sm! font-semibold! text-(--toast-action)! hover:bg-(--toast-action-hover)! focus-visible:outline-3! focus-visible:outline-offset-2! focus-visible:outline-ring!",
           success: "[&_[data-icon]]:text-(--toast-action)",
         },
       }}
