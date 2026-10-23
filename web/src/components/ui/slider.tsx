@@ -26,6 +26,13 @@ import { cn } from "@/lib/utils"
  *    measures once, so one mounted hidden (the master volume across a
  *    breakpoint) stays invisible once shown, and every thumb drifts off its
  *    value as the window resizes. Still true in Base UI 1.9.
+ * 6. A scroll passes over the control. Base UI sets the value the moment a
+ *    finger lands on the track, and the control was touch-none, so a list of
+ *    sliders (Now playing, Preferences) could not be scrolled on a phone and
+ *    every attempt moved a level. The track is now pan-y and a touch on it
+ *    waits: a drag across sets the value, a drag down scrolls. The thumb
+ *    still answers at once. A wheel is taken only once the pointer has really
+ *    moved onto the control since the page last scrolled.
  */
 
 /**
@@ -49,12 +56,31 @@ const WHEEL_PAGE = 800
 const MAX_NOTCHES = 5
 
 /**
- * A wheel arriving sooner than this after the pointer entered is a scroll
- * passing over the control, not an aim at it. Scrolling a list under a
- * stationary cursor re-fires pointerenter for every slider dragged past it,
- * and each one arrives with a fresh timestamp.
+ * When the page last scrolled under a wheel no slider took. A slider takes the
+ * wheel only if the pointer has moved onto it since: a scroll that pauses with
+ * the cursor resting on one, or drags one under a cursor held still, carries
+ * on scrolling. Pointer events fired as content scrolls under the cursor
+ * report no movement, so they don't count as aiming.
  */
-const WHEEL_SETTLE_MS = 120
+let pageWheelAt = 0
+let watchingPageWheel = false
+function watchPageWheel() {
+  if (watchingPageWheel) return
+  watchingPageWheel = true
+  // Bubble phase, after any slider has had the event and prevented it.
+  document.addEventListener(
+    "wheel",
+    (event) => {
+      if (!event.defaultPrevented) pageWheelAt = event.timeStamp
+    },
+    { passive: true }
+  )
+}
+
+/** How far a finger on the track moves before it counts as a drag or a scroll. */
+const TOUCH_SLOP = 8
+
+const THUMB = '[data-slot="slider-thumb"]'
 
 type SliderProps = Omit<
   SliderPrimitive.Root.Props,
@@ -82,6 +108,15 @@ type SliderProps = Omit<
 
 /** Both affordances need to know the current value, so both are controlled-scalar only. */
 const isScalar = (value: unknown): value is number => typeof value === "number"
+
+/** Onto the step grid and inside the range, as Base UI rounds its own values. */
+function snap(
+  raw: number,
+  { min, max, step }: { min: number; max: number; step: number }
+) {
+  const snapped = step > 0 ? Math.round((raw - min) / step) * step + min : raw
+  return Math.min(max, Math.max(min, Number(snapped.toFixed(5))))
+}
 
 function Slider({
   className,
@@ -113,7 +148,8 @@ function Slider({
   const [controlMounted, setControlMounted] = React.useState(false)
   React.useLayoutEffect(() => setControlMounted(true), [])
   const wheelAcc = React.useRef(0)
-  const enteredAt = React.useRef(0)
+  /** When the pointer last really moved over the control. */
+  const aimedAt = React.useRef(0)
 
   // The wheel listener is attached once, so it reads props from here rather
   // than closing over them.
@@ -150,6 +186,7 @@ function Slider({
   React.useEffect(() => {
     const control = controlRef.current
     if (!control) return
+    watchPageWheel()
 
     // Native and non-passive: React registers onWheel passively at the root,
     // and only preventDefault stops whatever scrolls underneath moving at the
@@ -157,7 +194,8 @@ function Slider({
     const onWheel = (event: WheelEvent) => {
       const s = live.current
       if (s.wheelStep == null || s.disabled || !isScalar(s.value)) return
-      if (event.timeStamp - enteredAt.current < WHEEL_SETTLE_MS) return
+      // Not aimed at since the page last scrolled: a scroll passing over.
+      if (aimedAt.current <= pageWheelAt) return
 
       event.preventDefault()
 
@@ -177,19 +215,85 @@ function Slider({
       const notches = Math.max(-MAX_NOTCHES, Math.min(MAX_NOTCHES, counted))
 
       // Wheel up reports a negative deltaY and should raise the value.
-      const raw = s.value - notches * s.wheelStep
-      const snapped =
-        s.step > 0 ? Math.round((raw - s.min) / s.step) * s.step + s.min : raw
-      const next = Math.min(
-        s.max,
-        Math.max(s.min, Number(snapped.toFixed(5)))
-      )
+      const next = snap(s.value - notches * s.wheelStep, s)
       if (next !== s.value) emit(next)
     }
 
+    // Base UI presses the track from its own touchstart listener on the
+    // control, which no prop can veto. Stopped one level up, on the way down,
+    // for any touch that isn't on the thumb; the pointer path below decides
+    // what that touch was.
+    const root = control.parentElement
+    const onTouchStart = (event: TouchEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest(THUMB))
+        event.stopPropagation()
+    }
+
     control.addEventListener("wheel", onWheel, { passive: false })
-    return () => control.removeEventListener("wheel", onWheel)
+    root?.addEventListener("touchstart", onTouchStart, {
+      capture: true,
+      passive: true,
+    })
+    return () => {
+      control.removeEventListener("wheel", onWheel)
+      root?.removeEventListener("touchstart", onTouchStart, { capture: true })
+    }
   }, [emit])
+
+  /**
+   * A finger on the track: once it has moved TOUCH_SLOP across, it drags the
+   * value from where it is; moved down first, it is a scroll, which pan-y has
+   * already handed to the browser, and it lets go.
+   */
+  const trackTouch = (event: React.PointerEvent) => {
+    const control = controlRef.current
+    if (!control) return
+    const { pointerId, clientX: x0, clientY: y0 } = event
+    let dragging = false
+    let last: number | null = null
+
+    const valueAt = (x: number) => {
+      const s = live.current
+      const rect = control.getBoundingClientRect()
+      // Edge alignment: the thumb's centre travels inset by half its width.
+      const inset =
+        (control.querySelector<HTMLElement>(THUMB)?.offsetWidth ?? 0) / 2
+      let ratio = (x - rect.left - inset) / Math.max(1, rect.width - 2 * inset)
+      if (getComputedStyle(control).direction === "rtl") ratio = 1 - ratio
+      ratio = Math.min(1, Math.max(0, ratio))
+      return snap(s.min + ratio * (s.max - s.min), s)
+    }
+
+    const doc = control.ownerDocument
+    const stop = () => {
+      doc.removeEventListener("pointermove", onMove)
+      doc.removeEventListener("pointerup", onUp)
+      doc.removeEventListener("pointercancel", stop)
+    }
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return
+      if (!dragging) {
+        const dx = Math.abs(e.clientX - x0)
+        const dy = Math.abs(e.clientY - y0)
+        if (dy > TOUCH_SLOP && dy >= dx) return stop()
+        if (dx <= TOUCH_SLOP) return
+        dragging = true
+      }
+      const next = valueAt(e.clientX)
+      if (next !== (last ?? live.current.value)) {
+        last = next
+        live.current.onValueChange?.(next)
+      }
+    }
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return
+      stop()
+      if (dragging && last !== null) live.current.onValueCommitted?.(last)
+    }
+    doc.addEventListener("pointermove", onMove)
+    doc.addEventListener("pointerup", onUp)
+    doc.addEventListener("pointercancel", stop)
+  }
 
   return (
     <SliderPrimitive.Root
@@ -210,8 +314,20 @@ function Slider({
     >
       <SliderPrimitive.Control
         ref={controlRef}
-        onPointerEnter={(event) => {
-          enteredAt.current = event.timeStamp
+        onPointerMove={(event) => {
+          if (event.movementX || event.movementY)
+            aimedAt.current = event.timeStamp
+        }}
+        onPointerDown={(event) => {
+          if (
+            event.pointerType !== "touch" ||
+            props.disabled ||
+            !isScalar(value) ||
+            (event.target instanceof Element && event.target.closest(THUMB))
+          )
+            return
+          event.preventBaseUIHandler()
+          trackTouch(event)
         }}
         onDoubleClick={() => {
           if (resetValue == null || !isScalar(value)) return
@@ -225,12 +341,10 @@ function Slider({
         // pointer maths are unchanged, and it still hit-tests as the control.
         // 12px per side is the ceiling, not a preference: it exactly fills a
         // grid card's bottom padding, and anything more would be clipped by the
-        // card or reach into the gap below it. The control is also touch-none
-        // and Base UI takes a track press on touchstart, so every pixel here is
-        // a pixel a phone cannot start a scroll from. That is why touch screens
-        // get no sliders in the grid (MurmurApp draws a LevelBar there), and
-        // why, everywhere else on touch, the band can grow to a full 44px.
-        className="relative flex w-full touch-none items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] pointer-coarse:before:-inset-y-5 data-disabled:opacity-38 data-dragging:cursor-grabbing data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:before:inset-y-0 data-vertical:before:-inset-x-3"
+        // card or reach into the gap below it. On touch the band can grow to a
+        // full 44px: the control is pan-y and a track touch waits to see which
+        // way it goes (see trackTouch), so a scroll can start anywhere on it.
+        className="relative flex w-full touch-pan-y items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] data-dragging:cursor-grabbing pointer-coarse:before:-inset-y-5 data-disabled:opacity-38 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:before:-inset-x-3 data-vertical:before:inset-y-0"
       >
         <SliderPrimitive.Track
           data-slot="slider-track"
@@ -254,7 +368,8 @@ function Slider({
             // Murmur's thumb: a brand-filled circle cut out of the surface it
             // sits on by a 3px border, growing slightly on hover and while held.
             // A finger gets a 24px one, a size it can see past its own tip.
-            className="block size-4 shrink-0 cursor-grab rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform select-none disabled:pointer-events-none disabled:opacity-38 has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring data-dragging:ring-4 data-dragging:ring-ring/25 motion-safe:hover:scale-[1.15] motion-safe:data-dragging:scale-[1.15] pointer-coarse:size-6 pointer-coarse:border-4"
+            // touch-none: a finger on the thumb drags at once, never scrolls.
+            className="block size-4 shrink-0 cursor-grab touch-none rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform select-none disabled:pointer-events-none disabled:opacity-38 has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring data-dragging:ring-4 data-dragging:ring-ring/25 motion-safe:hover:scale-[1.15] motion-safe:data-dragging:scale-[1.15] pointer-coarse:size-6 pointer-coarse:border-4"
           />
         ))}
       </SliderPrimitive.Control>
