@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { Popover } from "@base-ui/react/popover"
 import {
   Archive01Icon,
   ArrowDataTransferHorizontalIcon,
@@ -1122,6 +1123,8 @@ export function MurmurApp() {
   const [mixActionsFor, setMixActionsFor] = React.useState<string | null>(null)
   /** Each All mixes row's ··· button, so a Delete can hand focus on. */
   const mixMoreButtons = React.useRef(new Map<string, HTMLButtonElement>())
+  /** Each All mixes row, which its actions popover anchors to. */
+  const mixRows = React.useRef(new Map<string, HTMLDivElement>())
   /**
    * Sounds dragged to zero in Now playing. Zero is off, so their rows would
    * vanish from under the pointer mid-drag; they stay, at zero, until the list
@@ -3386,7 +3389,7 @@ export function MurmurApp() {
                     tap away, and the tap says where it goes. */}
                 <Button
                   variant="ghost"
-                  className="-mr-2 h-11 px-2 text-xs font-semibold text-brand hover:text-brand pointer-coarse:hit-target"
+                  className="-mr-3 h-9 rounded-full px-3 text-sm font-medium text-brand hover:text-brand pointer-coarse:hit-target"
                   aria-haspopup="dialog"
                   onClick={() => setAllMixesOpen(true)}
                 >
@@ -3691,162 +3694,177 @@ export function MurmurApp() {
               const open = mixActionsFor === mix.name
               return (
                 <SidebarMenuItem key={mix.name}>
-                  {/* The current mix's fill spans the whole row, ··· included,
-                      so the button reads as part of it. */}
-                  <div
-                    className={cn(
-                      "relative flex items-center rounded-m3-md",
-                      mix.name === mixName && "bg-sidebar-accent"
-                    )}
+                  <Popover.Root
+                    open={open}
+                    onOpenChange={(next) =>
+                      setMixActionsFor(next ? mix.name : null)
+                    }
                   >
-                    <div className="min-w-0 flex-1">
-                      <MixRow
-                        name={mix.name}
-                        mix={mix.mix}
-                        loaded={mix.name === mixName}
-                        dirty={mix.name === mixName && dirty}
-                        detail={mixSummary(mix.mix, soundName)}
-                        onApply={() => {
-                          applyMix(mix.name, mix.mix)
-                          setAllMixesOpen(false)
-                        }}
-                      />
-                    </div>
-                    <Button
+                    {/* The current mix's fill spans the whole row, ··· included,
+                      so the button reads as part of it. */}
+                    <div
                       ref={(el) => {
-                        if (el) mixMoreButtons.current.set(mix.name, el)
+                        if (el) mixRows.current.set(mix.name, el)
                         return () => {
-                          mixMoreButtons.current.delete(mix.name)
+                          mixRows.current.delete(mix.name)
                         }
                       }}
-                      variant="ghost"
-                      size="icon"
-                      className="size-11 shrink-0 rounded-full text-muted-foreground"
-                      aria-label={`More for ${mix.name}`}
-                      aria-expanded={open}
-                      onClick={() => setMixActionsFor(open ? null : mix.name)}
+                      className={cn(
+                        "relative flex items-center rounded-m3-md",
+                        mix.name === mixName && "bg-sidebar-accent"
+                      )}
                     >
-                      <HugeiconsIcon
-                        icon={MoreHorizontalIcon}
-                        strokeWidth={2}
-                        className="size-5"
-                      />
-                    </Button>
-                  </div>
-                  {/* Always mounted, so it can close as well as open. Rows
-                      0fr to 1fr is the height of its content without
-                      measuring it, and closing is quicker than opening.
-                      inert while shut, so its buttons leave the tab order. */}
-                  <div
-                    inert={!open}
-                    className={cn(
-                      "grid transition-[grid-template-rows,opacity] ease-out motion-reduce:transition-opacity",
-                      open
-                        ? "grid-rows-[1fr] opacity-100 duration-200"
-                        : "grid-rows-[0fr] opacity-0 duration-150"
-                    )}
-                  >
-                    <div className="min-h-0 overflow-hidden">
-                      {/* A segmented row, as the theme swatches are: the
+                      <div className="min-w-0 flex-1">
+                        <MixRow
+                          name={mix.name}
+                          mix={mix.mix}
+                          loaded={mix.name === mixName}
+                          dirty={mix.name === mixName && dirty}
+                          detail={mixSummary(mix.mix, soundName)}
+                          onApply={() => {
+                            applyMix(mix.name, mix.mix)
+                            setAllMixesOpen(false)
+                          }}
+                        />
+                      </div>
+                      <Popover.Trigger
+                        ref={(el: HTMLButtonElement | null) => {
+                          if (el) mixMoreButtons.current.set(mix.name, el)
+                          return () => {
+                            mixMoreButtons.current.delete(mix.name)
+                          }
+                        }}
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-11 shrink-0 rounded-full text-muted-foreground"
+                            aria-label={`More for ${mix.name}`}
+                          />
+                        }
+                      >
+                        <HugeiconsIcon
+                          icon={MoreHorizontalIcon}
+                          strokeWidth={2}
+                          className="size-5"
+                        />
+                      </Popover.Trigger>
+                    </div>
+                    {/* Floats under its row, as wide as it, rather than opening
+                      in the list: opened in place it pushed every row below
+                      down, and a short list's sheet grew upward with it. It
+                      flips above the row near the bottom, and grows from the
+                      ··· it came from. */}
+                    <Popover.Portal>
+                      <Popover.Positioner
+                        anchor={() => mixRows.current.get(mix.name) ?? null}
+                        side="bottom"
+                        sideOffset={4}
+                        className="z-50"
+                      >
+                        <Popover.Popup className="w-(--anchor-width) origin-(--transform-origin) rounded-m3-lg bg-popover p-1 shadow-level-2 ring-1 ring-foreground/5 transition-[opacity,scale] duration-150 ease-(--ease-out) outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-opacity dark:ring-foreground/10">
+                          {/* A segmented row, as the theme swatches are: the
                           desktop menu's actions, icons and order, one equal
                           cell each so none wraps onto a line of its own. */}
-                      <div className="grid auto-cols-fr grid-flow-col gap-0.5 pt-1 pb-2 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]">
-                        {mix.name === mixName && dirty && (
-                          <button
-                            type="button"
-                            className={shelfCell}
-                            onClick={() => {
-                              saveChanges(mix.name)
-                              setMixActionsFor(null)
-                            }}
-                          >
-                            <HugeiconsIcon
-                              icon={FloppyDiskIcon}
-                              strokeWidth={2}
-                              className="size-5"
-                            />
-                            Save changes
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className={shelfCell}
-                          onClick={() => {
-                            shareMix(mix.name, mix.mix, false)
-                            setMixActionsFor(null)
-                          }}
-                        >
-                          <HugeiconsIcon
-                            icon={Share01Icon}
-                            strokeWidth={2}
-                            className="size-5"
-                          />
-                          Share
-                        </button>
-                        <button
-                          type="button"
-                          className={shelfCell}
-                          onClick={() => {
-                            afterClose.current = () => {
-                              setRenameValue(mix.name)
-                              setRenaming(mix.name)
-                            }
-                            setAllMixesOpen(false)
-                            setMixActionsFor(null)
-                          }}
-                        >
-                          <HugeiconsIcon
-                            icon={PencilEdit02Icon}
-                            strokeWidth={2}
-                            className="size-5"
-                          />
-                          Rename…
-                        </button>
-                        <button
-                          type="button"
-                          className={shelfCell}
-                          onClick={() => {
-                            duplicateMix(mix)
-                            setMixActionsFor(null)
-                          }}
-                        >
-                          <HugeiconsIcon
-                            icon={Copy01Icon}
-                            strokeWidth={2}
-                            className="size-5"
-                          />
-                          Duplicate
-                        </button>
-                        <button
-                          type="button"
-                          className={cn(shelfCell, "text-destructive")}
-                          onClick={() => {
-                            // Focus moves to the next row, or the one above
-                            // for the last; deleting the only mix closes the
-                            // sheet, since there is nothing left in it.
-                            const at = saved.indexOf(mix)
-                            const neighbour = saved[at + 1] ?? saved[at - 1]
-                            if (neighbour) {
-                              mixMoreButtons.current
-                                .get(neighbour.name)
-                                ?.focus()
-                            } else {
-                              setAllMixesOpen(false)
-                            }
-                            removeSaved(mix.name)
-                            setMixActionsFor(null)
-                          }}
-                        >
-                          <HugeiconsIcon
-                            icon={Delete02Icon}
-                            strokeWidth={2}
-                            className="size-5"
-                          />
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                          <div className="grid auto-cols-fr grid-flow-col gap-0.5 [--segment-radius:var(--radius-m3-md)]">
+                            {mix.name === mixName && dirty && (
+                              <button
+                                type="button"
+                                className={shelfCell}
+                                onClick={() => {
+                                  saveChanges(mix.name)
+                                  setMixActionsFor(null)
+                                }}
+                              >
+                                <HugeiconsIcon
+                                  icon={FloppyDiskIcon}
+                                  strokeWidth={2}
+                                  className="size-5"
+                                />
+                                Save changes
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className={shelfCell}
+                              onClick={() => {
+                                shareMix(mix.name, mix.mix, false)
+                                setMixActionsFor(null)
+                              }}
+                            >
+                              <HugeiconsIcon
+                                icon={Share01Icon}
+                                strokeWidth={2}
+                                className="size-5"
+                              />
+                              Share
+                            </button>
+                            <button
+                              type="button"
+                              className={shelfCell}
+                              onClick={() => {
+                                afterClose.current = () => {
+                                  setRenameValue(mix.name)
+                                  setRenaming(mix.name)
+                                }
+                                setAllMixesOpen(false)
+                                setMixActionsFor(null)
+                              }}
+                            >
+                              <HugeiconsIcon
+                                icon={PencilEdit02Icon}
+                                strokeWidth={2}
+                                className="size-5"
+                              />
+                              Rename…
+                            </button>
+                            <button
+                              type="button"
+                              className={shelfCell}
+                              onClick={() => {
+                                duplicateMix(mix)
+                                setMixActionsFor(null)
+                              }}
+                            >
+                              <HugeiconsIcon
+                                icon={Copy01Icon}
+                                strokeWidth={2}
+                                className="size-5"
+                              />
+                              Duplicate
+                            </button>
+                            <button
+                              type="button"
+                              className={cn(shelfCell, "text-destructive")}
+                              onClick={() => {
+                                // Focus moves to the next row, or the one above
+                                // for the last; deleting the only mix closes the
+                                // sheet, since there is nothing left in it.
+                                const at = saved.indexOf(mix)
+                                const neighbour = saved[at + 1] ?? saved[at - 1]
+                                if (neighbour) {
+                                  mixMoreButtons.current
+                                    .get(neighbour.name)
+                                    ?.focus()
+                                } else {
+                                  setAllMixesOpen(false)
+                                }
+                                removeSaved(mix.name)
+                                setMixActionsFor(null)
+                              }}
+                            >
+                              <HugeiconsIcon
+                                icon={Delete02Icon}
+                                strokeWidth={2}
+                                className="size-5"
+                              />
+                              Delete
+                            </button>
+                          </div>
+                        </Popover.Popup>
+                      </Popover.Positioner>
+                    </Popover.Portal>
+                  </Popover.Root>
                 </SidebarMenuItem>
               )
             })}
