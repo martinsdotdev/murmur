@@ -130,6 +130,10 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "")
 
 const TIMER_OPTIONS = [0, 15, 30, 45, 60, 90]
 const CATEGORIES: SoundCategory[] = ["nature", "urban", "generated"]
+/** The built-in sounds in the grid's order, which Now playing lists in too. */
+const CATALOG_ORDER = CATEGORIES.flatMap((category) =>
+  sounds.filter((s) => s.category === category).map((s) => s.id)
+)
 const DEFAULT_TOGGLE_VOLUME = 0.7
 const CATALOG_IDS = new Set(sounds.map((s) => s.id))
 
@@ -509,7 +513,10 @@ function NowPlayingRow({
         <span
           dir="auto"
           title={name}
-          className="block truncate text-sm font-semibold"
+          className={cn(
+            "block truncate text-sm font-semibold",
+            level === 0 && "text-muted-foreground"
+          )}
         >
           {name}
         </span>
@@ -545,7 +552,9 @@ function NowPlayingRow({
           variant="ghost"
           size="icon"
           className="size-11 shrink-0 rounded-full text-muted-foreground pointer-coarse:hit-target"
-          aria-label={`Turn off ${name}`}
+          aria-label={
+            level > 0 ? `Turn off ${name}` : `Remove ${name} from the list`
+          }
           onClick={onTurnOff}
         >
           <HugeiconsIcon
@@ -1026,6 +1035,11 @@ export function MurmurApp() {
   const [view, setView] = React.useState<View>(initial.view)
   const [pane, setPane] = React.useState(initial.pane)
   const paneToggle = React.useRef<HTMLButtonElement>(null)
+  /** Hiding the pane lets go of its held rows, as closing the sheet does. */
+  const showPane = (open: boolean) => {
+    setPane(open)
+    releaseRows()
+  }
   const paneFits = usePaneFits()
   const [saved, setSaved] = React.useState<SavedMix[]>(initial.saved)
   const [customs, setCustoms] = React.useState<CustomSound[]>(initial.customs)
@@ -1041,6 +1055,25 @@ export function MurmurApp() {
   const [mixActionsFor, setMixActionsFor] = React.useState<string | null>(null)
   /** Each All mixes row's ··· button, so a Delete can hand focus on. */
   const mixMoreButtons = React.useRef(new Map<string, HTMLButtonElement>())
+  /**
+   * Sounds dragged to zero in Now playing. Zero is off, so their rows would
+   * vanish from under the pointer mid-drag; they stay, at zero, until the list
+   * is put away or the sound is turned off or on some other way.
+   */
+  const [heldRows, setHeldRows] = React.useState<ReadonlySet<string>>(
+    () => new Set()
+  )
+  const holdRow = (id: string) =>
+    setHeldRows((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+  const releaseRow = (id: string) =>
+    setHeldRows((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+  const releaseRows = () =>
+    setHeldRows((prev) => (prev.size ? new Set() : prev))
   // One sheet at a time, and the next one waits until the first has gone:
   // opened together, their two blurred backdrops stack and flash darker.
   const afterClose = React.useRef<(() => void) | null>(null)
@@ -1435,6 +1468,7 @@ export function MurmurApp() {
   const toggleSound = (id: string) => {
     // Its file is gone; the tile asks for it instead (see renderSound).
     if (missing.has(id)) return
+    releaseRow(id)
     const current = vols[id] ?? 0
     if (current > 0) {
       lastNonZero.current[id] = current
@@ -1490,6 +1524,7 @@ export function MurmurApp() {
         playable[id] = v
     }
     ensureAudio()
+    releaseRows()
     // Walk the union so sounds dropped by the incoming mix are actively zeroed.
     const union = new Set([...Object.keys(vols), ...Object.keys(playable)])
     setVols({ ...playable })
@@ -1519,6 +1554,7 @@ export function MurmurApp() {
   }
 
   const resetMix = () => {
+    releaseRows()
     for (const id of Object.keys(vols)) {
       if (audioStarted.current) void mixer.setVolume(id, 0)
     }
@@ -2496,7 +2532,15 @@ export function MurmurApp() {
   // Starters stand in for an empty list, so they return if every mix is deleted.
 
   // Now playing's body, shared by the phone sheet and the desktop pane: the
-  // master, every sound that's on, and what to do with them.
+  // master, every sound that's on, and what to do with them. In the grid's
+  // order, so a row keeps its place however the sounds were turned on, and a
+  // sound taken to zero and back up comes back where it was. The stragglers
+  // line is a guard: every id that can be on is a built-in or one of yours.
+  const knownOrder = [...CATALOG_ORDER, ...customs.map((c) => c.id)]
+  const nowPlayingIds = [
+    ...knownOrder.filter((id) => (vols[id] ?? 0) > 0 || heldRows.has(id)),
+    ...activeIds.filter((id) => !knownOrder.includes(id)),
+  ]
   const nowPlayingRows = (
     <div className="flex flex-col">
       <NowPlayingRow
@@ -2513,8 +2557,8 @@ export function MurmurApp() {
         onCommit={commitMaster}
       />
       <Separator className="my-1" />
-      {activeIds.length ? (
-        activeIds.map((id) => (
+      {nowPlayingIds.length ? (
+        nowPlayingIds.map((id) => (
           <NowPlayingRow
             key={id}
             icon={
@@ -2524,15 +2568,26 @@ export function MurmurApp() {
                   (ytVideoId(id) ? VIDEO_ICON : MUSIC_ICON)
                 }
                 size={18}
-                className="text-brand"
+                className={
+                  (vols[id] ?? 0) > 0 ? "text-brand" : "text-muted-foreground"
+                }
               />
             }
             name={nameFor(id)}
             level={vols[id] ?? 0}
             note={deviceSetsLevel(id) ? DEVICE_LEVEL_NOTE : undefined}
-            onDrag={(v) => dragVolume(id, v)}
-            onCommit={(v) => commitVolume(id, v)}
-            onTurnOff={() => toggleSound(id)}
+            onDrag={(v) => {
+              if (v === 0) holdRow(id)
+              dragVolume(id, v)
+            }}
+            onCommit={(v) => {
+              if (v === 0) holdRow(id)
+              commitVolume(id, v)
+            }}
+            // A row held at zero is already off, so its button only lets it go.
+            onTurnOff={() =>
+              (vols[id] ?? 0) > 0 ? toggleSound(id) : releaseRow(id)
+            }
           />
         ))
       ) : (
@@ -2898,7 +2953,7 @@ export function MurmurApp() {
               aria-haspopup={paneFits ? undefined : "dialog"}
               aria-expanded={paneFits ? pane : undefined}
               onClick={() =>
-                paneFits ? setPane((open) => !open) : setNowPlayingOpen(true)
+                paneFits ? showPane(!pane) : setNowPlayingOpen(true)
               }
               className="hidden min-h-11 min-w-0 items-center gap-2 rounded-md text-left wide:flex"
             >
@@ -3014,7 +3069,7 @@ export function MurmurApp() {
             aria-label="Now playing"
             aria-pressed={pane}
             title={pane ? "Hide Now playing" : "Show Now playing"}
-            onClick={() => setPane((open) => !open)}
+            onClick={() => showPane(!pane)}
           >
             <HugeiconsIcon icon={PanelRightIcon} strokeWidth={2} />
           </Button>
@@ -3392,7 +3447,7 @@ export function MurmurApp() {
                     aria-label="Close Now playing"
                     title="Close"
                     onClick={() => {
-                      setPane(false)
+                      showPane(false)
                       paneToggle.current?.focus()
                     }}
                   >
@@ -3505,7 +3560,11 @@ export function MurmurApp() {
       <Dialog
         open={nowPlayingOpen}
         onOpenChange={setNowPlayingOpen}
-        onOpenChangeComplete={(open) => !open && runAfterClose()}
+        onOpenChangeComplete={(open) => {
+          if (open) return
+          releaseRows()
+          runAfterClose()
+        }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
