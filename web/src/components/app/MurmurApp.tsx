@@ -207,6 +207,15 @@ function BrandMark({ size = 18 }: { size?: number }) {
 }
 
 /** Two links and a button sit in one row, so they have to read as one set. */
+/**
+ * Preferences' grouped lists, filled as the Claude app and iOS settings fill
+ * theirs: one step up from the dialog, no outline, hairlines from the text.
+ * 12px inside the phone sheet's 28px corners; 8px in the desktop dialog, so a
+ * card never rounds more than the frame around it.
+ */
+const prefGroup =
+  "grouped-rows overflow-hidden rounded-m3-md bg-grouped sm:rounded-lg"
+
 const aboutLink =
   "flex min-h-8 items-center gap-2 rounded px-2.5 text-xs font-semibold text-foreground/85 state-layer transition-colors hover:text-foreground"
 
@@ -731,9 +740,10 @@ function ThemeSwatch({
       onClick={onSelect}
       aria-pressed={active}
       className={cn(
-        "rounded-md border p-[9px_9px_8px] text-left transition-colors hover:border-brand",
-        // Selected as everywhere else: the raised container plus amber.
-        active ? "border-brand bg-secondary" : "border-border"
+        "rounded-m3-md border p-[9px_9px_8px] text-left transition-colors hover:border-brand sm:rounded-lg",
+        // Selected as everywhere else: the raised container plus amber. The
+        // rest are filled like the lists beneath them, with no outline.
+        active ? "border-brand bg-secondary" : "border-transparent bg-grouped"
       )}
     >
       <span className="flex h-8 overflow-hidden rounded border border-border">
@@ -772,7 +782,7 @@ function PrefRow({
   return (
     <label className="flex cursor-pointer items-center gap-3.5 state-layer px-3.5 py-3 transition-colors">
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold">{title}</span>
+        <span className="block text-sm">{title}</span>
         {/* 150%: these are sentences, and 133% packed them too tight. */}
         <span className="mt-0.5 block text-xs leading-[1.125rem] text-muted-foreground">
           {description}
@@ -792,8 +802,6 @@ function PrefSlider({
   step,
   largeStep,
   resetValue,
-  minLabel,
-  maxLabel,
   onChange,
 }: {
   title: string
@@ -804,19 +812,17 @@ function PrefSlider({
   step: number
   largeStep?: number
   resetValue: number
-  minLabel: string
-  maxLabel: string
   onChange: (value: number) => void
 }) {
   return (
-    <div className="px-3.5 py-3">
+    <div className="px-3.5 pt-3 pb-4">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm font-semibold">{title}</span>
-        <span className="font-mono text-xs text-brand tabular-nums">
+        <span className="text-sm">{title}</span>
+        <span className="text-sm text-muted-foreground tabular-nums">
           {display}
         </span>
       </div>
-      <div className="my-3">
+      <div className="mt-4">
         <Slider
           value={value}
           min={min}
@@ -832,10 +838,6 @@ function PrefSlider({
           aria-valuetext={display}
           onValueChange={(v) => onChange(v as number)}
         />
-      </div>
-      <div className="flex justify-between text-[0.6875rem] text-muted-foreground">
-        <span>{minLabel}</span>
-        <span>{maxLabel}</span>
       </div>
     </div>
   )
@@ -893,7 +895,7 @@ function PrefSection({
 }) {
   return (
     <section>
-      <h3 className="mb-2.5 flex items-center gap-2 text-label-small text-muted-foreground">
+      <h3 className="mb-2.5 flex items-center gap-2 px-3.5 text-label-small text-muted-foreground">
         <HugeiconsIcon icon={icon} strokeWidth={2} className="size-3" />
         {title}
       </h3>
@@ -3816,7 +3818,7 @@ export function MurmurApp() {
                   />
                 ))}
               </div>
-              <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
+              <div className={prefGroup}>
                 <PrefRow
                   title="Level meters"
                   description="Animated bars on playing sounds."
@@ -3835,7 +3837,7 @@ export function MurmurApp() {
             </PrefSection>
 
             <PrefSection icon={PlayIcon} title="Playback">
-              <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
+              <div className={prefGroup}>
                 <PrefSlider
                   title="Fade between sounds"
                   value={prefs.fadeMs}
@@ -3851,8 +3853,6 @@ export function MurmurApp() {
                   // smaller than one press of an arrow key.
                   largeStep={500}
                   resetValue={DEFAULT_PREFS.fadeMs}
-                  minLabel="Instant"
-                  maxLabel="3s"
                   onChange={(v) => setPref("fadeMs", v)}
                 />
                 <PrefSlider
@@ -3863,8 +3863,6 @@ export function MurmurApp() {
                   max={60}
                   step={1}
                   resetValue={DEFAULT_PREFS.sleepFade}
-                  minLabel="2s"
-                  maxLabel="1 min"
                   onChange={(v) => setPref("sleepFade", v)}
                 />
                 <PrefRow
@@ -3898,7 +3896,7 @@ export function MurmurApp() {
             }
             {(pwa.audio || installRow) && (
               <PrefSection icon={Download04Icon} title="Offline">
-                <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
+                <div className={prefGroup}>
                   {pwa.audio && (
                     <div className="flex items-center gap-3 px-3.5 py-3">
                       <p className="min-w-0 flex-1 text-xs text-muted-foreground">
@@ -3950,7 +3948,7 @@ export function MurmurApp() {
             )}
 
             <PrefSection icon={Database01Icon} title="Your data">
-              <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
+              <div className={prefGroup}>
                 <div className="flex items-center gap-3 px-3.5 py-3">
                   <p className="min-w-0 flex-1 text-xs text-muted-foreground">
                     {saved.length || customs.length
@@ -4027,7 +4025,7 @@ export function MurmurApp() {
             </PrefSection>
 
             <PrefSection icon={InformationCircleIcon} title="About">
-              <div className="overflow-hidden rounded-md border border-border">
+              <div className={prefGroup}>
                 <div className="flex items-center gap-3 p-3.5">
                   <img
                     src={`${BASE}/icon.svg`}
@@ -4049,7 +4047,7 @@ export function MurmurApp() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5 border-t border-border p-2.5">
+                <div className="flex flex-wrap items-center gap-1.5 p-2.5">
                   <a
                     className={aboutLink}
                     href={repoUrl}
@@ -4087,7 +4085,7 @@ export function MurmurApp() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-3 border-t border-border bg-brand/5 p-3">
+                <div className="flex items-center gap-3 bg-brand/5 p-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">
                       Free, no accounts, no ads
