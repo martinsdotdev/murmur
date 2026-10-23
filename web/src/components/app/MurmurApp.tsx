@@ -368,7 +368,7 @@ function MixChip({
         "flex h-10 shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors pointer-coarse:hit-target",
         active
           ? "border-brand bg-secondary text-foreground"
-          : "state-layer bg-muted text-foreground/85 [--state-base:var(--muted)]"
+          : "bg-muted state-layer text-foreground/85"
       )}
     >
       {/* M3's filter chip: a check replaces the leading icon once selected. */}
@@ -961,6 +961,8 @@ export function MurmurApp() {
   const menuOpenedAt = React.useRef(0)
   const [renameValue, setRenameValue] = React.useState("")
   const [removing, setRemoving] = React.useState<CustomSound | null>(null)
+  /** Finishes the last Clear all, if its toast is still open. */
+  const pendingClear = React.useRef<(() => void) | null>(null)
 
   const pwa = usePwa()
   // Where installing is possible at all: a prompt to show, or a touch device
@@ -1358,6 +1360,9 @@ export function MurmurApp() {
    * first leaves them orphaned, and the boot-time sweep deletes them then.
    */
   const clearData = () => {
+    // A second clear replaces the first one's toast without closing it, so
+    // the first is settled here or its files would stay until the next boot.
+    pendingClear.current?.()
     const cleared: ClearedData = {
       saved,
       customs: customsRef.current,
@@ -1385,6 +1390,7 @@ export function MurmurApp() {
         void deleteBlob(c.id)
       }
     }
+    pendingClear.current = purge
     toast.success("Saved mixes and imported sounds cleared", {
       id: "data-cleared",
       onAutoClose: purge,
@@ -1416,6 +1422,11 @@ export function MurmurApp() {
     for (const c of cleared.customs) {
       const v = cleared.vols[c.id]
       if (v) levels[c.id] = v
+    }
+    // clearData unregistered the YouTube streams; they have to be known to
+    // the mixer again before a level can reach them.
+    for (const c of cleared.customs) {
+      if (c.videoId) mixer.registerStream(c.id, c.videoId)
     }
     setVols((prev) => ({ ...prev, ...levels }))
     if (audioStarted.current) {
@@ -2103,10 +2114,10 @@ export function MurmurApp() {
     // While its menu is open the card holds M3's 10% pressed layer, so the
     // menu reads as belonging to it.
     const tileState = cn(
-      "[transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] data-popup-open:bg-[color-mix(in_srgb,var(--state-base),currentColor_10%)] pointer-coarse:motion-safe:active:scale-[0.98]",
+      "[transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] data-popup-open:bg-[color-mix(in_srgb,var(--tile-bg),currentColor_10%)] pointer-coarse:motion-safe:active:scale-[0.98]",
       active
-        ? "bg-secondary ring-ring [--state-base:var(--secondary)] dark:ring-ring"
-        : "[--state-base:var(--card)] hover:ring-brand/40 dark:hover:ring-brand/40"
+        ? "bg-secondary ring-ring [--tile-bg:var(--secondary)] dark:ring-ring"
+        : "[--tile-bg:var(--card)] hover:ring-brand/40 dark:hover:ring-brand/40"
     )
     // With the card, not after it: an icon that snaps while its card fades
     // reads as two changes.
@@ -2686,7 +2697,11 @@ export function MurmurApp() {
               </div>
               {/* The fade is scroll-aware, so it only marks an edge that still
                   has chips behind it. */}
-              <div className="-mx-4 no-scrollbar flex scroll-fade-x gap-2 overflow-x-auto px-4 scroll-fade-5">
+              {/* Room inside the scroller for the 5px focus ring and the 48px touch
+                  target, which it would otherwise clip. The bottom room is
+                  taken back from the padding below; the top is not, since it
+                  would lie over the All mixes button. */}
+              <div className="-mx-4 -mb-2 no-scrollbar flex scroll-fade-x gap-2 overflow-x-auto px-4 pt-1.5 pb-2 scroll-fade-5">
                 {saved.map((mix) => (
                   <MixChip
                     key={mix.name}

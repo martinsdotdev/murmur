@@ -11,9 +11,8 @@ const buttonVariants = cva(
         default:
           "bg-filled text-primary-foreground hover:bg-filled-hover disabled:bg-foreground/12 disabled:text-foreground/38 disabled:opacity-100",
         outline:
-          "border-border state-layer bg-background [--state-base:var(--background)] hover:text-foreground aria-expanded:text-foreground dark:bg-transparent dark:[--state-base:transparent]",
-        secondary:
-          "state-layer bg-secondary text-secondary-foreground [--state-base:var(--secondary)]",
+          "border-border bg-background state-layer hover:text-foreground aria-expanded:text-foreground dark:bg-transparent",
+        secondary: "bg-secondary state-layer text-secondary-foreground",
         ghost:
           "state-layer hover:text-foreground aria-expanded:text-foreground",
         destructive:
