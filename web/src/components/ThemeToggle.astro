@@ -64,7 +64,15 @@ import { Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons"
   btn?.addEventListener("click", () => {
     const next =
       document.documentElement.dataset.theme === "light" ? "dark" : "light"
-    document.documentElement.dataset.theme = next
+    // Crossfaded where the browser can, as the app's picker is.
+    const swap = () => {
+      document.documentElement.dataset.theme = next
+    }
+    if (typeof document.startViewTransition === "function") {
+      document.startViewTransition(swap)
+    } else {
+      swap()
+    }
     try {
       localStorage.setItem("theme", next)
     } catch {

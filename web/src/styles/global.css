@@ -337,3 +337,11 @@ section {
 ::selection {
   background: var(--color-selection);
 }
+
+/* The theme toggle crossfades, over the app's 200ms (see tailwind.css). */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: ease;
+}

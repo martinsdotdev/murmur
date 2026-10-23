@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { flushSync } from "react-dom"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Popover } from "@base-ui/react/popover"
 import {
@@ -112,6 +113,7 @@ import {
 import { isVideoId, parseYouTubeUrl } from "@/lib/youtube"
 import {
   applyTheme,
+  crossfadeTheme,
   readThemeMode,
   writeThemeMode,
   type ThemeMode,
@@ -1349,10 +1351,14 @@ export function MurmurApp() {
   // Theme is the site's, not the app's: it lives under its own localStorage key
   // so the landing page's toggle and this picker move the same setting.
   const [themeMode, setThemeMode] = React.useState<ThemeMode>(readThemeMode)
-  const selectTheme = (mode: ThemeMode) => {
-    setThemeMode(mode)
-    writeThemeMode(mode)
-  }
+  // Applied and committed inside the crossfade, so the new snapshot already
+  // has the new colours and the picker's new selection.
+  const selectTheme = (mode: ThemeMode) =>
+    crossfadeTheme(() => {
+      applyTheme(mode)
+      flushSync(() => setThemeMode(mode))
+      writeThemeMode(mode)
+    })
   const [settingsOpen, setSettingsOpen] = React.useState(false)
   // A dialog a shortcut opened or closed comes and goes without motion: the
   // keyboard is the fast path, and animating it reads as lag. Any pointer

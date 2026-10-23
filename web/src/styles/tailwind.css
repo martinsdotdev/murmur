@@ -583,6 +583,15 @@
   }
 }
 
+/* A theme change crossfades (crossfadeTheme in lib/theme.ts) over a colour
+   change's 200ms rather than the browser's 250ms. */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: ease;
+}
+
 /* The selection rail grows from its middle, so the mark reads as arriving on
    the row rather than sliding in from somewhere off-screen. */
 @keyframes murmur-rail {

@@ -33,6 +33,20 @@ export function writeThemeMode(mode: ThemeMode): void {
   }
 }
 
+/**
+ * Runs a theme change as a crossfade where the browser has View Transitions,
+ * since otherwise every surface changes colour in one frame. The swap runs
+ * inside the transition, so the new snapshot is the new theme. It's opacity
+ * only, so it stays under reduced motion; without the API it's instant.
+ */
+export function crossfadeTheme(swap: () => void): void {
+  if (typeof document.startViewTransition === "function") {
+    document.startViewTransition(swap)
+  } else {
+    swap()
+  }
+}
+
 export function applyTheme(mode: ThemeMode): void {
   const dark =
     mode === "dark" ||
