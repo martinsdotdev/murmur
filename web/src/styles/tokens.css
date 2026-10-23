@@ -17,6 +17,11 @@
   --color-brand-background: #d18a2c; /* button rest */
   --color-brand-background-hover: #e09a3a; /* button hover */
   --color-brand-background-pressed: #a85820; /* button pressed */
+  /* Fills behind text labels (.btn-primary). Dark text on the amber already
+     clears AA here; the light theme needs a darker tone, as the app does. */
+  --color-brand-fill: var(--color-brand-background);
+  --color-brand-fill-hover: var(--color-brand-background-hover);
+  --color-brand-fill-pressed: var(--color-brand-background-pressed);
   --color-brand-stroke-1: #f5c375;
   --color-brand-stroke-2: rgba(245, 195, 117, 0.32);
 
@@ -168,6 +173,9 @@
   /* === Focus (Fluent 2 dual-ring) ================================= */
   --focus-stroke-outer: var(--color-neutral-foreground-1);
   --focus-stroke-inner: var(--color-neutral-background-1);
+  /* The app's focus ring (web/src/styles/tailwind.css --ring), so the site
+     and the app show the same indicator. */
+  --focus-ring: #f5c375;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -211,14 +219,19 @@
   --color-brand-background: #b86d20;
   --color-brand-background-hover: #c97c2d;
   --color-brand-background-pressed: #944f12;
+  /* White on the amber is 4.0:1, under AA for text, so labelled fills take
+     the app's --filled tone (6.7:1) and darken on hover. */
+  --color-brand-fill: #8a4c10;
+  --color-brand-fill-hover: #6c3a00;
+  --color-brand-fill-pressed: #5a3000;
   --color-neutral-foreground-on-brand: #ffffff;
 
   /* The light theme never overrode these, so accent text and icons kept the
      dark theme's pale tile-amber: 1.28:1 on the icon wells, i.e. invisible.
      Chosen to clear 4.5:1 on the page, on cards, and on background-3, which
      is where the feature icons and the numbered install steps sit. */
-  --color-brand-foreground: #944f12;
-  --color-brand-foreground-hover: #7a3f0c;
+  --color-brand-foreground: #8a4c10;
+  --color-brand-foreground-hover: #6c3a00;
 
   --acrylic-tint: rgba(250, 246, 238, 0.75);
   --acrylic-tint-strong: rgba(250, 246, 238, 0.85);
@@ -238,4 +251,7 @@
 
   --focus-stroke-outer: var(--color-neutral-foreground-1);
   --focus-stroke-inner: var(--color-neutral-background-1);
+  /* The app's focus ring (web/src/styles/tailwind.css --ring), so the site
+     and the app show the same indicator. */
+  --focus-ring: #b86d20;
 }

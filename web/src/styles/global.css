@@ -203,11 +203,11 @@ button {
 }
 
 /* ==========================================================================
-   Focus rings, Fluent 2 dual-ring (outer + inner)
+   Focus ring: the app's, a solid 3px amber ring 2px outside the control
    ========================================================================== */
 
 :focus-visible {
-  outline: 2px solid var(--focus-stroke-outer);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: var(--border-radius-small);
 }
@@ -245,17 +245,17 @@ button {
 
 /* Primary (accent / brand) */
 .btn-primary {
-  background-color: var(--color-brand-background);
+  background-color: var(--color-brand-fill);
   color: var(--color-neutral-foreground-on-brand);
   box-shadow: var(--shadow-2);
 }
 .btn-primary:hover {
-  background-color: var(--color-brand-background-hover);
+  background-color: var(--color-brand-fill-hover);
   color: var(--color-neutral-foreground-on-brand);
   text-decoration: none;
 }
 .btn-primary:active {
-  background-color: var(--color-brand-background-pressed);
+  background-color: var(--color-brand-fill-pressed);
 }
 
 /* Secondary (default outlined) */
