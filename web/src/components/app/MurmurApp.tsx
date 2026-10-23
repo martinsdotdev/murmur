@@ -2683,11 +2683,14 @@ export function MurmurApp() {
     // sound arrives; a mouse already has hover.
     // While its menu is open the card holds M3's 10% pressed layer, so the
     // menu reads as belonging to it.
+    // On is the raised fill alone, with the amber left to the icon, slider
+    // and meters inside: an amber edge as well, on every card that's on,
+    // made a playing mix the loudest thing on the page.
     const tileState = cn(
-      "rounded-lg shadow-level-1 [transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] data-popup-open:bg-[color-mix(in_srgb,var(--tile-bg),currentColor_10%)] pointer-coarse:motion-safe:active:scale-[0.98]",
+      "rounded-lg shadow-level-1 [transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] hover:ring-brand/40 data-popup-open:bg-[color-mix(in_srgb,var(--tile-bg),currentColor_10%)] dark:hover:ring-brand/40 pointer-coarse:motion-safe:active:scale-[0.98]",
       active
-        ? "bg-secondary ring-ring [--tile-bg:var(--secondary)] dark:ring-ring"
-        : "[--tile-bg:var(--card)] hover:ring-brand/40 dark:hover:ring-brand/40"
+        ? "bg-secondary [--tile-bg:var(--secondary)]"
+        : "[--tile-bg:var(--card)]"
     )
     // With the card, not after it: an icon that snaps while its card fades
     // reads as two changes.
