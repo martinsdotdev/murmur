@@ -3200,6 +3200,7 @@ export function MurmurApp() {
                 <Button
                   variant="ghost"
                   className="-mr-2 h-11 px-2 text-xs font-semibold text-brand hover:text-brand pointer-coarse:hit-target"
+                  aria-haspopup="dialog"
                   onClick={() => setAllMixesOpen(true)}
                 >
                   All mixes
@@ -3477,7 +3478,7 @@ export function MurmurApp() {
       >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Your mixes</DialogTitle>
+            <DialogTitle>All mixes</DialogTitle>
             <DialogDescription>
               Tap a mix to play it, or the dots beside it to rename, duplicate
               or delete it.
