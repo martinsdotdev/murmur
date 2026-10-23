@@ -321,7 +321,9 @@ function MixRow({
 }: MixRowProps) {
   return (
     <>
-      {loaded && (
+      {/* Fluent's rail marks the sidebar's row. The sheet's row is filled
+          whole by its caller instead, ··· included, as an M3 list's is. */}
+      {loaded && detail === undefined && (
         <span
           aria-hidden="true"
           className={cn(
@@ -343,7 +345,7 @@ function MixRow({
           "h-auto min-h-8 gap-2 rounded px-2.5 py-1.5 text-label-large font-semibold data-active:font-semibold",
           !loaded && "text-foreground/85",
           detail !== undefined &&
-            "min-h-14 gap-4 py-2 text-body-large font-normal data-active:font-normal",
+            "min-h-14 gap-4 rounded-m3-md py-2 text-body-large font-normal data-active:bg-transparent data-active:font-normal",
           className
         )}
       >
@@ -361,7 +363,16 @@ function MixRow({
         </span>
         {detail !== undefined ? (
           <span className="min-w-0 flex-1">
-            <MiddleTruncate text={name} />
+            {/* "(edited)" as Now playing writes it, since there's no rail here
+                to dim. */}
+            <span className="flex min-w-0">
+              <MiddleTruncate text={name} />
+              {dirty && (
+                <span className="shrink-0 whitespace-pre text-muted-foreground">
+                  {" (edited)"}
+                </span>
+              )}
+            </span>
             {/* An English sentence around isolated names, so it keeps the
                 page's direction; dir="auto" would take an Arabic name's. */}
             <span className="block truncate text-body-medium text-muted-foreground">
@@ -3680,7 +3691,14 @@ export function MurmurApp() {
               const open = mixActionsFor === mix.name
               return (
                 <SidebarMenuItem key={mix.name}>
-                  <div className="relative flex items-center">
+                  {/* The current mix's fill spans the whole row, ··· included,
+                      so the button reads as part of it. */}
+                  <div
+                    className={cn(
+                      "relative flex items-center rounded-m3-md",
+                      mix.name === mixName && "bg-sidebar-accent"
+                    )}
+                  >
                     <div className="min-w-0 flex-1">
                       <MixRow
                         name={mix.name}
