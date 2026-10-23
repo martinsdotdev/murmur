@@ -35,10 +35,6 @@ import Icon from "./Icon.astro"
     border-top: var(--stroke-width-thin) solid var(--color-neutral-stroke-2);
   }
 
-  .features-heading {
-    margin-bottom: var(--space-sn);
-  }
-
   .features-sub {
     font-size: 15px;
     color: var(--color-neutral-foreground-2);
@@ -89,7 +85,9 @@ import Icon from "./Icon.astro"
   }
 
   .card-sub {
-    font-size: var(--font-caption1-size);
+    /* The page's main explanation of the app, so body size, not caption. */
+    font-size: 15px;
+    line-height: 1.45;
     color: var(--color-neutral-foreground-3);
     margin-top: 2px;
   }

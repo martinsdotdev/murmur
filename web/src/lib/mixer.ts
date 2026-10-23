@@ -358,7 +358,7 @@ export class Mixer {
           n.id,
           err instanceof Error
             ? err.message
-            : "YouTube couldn't play that video"
+            : "YouTube couldn’t play that video"
         )
       })
       .finally(() => {

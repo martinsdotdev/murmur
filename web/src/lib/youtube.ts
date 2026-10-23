@@ -133,7 +133,7 @@ function loadIframeApi(): Promise<void> {
     script.async = true
     script.onerror = () => {
       window.clearTimeout(timer)
-      reject(new Error("Couldn't reach YouTube"))
+      reject(new Error("Couldn’t reach YouTube"))
     }
     document.head.appendChild(script)
   })
@@ -167,16 +167,16 @@ function playerContainer(): HTMLElement {
 function errorMessage(code: number): string {
   switch (code) {
     case 2:
-      return "That video link isn't valid"
+      return "That video link isn’t valid"
     case 5:
-      return "This video can't play in a browser"
+      return "This video can’t play in a browser"
     case 100:
       return "That video is private or no longer exists"
     case 101:
     case 150:
-      return "The owner doesn't allow this video to be embedded"
+      return "The owner doesn’t allow this video to be embedded"
     default:
-      return "YouTube couldn't play that video"
+      return "YouTube couldn’t play that video"
   }
 }
 
@@ -215,13 +215,13 @@ export async function createYouTubeSound(
   // existing catch in mixer.setStreamVolume, which zeroes the sound and toasts.
   if (!navigator.onLine) {
     throw new Error(
-      "YouTube sounds need a connection. Tap again when you're back online"
+      "YouTube sounds need a connection. Tap again when you’re back online"
     )
   }
 
   await loadIframeApi()
   const YT = window.YT
-  if (!YT) throw new Error("Couldn't reach YouTube")
+  if (!YT) throw new Error("Couldn’t reach YouTube")
 
   const mount = document.createElement("div")
   playerContainer().appendChild(mount)
@@ -288,7 +288,7 @@ export async function createYouTubeSound(
   })
 
   const live = player as YTPlayer | null
-  if (!live) throw new Error("Couldn't reach YouTube")
+  if (!live) throw new Error("Couldn’t reach YouTube")
 
   return {
     setVolume(fraction) {

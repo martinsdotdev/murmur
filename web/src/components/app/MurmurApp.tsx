@@ -724,7 +724,8 @@ function PrefRow({
     <label className="flex cursor-pointer items-center gap-3.5 state-layer px-3.5 py-3 transition-colors">
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold">{title}</span>
-        <span className="mt-0.5 block text-xs text-muted-foreground">
+        {/* 150%: these are sentences, and 133% packed them too tight. */}
+        <span className="mt-0.5 block text-xs leading-[1.125rem] text-muted-foreground">
           {description}
         </span>
       </span>
@@ -1055,8 +1056,8 @@ export function MurmurApp() {
     if (!navigator.onLine) offlineFailures.current.add(id)
     toast(
       navigator.onLine
-        ? `Couldn't load ${isolate(nameFor(id))}. This browser may not support the file`
-        : `${isolate(nameFor(id))} isn't saved for offline use yet. Reconnect to add it`,
+        ? `Couldn’t load ${isolate(nameFor(id))}. This browser may not support the file`
+        : `${isolate(nameFor(id))} isn’t saved for offline use yet. Reconnect to add it`,
       {
         id: "sound-load-failed",
       }
@@ -1174,7 +1175,7 @@ export function MurmurApp() {
     try {
       host = new URL(url).hostname.replace(/^www\./, "")
     } catch {
-      toast("That doesn't look like a link")
+      toast("That doesn’t look like a link")
       return
     }
     const id = `cu${Date.now()}`
@@ -1222,7 +1223,7 @@ export function MurmurApp() {
           )
         )
       } else {
-        toast("Couldn't save the file. It'll play until you close this tab")
+        toast("Couldn’t save the file. It’ll play until you close this tab")
       }
     })
   }
@@ -1385,7 +1386,7 @@ export function MurmurApp() {
       toast(
         lost.length === 1
           ? `${isolate(nameFor(lost[0]))} is missing from this browser. Add the file again from its tile`
-          : `${lost.length} of this mix's sounds are missing from this browser. Add their files again from their tiles`,
+          : `${lost.length} of this mix’s sounds are missing from this browser. Add their files again from their tiles`,
         { id: "sound-missing" }
       )
     }
@@ -1610,7 +1611,7 @@ export function MurmurApp() {
     }
     navigator.clipboard.writeText(info).then(
       () => toast.success("Build info copied"),
-      () => toast("Couldn't copy the build info")
+      () => toast("Couldn’t copy the build info")
     )
   }
 
@@ -1636,8 +1637,8 @@ export function MurmurApp() {
       toast(
         droppedCustoms
           ? current
-            ? "Only your own sounds are playing, and those can't be shared"
-            : "This mix only has your own sounds, and those can't be shared"
+            ? "Only your own sounds are playing, and those can’t be shared"
+            : "This mix only has your own sounds, and those can’t be shared"
           : current
             ? "Nothing playing to share yet"
             : "This mix has no sounds to share"
@@ -1647,7 +1648,7 @@ export function MurmurApp() {
     const url = `${window.location.origin}${window.location.pathname}#mix=${fragment}&n=${encodeURIComponent(name)}`
     const done = () =>
       droppedCustoms
-        ? toast.success("Link copied. Your own sounds aren't included")
+        ? toast.success("Link copied. Your own sounds aren’t included")
         : toast.success("Link copied")
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(done, done)
@@ -1968,7 +1969,7 @@ export function MurmurApp() {
   React.useEffect(() => {
     if (canPlayOgg()) return
     toast(
-      "Murmur's built-in sounds need Safari 18.4 or later. YouTube sounds and your own MP3 or M4A files still play",
+      "Murmur’s built-in sounds need Safari 18.4 or later. YouTube sounds and your own MP3 or M4A files still play",
       { id: "ogg-unsupported", duration: Infinity }
     )
   }, [])
@@ -2049,7 +2050,7 @@ export function MurmurApp() {
       // Cleared here, so the offer appears once per outage rather than on
       // every flap of a bad connection.
       offlineFailures.current.clear()
-      toast("You're back online", {
+      toast("You’re back online", {
         id: "back-online",
         action: {
           label: ids.length === 1 ? "Play it" : "Play them",
@@ -3130,7 +3131,7 @@ export function MurmurApp() {
                   level={vols[id] ?? 0}
                   note={
                     IS_IPHONE && ytVideoId(id)
-                      ? "Uses your iPhone's volume"
+                      ? "Uses your iPhone’s volume"
                       : undefined
                   }
                   onDrag={(v) => dragVolume(id, v)}
@@ -3572,7 +3573,7 @@ export function MurmurApp() {
                       <p className="min-w-0 flex-1 text-xs text-muted-foreground">
                         {pwa.canInstall
                           ? "Install Murmur to launch it from your dock or home screen."
-                          : "To install, use your browser's Add to Home Screen option."}
+                          : "To install, use your browser’s Add to Home Screen option."}
                       </p>
                       {pwa.canInstall && (
                         <Button

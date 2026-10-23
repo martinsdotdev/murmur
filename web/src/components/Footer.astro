@@ -36,7 +36,9 @@ import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
               <div class="attr-row">
                 <span class="attr-name">{s.name}</span>
                 <span class="attr-leader" aria-hidden="true" />
-                <span class="attr-author">{s.attribution.author}</span>
+                <span class="attr-author" title={s.attribution.author}>
+                  {s.attribution.author}
+                </span>
                 <a
                   href={s.attribution.sourceUrl}
                   target="_blank"
@@ -112,16 +114,14 @@ import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
   .footer-links {
     display: flex;
     gap: 18px;
-    font-size: 12.5px;
+    font-size: 13px;
     flex-wrap: wrap;
   }
 
   .attr-heading {
     font-family: var(--font-family-base);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
     color: var(--color-neutral-foreground-3);
     margin-bottom: var(--space-m);
   }
@@ -142,7 +142,7 @@ import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
     display: flex;
     align-items: baseline;
     gap: var(--space-s);
-    font-size: var(--font-caption1-size);
+    font-size: 13px;
     padding: 3px 0;
     min-width: 0;
   }
@@ -167,17 +167,17 @@ import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
 
   .attr-license {
     white-space: nowrap;
-    font-size: 11.5px;
+    font-size: 13px;
   }
 
   .attr-note {
     margin-top: var(--space-m);
-    font-size: 11.5px;
+    font-size: 13px;
     color: var(--color-neutral-foreground-3);
   }
 
   .footer-base {
-    font-size: 11.5px;
+    font-size: 13px;
     color: var(--color-neutral-foreground-3);
     margin-top: 40px;
     padding-top: 18px;

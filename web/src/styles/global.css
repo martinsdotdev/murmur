@@ -33,8 +33,9 @@ body {
   background: var(--color-neutral-background-1);
   color: var(--color-neutral-foreground-1);
   font-family: var(--font-family-base);
-  font-size: var(--font-body1-size);
-  line-height: var(--font-body1-line);
+  /* Running text starts at 16px; controls set their own 14px. */
+  font-size: 16px;
+  line-height: 1.45;
   font-weight: var(--font-weight-regular);
   /*
    * Subtle "mica-like" tinted-noise base. The radial gradients are tinted by
@@ -93,6 +94,8 @@ h6 {
   font-size: clamp(32px, 3.6vw, 42px);
   line-height: 1.15;
   letter-spacing: -0.02em;
+  /* The same space under every section heading; sections space above. */
+  margin: 0 0 16px;
 }
 
 .fluent-display {
