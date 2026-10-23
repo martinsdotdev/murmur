@@ -768,9 +768,10 @@ function ThemeSwatch({
       onClick={onSelect}
       aria-pressed={active}
       className={cn(
-        "cursor-pointer rounded-m3-xs border p-[9px_9px_8px] text-left transition-colors first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) hover:border-brand",
+        "cursor-pointer rounded-m3-xs border state-layer p-[9px_9px_8px] text-left transition-[color,background-color,border-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px",
         // Selected as everywhere else: the raised container plus amber. The
-        // rest are tiles like the list beneath them, with no outline.
+        // rest are tiles like the list beneath them, with no outline, and
+        // hover and press as the buttons do.
         active ? "border-brand bg-secondary" : "border-transparent bg-grouped"
       )}
     >
