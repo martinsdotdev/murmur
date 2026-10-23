@@ -78,6 +78,8 @@ import {
   DEFAULT_MASTER,
   DEFAULT_PREFS,
   DEV_FIXTURE,
+  MIX_NAME_MAX,
+  SOUND_NAME_MAX,
   loadPersisted,
   savePersisted,
   type CustomSound,
@@ -102,9 +104,11 @@ import {
   writeThemeMode,
   type ThemeMode,
 } from "@/lib/theme"
+import { clampName, isolate } from "@/lib/text"
 import { cn } from "@/lib/utils"
 
 import { DevDataToggle } from "./DevDataToggle"
+import { MiddleTruncate } from "./MiddleTruncate"
 import { SoundIcon } from "./SoundIcon"
 import { useCoarsePointer } from "./use-coarse-pointer"
 import { persistStorage, usePwa } from "./use-pwa"
@@ -189,7 +193,7 @@ function BrandMark({ size = 18 }: { size?: number }) {
 
 /** Two links and a button sit in one row, so they have to read as one set. */
 const aboutLink =
-  "flex h-[30px] items-center gap-[7px] rounded-[5px] px-2.5 text-xs font-semibold text-foreground/85 transition-colors hover:bg-accent hover:text-foreground"
+  "flex min-h-[1.875rem] items-center gap-[7px] rounded-[5px] px-2.5 text-xs font-semibold text-foreground/85 transition-colors hover:bg-accent hover:text-foreground"
 
 /** A mix's loudest sound stands in for it, so "Rainy café" reads as a café. */
 function mixIconPath(mix: MixerState) {
@@ -260,7 +264,7 @@ function MixRow({
         className={cn(
           // data-active:font-semibold because the variant's data-active sets
           // font-medium, and the row's weight is fixed at 600 by the design.
-          "h-[34px] gap-[7px] rounded-[7px] px-2.5 text-[13px] leading-[17px] font-semibold data-active:font-semibold",
+          "h-auto min-h-[2.125rem] gap-[7px] rounded-[7px] px-2.5 text-[0.8125rem] leading-[1.0625rem] font-semibold data-active:font-semibold",
           !loaded && "text-foreground/85",
           className
         )}
@@ -268,7 +272,7 @@ function MixRow({
         <span className="flex size-3.5 shrink-0 items-center justify-center">
           <SoundIcon path={mixIconPath(mix)} size={13} strokeWidth={1.9} />
         </span>
-        <span>{name}</span>
+        <MiddleTruncate text={name} />
       </SidebarMenuButton>
       {/* The component centres itself with top-*, keyed to the peer button's
           data-size. top-2 centres a 20px action in the default 36px row. This
@@ -302,6 +306,7 @@ function RenameDialog({
   title,
   placeholder,
   value,
+  maxLength,
   onValueChange,
   onRename,
   onCancel,
@@ -310,6 +315,7 @@ function RenameDialog({
   title: string
   placeholder: string
   value: string
+  maxLength: number
   onValueChange: (value: string) => void
   onRename: () => void
   onCancel: () => void
@@ -325,6 +331,7 @@ function RenameDialog({
         <Input
           autoFocus
           value={value}
+          maxLength={maxLength}
           placeholder={placeholder}
           autoComplete="off"
           enterKeyHint="done"
@@ -367,7 +374,7 @@ function MixChip({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "flex h-10 shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors pointer-coarse:hit-target",
+        "flex h-10 max-w-[14rem] shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-[0.8125rem] font-semibold whitespace-nowrap transition-colors pointer-coarse:hit-target",
         active
           ? "border-brand bg-secondary text-foreground"
           : "bg-muted state-layer text-foreground/85"
@@ -390,7 +397,7 @@ function MixChip({
           />
         )
       )}
-      {label}
+      <MiddleTruncate text={label} />
     </button>
   )
 }
@@ -457,9 +464,15 @@ function NowPlayingRow({
         {icon}
       </span>
       <span className="w-24 shrink-0">
-        <span className="block truncate text-sm font-semibold">{name}</span>
+        <span
+          dir="auto"
+          title={name}
+          className="block truncate text-sm font-semibold"
+        >
+          {name}
+        </span>
         {note && (
-          <span className="block text-[11px] leading-tight text-muted-foreground">
+          <span className="block text-[0.6875rem] leading-tight text-muted-foreground">
             {note}
           </span>
         )}
@@ -578,7 +591,7 @@ function readInitialState(): {
     Object.keys(state.vols).length > 0 &&
     (state.dirty || !state.saved.some((s) => s.name === state.mixName))
   state.vols = mix
-  state.mixName = params.get("n")?.trim() || "Shared mix"
+  state.mixName = clampName(params.get("n") ?? "", MIX_NAME_MAX) || "Shared mix"
   state.dirty = false
 
   // A link can name a video this browser has never seen, so its custom has
@@ -766,7 +779,7 @@ function PrefSlider({
           onValueChange={(v) => onChange(v as number)}
         />
       </div>
-      <div className="flex justify-between text-[11px] text-muted-foreground">
+      <div className="flex justify-between text-[0.6875rem] text-muted-foreground">
         <span>{minLabel}</span>
         <span>{maxLabel}</span>
       </div>
@@ -1028,8 +1041,8 @@ export function MurmurApp() {
     if (!navigator.onLine) offlineFailures.current.add(id)
     toast(
       navigator.onLine
-        ? `Couldn't load ${nameFor(id)}. This browser may not support the file`
-        : `${nameFor(id)} isn't saved for offline use yet. Reconnect to add it`,
+        ? `Couldn't load ${isolate(nameFor(id))}. This browser may not support the file`
+        : `${isolate(nameFor(id))} isn't saved for offline use yet. Reconnect to add it`,
       {
         id: "sound-load-failed",
       }
@@ -1123,7 +1136,11 @@ export function MurmurApp() {
 
     commitCustoms([
       ...customsRef.current,
-      { id, name: name || YT_PLACEHOLDER_NAME, videoId },
+      {
+        id,
+        name: clampName(name, SOUND_NAME_MAX) || YT_PLACEHOLDER_NAME,
+        videoId,
+      },
     ])
     // Registered before the volume change, so the mixer recognises the id as a
     // stream instead of going looking for /sounds/yt_<id>.ogg.
@@ -1149,7 +1166,7 @@ export function MurmurApp() {
     const id = `cu${Date.now()}`
     commitCustoms([
       ...customsRef.current,
-      { id, name: addName.trim() || host, url },
+      { id, name: clampName(addName.trim() || host, SOUND_NAME_MAX), url },
     ])
     setAddOpen(false)
     changeVolume(id, DEFAULT_TOGGLE_VOLUME, { keepName: true })
@@ -1158,7 +1175,10 @@ export function MurmurApp() {
   const addFromFile = (file: File) => {
     const id = `cf${Date.now()}`
     blobUrls.current.set(id, URL.createObjectURL(file))
-    const name = addName.trim() || file.name.replace(/\.[^.]+$/, "")
+    const name = clampName(
+      addName.trim() || file.name.replace(/\.[^.]+$/, ""),
+      SOUND_NAME_MAX
+    )
     commitCustoms([...customsRef.current, { id, name }])
     setAddOpen(false)
     changeVolume(id, DEFAULT_TOGGLE_VOLUME, { keepName: true })
@@ -1207,6 +1227,8 @@ export function MurmurApp() {
   }
 
   const togglePlay = () => {
+    // Nothing on, nothing to play: Space does what the disabled button does.
+    if (!playing && activeIds.length === 0) return
     ensureAudio()
     const next = !playing
     setPlaying(next)
@@ -1297,7 +1319,7 @@ export function MurmurApp() {
     setSaved((prev) => prev.filter((s) => s.name !== name))
     // Still loaded but no longer stored, so it must read as unsaved.
     if (name === mixName) setDirty(true)
-    toast(`Deleted “${name}”`, {
+    toast(`Deleted “${isolate(name)}”`, {
       id: "mix-deleted",
       action: {
         label: "Undo",
@@ -1325,7 +1347,7 @@ export function MurmurApp() {
     for (const [id, v] of Object.entries(vols)) if (v > 0) mix[id] = v
     setSaved((prev) => prev.map((s) => (s.name === name ? { ...s, mix } : s)))
     setDirty(false)
-    toast.success(`Saved changes to “${name}”`, {
+    toast.success(`Saved changes to “${isolate(name)}”`, {
       id: "mix-saved",
       action: {
         label: "Undo",
@@ -1343,17 +1365,20 @@ export function MurmurApp() {
 
   const duplicateMix = (mix: SavedMix) => {
     // Desktop leaves the active mix alone after duplicating.
-    const base = `${mix.name} copy`
-    let name = base
+    // The suffix is what tells the copies apart, so the original's name gives
+    // way to it at the length limit, never the other way round.
+    const copy = (suffix: string) =>
+      `${clampName(mix.name, MIX_NAME_MAX - suffix.length)}${suffix}`
+    let name = copy(" copy")
     for (let n = 2; saved.some((s) => s.name === name); n++)
-      name = `${base} ${n}`
+      name = copy(` copy ${n}`)
     setSaved((prev) => {
       const at = prev.findIndex((s) => s.name === mix.name)
       const next = [...prev]
       next.splice(at + 1, 0, { name, mix: { ...mix.mix } })
       return next
     })
-    toast.success(`Duplicated as “${name}”`)
+    toast.success(`Duplicated as “${isolate(name)}”`)
   }
 
   /**
@@ -1446,7 +1471,7 @@ export function MurmurApp() {
     setMixName(name)
     setDirty(false)
     setSaveOpen(false)
-    toast.success(`Saved “${name}”`)
+    toast.success(`Saved “${isolate(name)}”`)
   }
 
   /** What a bug report needs: which build, and which browser rendered it. */
@@ -1560,7 +1585,7 @@ export function MurmurApp() {
         customsRef.current.map((c) =>
           // Only fills the placeholder: a name the user typed is theirs.
           c.id === id && c.name === YT_PLACEHOLDER_NAME
-            ? { ...c, name: title }
+            ? { ...c, name: clampName(title, SOUND_NAME_MAX) }
             : c
         )
       )
@@ -1652,7 +1677,7 @@ export function MurmurApp() {
       setPlaying(true)
       mixer.setPlaying(true)
     }
-    toast(`Playing only ${nameFor(id)}`, {
+    toast(`Playing only ${isolate(nameFor(id))}`, {
       id: "play-only",
       action: {
         label: "Undo",
@@ -2022,10 +2047,13 @@ export function MurmurApp() {
 
   // The phone bar shows the countdown in its own timer button, so it takes
   // playStatus; the header has no such button and gets the full line.
-  const playStatus = [
-    activeIds.length === 1 ? "1 sound" : `${activeIds.length} sounds`,
-    playing ? "playing" : "paused",
-  ].join(" · ")
+  const playStatus =
+    activeIds.length === 0
+      ? "Nothing playing"
+      : [
+          activeIds.length === 1 ? "1 sound" : `${activeIds.length} sounds`,
+          playing ? "playing" : "paused",
+        ].join(" · ")
   const status = timerOn
     ? `${playStatus} · sleeps in ${formatClock(timerLeft)}`
     : playStatus
@@ -2105,7 +2133,7 @@ export function MurmurApp() {
       <span
         aria-hidden="true"
         className={cn(
-          "w-7 shrink-0 text-right font-mono text-[11px] tabular-nums opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+          "w-7 shrink-0 text-right font-mono text-[0.6875rem] tabular-nums opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
           active ? "text-brand" : "text-muted-foreground"
         )}
       >
@@ -2221,9 +2249,11 @@ export function MurmurApp() {
             <SoundIcon path={sound.iconPath} size={17} className={iconState} />
             <span
               className={cn(
-                "w-28 shrink-0 truncate text-xs",
+                "w-28 shrink-0 truncate text-xs sm:w-40 lg:w-56",
                 active ? "font-semibold" : "font-medium"
               )}
+              dir="auto"
+              title={sound.name}
             >
               {sound.name}
             </span>
@@ -2282,6 +2312,8 @@ export function MurmurApp() {
                 "min-w-0 flex-1 truncate text-xs",
                 active ? "font-semibold" : "font-medium"
               )}
+              dir="auto"
+              title={sound.name}
             >
               {sound.name}
             </span>
@@ -2317,12 +2349,12 @@ export function MurmurApp() {
       {/* From md up the header sits on the frame beside the sidebar, the two
           reading as one title bar over the inset panel. On a phone there is
           no panel, so it keeps its own surface and rule. */}
-      <header className="flex shrink-0 items-center border-b bg-background py-3 wide:border-b-0 wide:bg-transparent">
+      <header className="@container flex shrink-0 items-center border-b bg-background py-3 wide:border-b-0 wide:bg-transparent">
         {/* Exactly the sidebar's width, so the controls start where the
             panel does; pl-5 is the sidebar's own inset. */}
-        <div className="flex shrink-0 items-center gap-[7px] pl-4 wide:w-(--sidebar-width) wide:pl-5">
+        <div className="flex shrink-0 items-center gap-[7px] pl-4 @max-5xl:w-auto! wide:w-(--sidebar-width) wide:pl-5">
           <BrandMark />
-          <span className="font-serif text-[17px]">Murmur</span>
+          <span className="font-serif text-[1.0625rem]">Murmur</span>
         </div>
 
         {/* px-6 is the panel's p-6, so the play button and Share sit on the
@@ -2334,6 +2366,7 @@ export function MurmurApp() {
           <Button
             size="icon-lg"
             className="hidden rounded-full bg-primary hover:bg-primary/80 wide:inline-flex"
+            disabled={!playing && activeIds.length === 0}
             aria-label={playing ? "Pause" : "Play"}
             onClick={togglePlay}
           >
@@ -2354,9 +2387,9 @@ export function MurmurApp() {
               className="hidden min-h-11 min-w-0 items-center gap-2 rounded-md text-left wide:flex"
             >
               <span className="min-w-0">
-                <span className="block truncate text-sm font-medium">
-                  {mixName}
-                  {dirty && " *"}
+                <span className="flex min-w-0 text-sm font-medium">
+                  <MiddleTruncate text={mixName} />
+                  {dirty && <span className="shrink-0 whitespace-pre"> *</span>}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">
                   {status}
@@ -2370,9 +2403,9 @@ export function MurmurApp() {
             </button>
           ) : (
             <div className="hidden min-w-0 wide:block">
-              <p className="truncate text-sm font-medium">
-                {mixName}
-                {dirty && " *"}
+              <p className="flex min-w-0 text-sm font-medium">
+                <MiddleTruncate text={mixName} />
+                {dirty && <span className="shrink-0 whitespace-pre"> *</span>}
               </p>
               <p className="truncate text-xs text-muted-foreground">{status}</p>
             </div>
@@ -2384,7 +2417,7 @@ export function MurmurApp() {
               the phone bar stops. The level is always shown here: one number,
               where the cards have fourteen and keep theirs for hover. The
               speaker mutes, as on any player. */}
-          <div className="hidden w-52 min-w-0 items-center gap-1.5 wide:flex">
+          <div className="hidden w-52 min-w-0 items-center gap-1.5 @max-5xl:w-28 @max-5xl:min-w-20 wide:flex">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -2413,10 +2446,12 @@ export function MurmurApp() {
                 commitMaster((value as number) / 100)
               }
             />
-            {/* lg: below it the slider and the mix name need the room more. */}
+            {/* A container query, not lg:, so a larger text size counts too:
+                rem in a container query follows the root font size. Below it
+                the slider and the mix name need the room more. */}
             <span
               aria-hidden="true"
-              className="hidden w-7 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums lg:block"
+              className="hidden w-7 shrink-0 text-right font-mono text-[0.6875rem] text-muted-foreground tabular-nums @5xl:block"
             >
               {Math.round(master * 100)}
             </span>
@@ -2484,7 +2519,7 @@ export function MurmurApp() {
               strokeWidth={2}
               className="size-3.5"
             />
-            <span className="hidden lg:inline">Share</span>
+            <span className="hidden @5xl:inline">Share</span>
           </Button>
 
           {/* The phone header keeps two actions, at a finger's 44px. Preferences
@@ -2733,7 +2768,7 @@ export function MurmurApp() {
                   <div
                     className={cn(
                       shownView === "grid"
-                        ? "grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5"
+                        ? "grid grid-cols-[repeat(auto-fill,minmax(9.375rem,1fr))] gap-2.5"
                         : "flex flex-col gap-1.5"
                     )}
                   >
@@ -2751,7 +2786,7 @@ export function MurmurApp() {
                 <div
                   className={cn(
                     shownView === "grid"
-                      ? "grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5"
+                      ? "grid grid-cols-[repeat(auto-fill,minmax(9.375rem,1fr))] gap-2.5"
                       : "flex flex-col gap-1.5"
                   )}
                 >
@@ -2780,7 +2815,7 @@ export function MurmurApp() {
                       // height, not a round number: the 92px that was here made
                       // the whole Yours row 9px taller than every other section.
                       shownView === "grid"
-                        ? "min-h-[83px] flex-col p-3"
+                        ? "min-h-[5.1875rem] flex-col p-3"
                         : "px-4 py-3"
                     )}
                   >
@@ -2797,7 +2832,7 @@ export function MurmurApp() {
           </ScrollArea>
 
           {prefs.hints && !coarse && (
-            <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[11px] text-muted-foreground medium:px-6">
+            <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[0.6875rem] text-muted-foreground medium:px-6">
               {[
                 ["Space", "play"],
                 ["↑↓", "volume"],
@@ -2824,6 +2859,7 @@ export function MurmurApp() {
             <Button
               size="icon"
               className="size-12 shrink-0 rounded-full bg-primary shadow-md hover:bg-primary/80"
+              disabled={!playing && activeIds.length === 0}
               aria-label={playing ? "Pause" : "Play"}
               onClick={togglePlay}
             >
@@ -2841,9 +2877,9 @@ export function MurmurApp() {
               className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg text-left pointer-coarse:hit-target"
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">
-                  {mixName}
-                  {dirty && " *"}
+                <span className="flex min-w-0 text-sm font-semibold">
+                  <MiddleTruncate text={mixName} />
+                  {dirty && <span className="shrink-0 whitespace-pre"> *</span>}
                 </span>
                 <span className="mt-px block truncate text-xs text-muted-foreground">
                   {playStatus}
@@ -3101,6 +3137,7 @@ export function MurmurApp() {
           <Input
             autoFocus
             value={saveName}
+            maxLength={MIX_NAME_MAX}
             placeholder="Name your mix"
             autoComplete="off"
             enterKeyHint="done"
@@ -3132,6 +3169,7 @@ export function MurmurApp() {
           <div className="flex flex-col gap-2">
             <Input
               value={addName}
+              maxLength={SOUND_NAME_MAX}
               placeholder="Name (optional)"
               // Otherwise phones offer the user's own name here.
               autoComplete="off"
@@ -3160,7 +3198,7 @@ export function MurmurApp() {
 
           <div className="flex items-center gap-2.5">
             <Separator className="flex-1" />
-            <span className="text-[11px] text-muted-foreground">or</span>
+            <span className="text-[0.6875rem] text-muted-foreground">or</span>
             <Separator className="flex-1" />
           </div>
 
@@ -3373,8 +3411,9 @@ export function MurmurApp() {
             <PrefSection icon={Database01Icon} title="Your data">
               <div className="flex items-center gap-3 rounded-md border border-border px-3.5 py-3">
                 <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-                  {saved.length} saved {saved.length === 1 ? "mix" : "mixes"} ·{" "}
-                  {customs.length} of your own sounds, kept in this browser.
+                  {saved.length || customs.length
+                    ? `${saved.length} saved ${saved.length === 1 ? "mix" : "mixes"} and ${customs.length} ${customs.length === 1 ? "sound" : "sounds"} of your own, kept in this browser.`
+                    : "Nothing saved yet."}
                 </p>
                 <Button
                   variant="outline"
@@ -3538,6 +3577,7 @@ export function MurmurApp() {
         title="Rename mix"
         placeholder="Name your mix"
         value={renameValue}
+        maxLength={MIX_NAME_MAX}
         onValueChange={setRenameValue}
         onRename={renameMix}
         onCancel={() => setRenaming(null)}
@@ -3547,6 +3587,7 @@ export function MurmurApp() {
         title="Rename sound"
         placeholder="Name your sound"
         value={renameValue}
+        maxLength={SOUND_NAME_MAX}
         onValueChange={setRenameValue}
         onRename={renameSound}
         onCancel={() => setRenamingSound(null)}
@@ -3559,7 +3600,7 @@ export function MurmurApp() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-lg">
-              Remove “{removing?.name}”?
+              Remove “<bdi>{removing?.name}</bdi>”?
             </DialogTitle>
             {/* Only a file loses something the title doesn't already say. */}
             {removing && !removing.videoId && !removing.url && (

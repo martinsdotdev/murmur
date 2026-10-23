@@ -34,6 +34,16 @@ const V1_STATE = "murmur-app-state"
 const V1_SAVED = "murmur-app-saved"
 const V1_CUSTOM = "murmur-app-custom"
 
+/**
+ * Longest names, in graphemes. Long enough for a real YouTube title to stay
+ * recognisable; short enough that a name never has to carry a layout. Applied
+ * where names are made: typed, or taken from a file name, a video title or a
+ * shared link. Names already in storage are the user's and stay whole; the
+ * layout copes with them.
+ */
+export const MIX_NAME_MAX = 60
+export const SOUND_NAME_MAX = 80
+
 /** Exported so the master slider's double-click reset cannot drift from it. */
 export const DEFAULT_MASTER = 0.7
 
