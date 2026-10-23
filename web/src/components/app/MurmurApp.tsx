@@ -853,8 +853,8 @@ function PrefSection({
 
 /**
  * Stops propagation so removing never also toggles the card it sits in. On
- * touch the hit area grows to 44px past the 22px it draws; removing asks first,
- * so a near miss costs a Cancel, not a sound.
+ * touch the hit area grows to 44px past the 22px it draws; removing comes with
+ * Undo, so a near miss costs a tap, not a sound.
  */
 function RemoveSoundButton({
   name,
@@ -970,7 +970,6 @@ export function MurmurApp() {
     window.addEventListener("pointerdown", off)
     return () => window.removeEventListener("pointerdown", off)
   }, [])
-  const [resetOpen, setResetOpen] = React.useState(false)
   const [renaming, setRenaming] = React.useState<string | null>(null)
   /** An imported sound being renamed; the rename dialog serves both. */
   const [renamingSound, setRenamingSound] = React.useState<string | null>(null)
@@ -978,7 +977,6 @@ export function MurmurApp() {
   // doesn't also toggle the sound underneath.
   const menuOpenedAt = React.useRef(0)
   const [renameValue, setRenameValue] = React.useState("")
-  const [removing, setRemoving] = React.useState<CustomSound | null>(null)
   /**
    * Your own sounds whose file the browser has deleted to free space. The
    * record stays, so the tile can say so and take the file back under the
@@ -1252,6 +1250,67 @@ export function MurmurApp() {
     })
   }
 
+  /**
+   * Remove with Undo, like every other delete. A file outlives the toast so
+   * Undo can bring it back, and is deleted once the toast closes; a tab closed
+   * first leaves it to the boot-time sweep.
+   */
+  const removeSound = (id: string) => {
+    const at = customsRef.current.findIndex((c) => c.id === id)
+    if (at < 0) return
+    const custom = customsRef.current[at]
+    const level = vols[id] ?? 0
+    if (audioStarted.current) void mixer.setVolume(id, 0)
+    if (ytVideoId(id)) mixer.unregister(id)
+    commitCustoms(customsRef.current.filter((c) => c.id !== id))
+    setVols((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+    let settled = false
+    const purge = () => {
+      if (settled) return
+      settled = true
+      const objectUrl = blobUrls.current.get(id)
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+      blobUrls.current.delete(id)
+      void deleteBlob(id)
+      setMissing((prev) => {
+        if (!prev.has(id)) return prev
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+    // One toast per sound, so removing two in a row settles neither early.
+    toast(`Removed “${isolate(custom.name)}”`, {
+      id: `sound-removed:${id}`,
+      onAutoClose: purge,
+      onDismiss: purge,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          if (settled) return
+          settled = true
+          undoRef.current.undoRemoveSound(custom, at, level)
+        },
+      },
+    })
+  }
+
+  const undoRemoveSound = (custom: CustomSound, at: number, level: number) => {
+    if (customsRef.current.some((c) => c.id === custom.id)) return
+    const next = [...customsRef.current]
+    next.splice(Math.min(at, next.length), 0, custom)
+    commitCustoms(next)
+    if (custom.videoId) mixer.registerStream(custom.id, custom.videoId)
+    if (level > 0) {
+      setVols((prev) => ({ ...prev, [custom.id]: level }))
+      if (audioStarted.current) void applyVolume(custom.id, level, "fade")
+    }
+  }
+
   const toggleSound = (id: string) => {
     // Its file is gone; the tile asks for it instead (see renderSound).
     if (missing.has(id)) return
@@ -1339,7 +1398,6 @@ export function MurmurApp() {
   }
 
   const resetMix = () => {
-    setResetOpen(false)
     for (const id of Object.keys(vols)) {
       if (audioStarted.current) void mixer.setVolume(id, 0)
     }
@@ -1477,7 +1535,7 @@ export function MurmurApp() {
       }
     }
     pendingClear.current = purge
-    toast.success("Saved mixes and imported sounds cleared", {
+    toast.success("Saved mixes and your own sounds cleared", {
       id: "data-cleared",
       onAutoClose: purge,
       onDismiss: purge,
@@ -1568,8 +1626,8 @@ export function MurmurApp() {
       toast(
         droppedCustoms
           ? current
-            ? "Only your imported sounds are playing, and those can't be shared"
-            : "This mix only has imported sounds, and those can't be shared"
+            ? "Only your own sounds are playing, and those can't be shared"
+            : "This mix only has your own sounds, and those can't be shared"
           : current
             ? "Nothing playing to share yet"
             : "This mix has no sounds to share"
@@ -1579,7 +1637,7 @@ export function MurmurApp() {
     const url = `${window.location.origin}${window.location.pathname}#mix=${fragment}&n=${encodeURIComponent(name)}`
     const done = () =>
       droppedCustoms
-        ? toast.success("Link copied. Your imported sounds aren't included")
+        ? toast.success("Link copied. Your own sounds aren't included")
         : toast.success("Link copied")
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(done, done)
@@ -1708,6 +1766,7 @@ export function MurmurApp() {
     undoDelete,
     undoSaveChanges,
     undoClear,
+    undoRemoveSound,
   })
   React.useEffect(() => {
     undoRef.current = {
@@ -1716,6 +1775,7 @@ export function MurmurApp() {
       undoDelete,
       undoSaveChanges,
       undoClear,
+      undoRemoveSound,
     }
   })
 
@@ -2062,8 +2122,7 @@ export function MurmurApp() {
         const key = e.key.toLowerCase()
         if (key === "r" && !e.shiftKey) {
           e.preventDefault()
-          setKeyDriven(true)
-          if (Object.keys(vols).length) setResetOpen(true)
+          if (Object.keys(vols).length) turnAllOff()
         } else if (key === "i") {
           e.preventDefault()
           setKeyDriven(true)
@@ -2138,10 +2197,8 @@ export function MurmurApp() {
     addOpen ||
     timerOpen ||
     settingsOpen ||
-    resetOpen ||
     renaming !== null ||
-    renamingSound !== null ||
-    removing !== null
+    renamingSound !== null
   const metersPaused = pageHidden || anyDialogOpen
 
   // Nothing new to save when the loaded mix is a saved one, unedited.
@@ -2224,8 +2281,7 @@ export function MurmurApp() {
     )
 
     const videoId = ytVideoId(sound.id)
-    const askRemove = () =>
-      setRemoving(customsRef.current.find((c) => c.id === sound.id) ?? null)
+    const askRemove = () => removeSound(sound.id)
     const menu = (
       <ContextMenuContent>
         <ContextMenuItem
@@ -2582,15 +2638,16 @@ export function MurmurApp() {
             </ToggleGroupItem>
           </ToggleGroup>
 
-          {/* Below md, Now playing's "Turn all off" stands in for this. */}
+          {/* The same action as Now playing's "Turn all off" on a phone, and
+              the same Undo instead of a confirmation. */}
           <Button
             variant="ghost"
             size="icon-sm"
             className="hidden wide:inline-flex"
-            aria-label="Reset mix"
-            title="Reset mix (Ctrl+R)"
+            aria-label="Turn all off"
+            title="Turn all off (Ctrl+R)"
             disabled={activeIds.length === 0}
-            onClick={() => setResetOpen(true)}
+            onClick={turnAllOff}
           >
             <HugeiconsIcon
               icon={RefreshIcon}
@@ -2744,7 +2801,7 @@ export function MurmurApp() {
                   strokeWidth={2}
                   className="size-3.5"
                 />
-                Save current mix
+                Save mix
               </Button>
             </SidebarGroup>
           </SidebarContent>
@@ -3172,7 +3229,29 @@ export function MurmurApp() {
                     )}
                   >
                     <div className="min-h-0 overflow-hidden">
-                      <div className="flex gap-1 pb-1 pl-8">
+                      <div className="flex flex-wrap gap-1 pb-1 pl-8">
+                        {mix.name === mixName && dirty && (
+                          <Button
+                            variant="ghost"
+                            className="h-12 px-3"
+                            onClick={() => {
+                              saveChanges(mix.name)
+                              setMixActionsFor(null)
+                            }}
+                          >
+                            Save changes
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          className="h-12 px-3"
+                          onClick={() => {
+                            shareMix(mix.name, mix.mix, false)
+                            setMixActionsFor(null)
+                          }}
+                        >
+                          Share
+                        </Button>
                         <Button
                           variant="ghost"
                           className="h-12 px-3"
@@ -3185,7 +3264,7 @@ export function MurmurApp() {
                             setMixActionsFor(null)
                           }}
                         >
-                          Rename
+                          Rename…
                         </Button>
                         <Button
                           variant="ghost"
@@ -3648,23 +3727,6 @@ export function MurmurApp() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-        <DialogContent className="sm:max-w-sm" instant={keyDriven}>
-          <DialogHeader>
-            <DialogTitle className="text-lg">Reset mix?</DialogTitle>
-            <DialogDescription>
-              Turns every sound down to 0.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setResetOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={resetMix}>Reset</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <RenameDialog
         open={renaming !== null}
         title="Rename mix"
@@ -3685,38 +3747,6 @@ export function MurmurApp() {
         onRename={renameSound}
         onCancel={() => setRenamingSound(null)}
       />
-
-      <Dialog
-        open={removing !== null}
-        onOpenChange={(o) => !o && setRemoving(null)}
-      >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-lg">
-              Remove “<bdi>{removing?.name}</bdi>”?
-            </DialogTitle>
-            {/* Only a file loses something the title doesn't already say. */}
-            {removing && !removing.videoId && !removing.url && (
-              <DialogDescription>
-                The saved audio file will be deleted from this browser.
-              </DialogDescription>
-            )}
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRemoving(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (removing) removeCustom(removing.id)
-                setRemoving(null)
-              }}
-            >
-              Remove
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Below md the phone bar owns the bottom edge: 55px plus its padding
           over the home indicator, then an 8px gap. Sonner's own mobile switch
