@@ -24,6 +24,8 @@
  * and a parallel API would leave a video playing wherever a call was missed.
  */
 
+import { m } from "@/paraglide/messages.js"
+
 import { createYouTubeSound, type YouTubeSound } from "./youtube"
 
 const DEFAULT_FADE_IN_MS = 200
@@ -356,9 +358,7 @@ export class Mixer {
         n.volume = 0
         this.onStreamError?.(
           n.id,
-          err instanceof Error
-            ? err.message
-            : "YouTube couldn’t play that video"
+          err instanceof Error ? err.message : m.yt_failed()
         )
       })
       .finally(() => {

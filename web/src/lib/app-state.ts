@@ -14,6 +14,8 @@
 
 import { devFixtures } from "@/data/dev-fixtures"
 import { presets } from "@/data/presets"
+import { fromAnyLocale } from "@/lib/i18n"
+import { m } from "@/paraglide/messages.js"
 
 import type { MixerState } from "./mixer"
 import { isVideoId } from "./youtube"
@@ -213,6 +215,15 @@ function upgradePrefs(prefs: Prefs, rev: unknown): Prefs {
   }
 }
 
+/** A name the app gave a mix, in the language it gave it in, comes back in
+ * today's. A name anyone typed comes back as it is. */
+function localName(name: string) {
+  const own = [m.mix_new, m.mix_custom, m.mix_shared].find((message) =>
+    fromAnyLocale(message, name)
+  )
+  return own ? own() : name
+}
+
 function coerce(raw: unknown, defaultMaster: number): PersistedState {
   const r = isRecord(raw) ? raw : {}
   const vols = cleanVols(r.vols)
@@ -224,9 +235,9 @@ function coerce(raw: unknown, defaultMaster: number): PersistedState {
     // A name only means something alongside a mix to wear it.
     mixName: Object.keys(vols).length
       ? named
-        ? (r.mixName as string)
-        : "Custom mix"
-      : "New mix",
+        ? localName(r.mixName as string)
+        : m.mix_custom()
+      : m.mix_new(),
     dirty:
       Object.keys(vols).length && typeof r.dirty === "boolean"
         ? r.dirty

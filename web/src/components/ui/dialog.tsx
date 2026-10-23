@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Cancel01Icon } from "@hugeicons/core-free-icons"
+import { m } from "@/paraglide/messages.js"
 
 const SHEET_QUERY = "(width < 40rem)"
 
@@ -107,7 +108,9 @@ function DialogContent({
       }
     >
       <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-      <span className="sr-only">Close</span>
+      {/* DIVERGES FROM THE REGISTRY: the label is a message, in the app's
+          language. */}
+      <span className="sr-only">{m.action_close()}</span>
     </DialogPrimitive.Close>
   )
 

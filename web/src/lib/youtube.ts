@@ -17,6 +17,7 @@
  *    Nothing here can fix that; the mixer's slider is simply inert on iPhone.
  *  - There is no single-video loop parameter, so ENDED is caught and rewound.
  */
+import { m } from "@/paraglide/messages.js"
 
 const API_SRC = "https://www.youtube.com/iframe_api"
 
@@ -133,7 +134,7 @@ function loadIframeApi(): Promise<void> {
     script.async = true
     script.onerror = () => {
       window.clearTimeout(timer)
-      reject(new Error("Couldn’t reach YouTube"))
+      reject(new Error(m.yt_unreachable()))
     }
     document.head.appendChild(script)
   })
@@ -167,16 +168,16 @@ function playerContainer(): HTMLElement {
 function errorMessage(code: number): string {
   switch (code) {
     case 2:
-      return "That video link isn’t valid"
+      return m.yt_invalid_link()
     case 5:
-      return "This video can’t play in a browser"
+      return m.yt_no_browser()
     case 100:
-      return "That video is private or no longer exists"
+      return m.yt_private()
     case 101:
     case 150:
-      return "The owner doesn’t allow this video to be embedded"
+      return m.yt_no_embed()
     default:
-      return "YouTube couldn’t play that video"
+      return m.yt_failed()
   }
 }
 
@@ -221,7 +222,7 @@ export async function createYouTubeSound(
 
   await loadIframeApi()
   const YT = window.YT
-  if (!YT) throw new Error("Couldn’t reach YouTube")
+  if (!YT) throw new Error(m.yt_unreachable())
 
   const mount = document.createElement("div")
   playerContainer().appendChild(mount)
@@ -281,14 +282,14 @@ export async function createYouTubeSound(
           else reject(new Error(message))
         },
         onAutoplayBlocked: () => {
-          handlers.onError?.("Your browser blocked this video from starting")
+          handlers.onError?.(m.yt_autoplay_blocked())
         },
       },
     })
   })
 
   const live = player as YTPlayer | null
-  if (!live) throw new Error("Couldn’t reach YouTube")
+  if (!live) throw new Error(m.yt_unreachable())
 
   return {
     setVolume(fraction) {

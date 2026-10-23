@@ -12,7 +12,7 @@
   "hero_sub": "Toque sons ambiente enquanto trabalha, lê ou pega no sono. Sobreponha chuva a uma lareira e salve a mistura.",
   "hero_download": "Baixar para Windows",
   "hero_try": "Misture no navegador",
-  "hero_meta": "Gratuito · GPLv3 · Sem telemetria · Windows\u00a010 e 11",
+  "hero_meta": "Gratuito · GPLv3 · Sem telemetria · Windows 10 e 11",
   "features_heading": "O que ele faz",
   "features_sub": "Ele lembra das suas misturas.",
   "feature_layer_title": "Sobreponha sons em qualquer volume",
@@ -74,5 +74,336 @@
   "category_generated": "Gerados",
   "preset_rainy_cafe": "Café chuvoso",
   "preset_night_train": "Trem noturno",
-  "preset_seaside_evening": "Fim de tarde na praia"
+  "preset_seaside_evening": "Fim de tarde na praia",
+  "action_add": "Adicionar",
+  "action_cancel": "Cancelar",
+  "action_close": "Fechar",
+  "action_delete": "Excluir",
+  "action_duplicate": "Duplicar",
+  "action_export": "Exportar",
+  "action_import": "Importar",
+  "action_install": "Instalar",
+  "action_mute": "Silenciar",
+  "action_unmute": "Ativar som",
+  "action_open_youtube": "Abrir no YouTube",
+  "action_pause": "Pausar",
+  "action_play": "Tocar",
+  "action_play_back": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Tocar",
+        "countPlural=other": "Tocar todos"
+      }
+    }
+  ],
+  "action_play_only": "Tocar só este",
+  "action_reload": "Recarregar",
+  "action_remove": "Remover",
+  "action_rename": "Renomear",
+  "action_rename_ellipsis": "Renomear…",
+  "action_reset_level": "Redefinir volume",
+  "action_save": "Salvar",
+  "action_save_changes": "Salvar alterações",
+  "action_save_mix": "Salvar mix",
+  "action_save_mix_ellipsis": "Salvar mix…",
+  "action_share": "Compartilhar",
+  "action_start": "Iniciar",
+  "action_turn_all_off": "Desligar tudo",
+  "action_turn_off": "Desligar",
+  "action_undo": "Desfazer",
+  "mix_new": "Novo mix",
+  "mix_custom": "Mix personalizado",
+  "mix_shared": "Mix compartilhado",
+  "mix_name_pair": "{first} e {second}",
+  "mix_more": "mais {count}",
+  "mix_edited": " (editado)",
+  "mix_delete": "Excluir mix",
+  "mix_delete_named": "Excluir {name}",
+  "mix_more_for": "Mais opções para {name}",
+  "mix_copy_suffix": " (cópia)",
+  "mix_copy_suffix_numbered": " (cópia {n})",
+  "sound_that": "esse som",
+  "sound_volume": "Volume de {name}",
+  "sound_turn_off_named": "Desligar {name}",
+  "sound_release_named": "Tirar {name} da lista",
+  "sound_remove_named": "Remover {name}",
+  "sound_missing_note": "Arquivo ausente neste navegador. Escolha-o de novo",
+  "sound_missing_badge": "Ausente",
+  "sound_device_level": "Ajuste com os botões de volume do iPhone",
+  "count_sounds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} som",
+        "countPlural=other": "{count} sons"
+      }
+    }
+  ],
+  "count_mixes": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} mix",
+        "countPlural=other": "{count} mixes"
+      }
+    }
+  ],
+  "count_saved_mixes": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} mix salvo",
+        "countPlural=other": "{count} mixes salvos"
+      }
+    }
+  ],
+  "count_own_sounds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} som seu",
+        "countPlural=other": "{count} sons seus"
+      }
+    }
+  ],
+  "count_missing_files": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} arquivo ausente",
+        "countPlural=other": "{count} arquivos ausentes"
+      }
+    }
+  ],
+  "count_youtube_sounds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "um som do YouTube",
+        "countPlural=other": "{count} sons do YouTube"
+      }
+    }
+  ],
+  "duration_minutes": "{minutes} min",
+  "duration_hours": "{hours} h",
+  "duration_hours_minutes": "{hours} h {minutes} min",
+  "duration_hour_and_half": "1h30",
+  "status_nothing": "Nada tocando",
+  "status_playing": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} som · tocando",
+        "countPlural=other": "{count} sons · tocando"
+      }
+    }
+  ],
+  "status_paused": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} som · pausado",
+        "countPlural=other": "{count} sons · pausados"
+      }
+    }
+  ],
+  "status_sleeps": "{status} · desliga em {time}",
+  "timer_title": "Timer para dormir",
+  "timer_left_named": "Timer para dormir, faltam {time}",
+  "timer_fading": "Diminuindo o volume",
+  "timer_stops_at": "Para às {time}",
+  "timer_extend": "+{duration}",
+  "timer_length": "Duração do timer",
+  "timer_fade_minute": "Diminui o volume no último minuto e depois pausa.",
+  "timer_fade_seconds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Diminui o volume no último segundo e depois pausa.",
+        "countPlural=other": "Diminui o volume nos últimos {count} segundos e depois pausa."
+      }
+    }
+  ],
+  "now_playing": "Tocando agora",
+  "now_playing_show": "Mostrar Tocando agora",
+  "now_playing_hide": "Ocultar Tocando agora",
+  "now_playing_close": "Fechar Tocando agora",
+  "now_playing_empty": "Nada ligado ainda. Toque em um som para adicioná-lo.",
+  "master": "Geral",
+  "master_volume": "Volume geral",
+  "view_grid": "Ver em grade",
+  "view_list": "Ver em lista",
+  "turn_all_off_shortcut": "Desligar tudo (Ctrl+R)",
+  "preferences": "Preferências",
+  "preferences_shortcut": "Preferências (Ctrl+P)",
+  "your_mixes": "Seus mixes",
+  "all_mixes": "Todos os mixes",
+  "all_mixes_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} mix, guardado neste navegador.",
+        "countPlural=other": "{count} mixes, guardados neste navegador."
+      }
+    }
+  ],
+  "yours": "Seus",
+  "add_sound": "Adicionar som",
+  "add_own_sound": "Adicionar seu próprio som",
+  "key_space": "Espaço",
+  "hint_play": "tocar",
+  "hint_volume": "volume",
+  "hint_share": "compartilhar",
+  "hint_timer": "timer",
+  "hint_preferences": "preferências",
+  "media_album": "Mixer de sons ambiente",
+  "save_title": "Salvar este mix",
+  "save_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} som no volume atual.",
+        "countPlural=other": "{count} sons nos volumes atuais."
+      }
+    }
+  ],
+  "save_description_empty": "Nada está tocando, então o mix ficará vazio.",
+  "name_your_mix": "Dê um nome ao mix",
+  "name_your_sound": "Dê um nome ao som",
+  "rename_mix": "Renomear mix",
+  "rename_sound": "Renomear som",
+  "add_name_placeholder": "Nome (opcional)",
+  "add_url_placeholder": "Um link do YouTube, ou https://…/som.ogg",
+  "add_or": "ou",
+  "add_choose_file": "Escolher um arquivo de áudio…",
+  "section_appearance": "Aparência",
+  "section_playback": "Reprodução",
+  "section_offline": "Offline",
+  "section_data": "Seus dados",
+  "about": "Sobre",
+  "theme_auto": "Automático",
+  "theme_light": "Claro",
+  "theme_dark": "Escuro",
+  "colour": "Cor",
+  "scheme_amber": "Âmbar",
+  "scheme_rose": "Rosa",
+  "scheme_sage": "Sálvia",
+  "scheme_sky": "Céu",
+  "scheme_violet": "Violeta",
+  "pref_language_title": "Idioma",
+  "pref_language_description": "O Murmur recarrega para trocar.",
+  "pref_language_auto": "Automático",
+  "pref_black_title": "Preto puro à noite",
+  "pref_black_description": "Fundos pretos quando o tema é escuro, para telas OLED e quartos escuros.",
+  "pref_meters_title": "Medidores de nível",
+  "pref_meters_description": "Barras animadas nos sons que estão tocando.",
+  "pref_hints_title": "Dicas de teclado",
+  "pref_hints_description": "Faixa de atalhos na parte de baixo.",
+  "pref_fade_title": "Transição entre sons",
+  "pref_fade_instant": "Instantânea",
+  "pref_sleep_fade_title": "Fade-out do timer para dormir",
+  "pref_pause_title": "Pausar em abas em segundo plano",
+  "pref_pause_description": "Para quando você troca de aba ou bloqueia a tela, e volta quando você retorna.",
+  "pref_awake_title": "Manter a tela ligada",
+  "pref_awake_description": "Impede que a tela escureça enquanto os sons tocam.",
+  "pref_alongside_title": "Tocar junto com outros apps",
+  "pref_alongside_description": "A música continua tocando. A chave de silêncio silencia o Murmur, e ele para quando a tela é bloqueada.",
+  "offline_title": "Sons incluídos",
+  "offline_saved": "{cached} de {total} salvos para uso offline.",
+  "offline_saved_reconnect": "{cached} de {total} salvos para uso offline. Conecte-se para baixar o resto.",
+  "offline_downloading": "Baixando {cached} de {total}…",
+  "offline_download": "Baixar ({size})",
+  "install_title": "Instalar o Murmur",
+  "install_description_prompt": "Abra-o pelo Dock ou pela tela inicial.",
+  "install_description_apple": "Toque em Compartilhar e depois em Adicionar à Tela de Início.",
+  "install_description_menu": "Use o menu do navegador e depois Instalar app ou Adicionar à tela inicial.",
+  "data_title": "Guardado neste navegador",
+  "data_summary": "{mixes} e {sounds}.",
+  "data_empty": "Nada salvo ainda.",
+  "clear_all": "Apagar tudo",
+  "clear_sure": "Certeza?",
+  "backup_title": "Backup",
+  "backup_description": "Salve seus mixes e sons em um arquivo, ou adicione-os a partir de um.",
+  "backup_damaged": "Esse backup está danificado",
+  "backup_not_murmur": "Esse arquivo não é um backup do Murmur",
+  "backup_too_new": "Esse backup é de uma versão mais nova do Murmur",
+  "about_tagline": "Mixer de sons ambiente que roda no seu navegador.",
+  "about_source": "Código-fonte",
+  "about_credits": "Créditos",
+  "about_copy_build": "Copiar informações da versão",
+  "support_title": "Gratuito, sem contas, sem anúncios",
+  "support_description": "Se o Murmur ajuda você a se concentrar ou a dormir, você pode ajudar a pagar a hospedagem.",
+  "support_action": "Apoiar",
+  "prefs_shortcut_hint": "Pressione {key} para abrir isto",
+  "restore_defaults": "Restaurar padrões",
+  "share_only_own_playing": "Só seus próprios sons estão tocando, e eles não podem ser compartilhados",
+  "share_only_own_mix": "Este mix só tem sons seus, e eles não podem ser compartilhados",
+  "share_nothing_playing": "Nada tocando para compartilhar ainda",
+  "share_mix_empty": "Este mix não tem sons para compartilhar",
+  "link_replaced": "Este link substituiu seu mix não salvo",
+  "link_replaced_added": "Este link substituiu seu mix não salvo e adicionou {videos}",
+  "link_added": "Este link adicionou {videos} ao seu mixer",
+  "toast_load_failed": "Não foi possível carregar {name}. Este navegador pode não suportar o arquivo",
+  "toast_not_offline": "{name} ainda não está salvo para uso offline. Conecte-se para adicioná-lo",
+  "toast_video_exists": "Esse vídeo já está no seu mixer",
+  "toast_not_a_link": "Isso não parece um link",
+  "toast_sound_back": "{name} voltou",
+  "toast_file_not_saved": "Não foi possível salvar o arquivo. Ele toca até você fechar esta aba",
+  "toast_sound_removed": "“{name}” removido",
+  "toast_missing_one": "{name} está ausente deste navegador. Adicione o arquivo de novo pelo bloco dele",
+  "toast_missing_many": "{count} sons deste mix estão ausentes deste navegador. Adicione os arquivos de novo pelos blocos deles",
+  "toast_mix_deleted": "“{name}” excluído",
+  "toast_changes_saved": "Alterações salvas em “{name}”",
+  "toast_duplicated": "Duplicado como “{name}”",
+  "toast_backup_saved": "Backup salvo ({size})",
+  "toast_backup_partial": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Backup salvo ({size}). {count} dos seus sons não tem arquivo para incluir",
+        "countPlural=other": "Backup salvo ({size}). {count} dos seus sons não têm arquivo para incluir"
+      }
+    }
+  ],
+  "toast_files_not_saved": "Alguns arquivos de som não puderam ser salvos. Eles tocam até você fechar esta aba",
+  "toast_backup_nothing_new": "Nada de novo nesse backup",
+  "toast_imported": "{mixes} e {sounds} importados",
+  "toast_imported_relinked": "{mixes} e {sounds} importados, e {files} recuperados",
+  "toast_cleared": "Mixes salvos e seus próprios sons apagados",
+  "toast_saved": "“{name}” salvo",
+  "toast_no_clipboard": "Área de transferência indisponível neste navegador",
+  "toast_build_copied": "Informações da versão copiadas",
+  "toast_build_copy_failed": "Não foi possível copiar as informações da versão",
+  "toast_link_copied": "Link copiado",
+  "toast_link_copied_partial": "Link copiado. Seus próprios sons não estão incluídos",
+  "toast_link_in_address_bar": "O link está na barra de endereço",
+  "toast_playing_only": "Tocando só {name}",
+  "toast_turned_off": "Tudo desligado",
+  "toast_ogg_unsupported": "Os sons incluídos no Murmur precisam do Safari 18.4 ou posterior. Sons do YouTube e seus próprios arquivos MP3 ou M4A continuam tocando",
+  "toast_update_ready": "Uma nova versão do Murmur está pronta",
+  "toast_offline_ready": "Todos os {count} sons incluídos estão salvos para uso offline",
+  "toast_back_online": "Você está online de novo",
+  "toast_prefs_restored": "Preferências restauradas para os padrões",
+  "yt_placeholder": "Som do YouTube",
+  "yt_unreachable": "Não foi possível acessar o YouTube",
+  "yt_invalid_link": "Esse link de vídeo não é válido",
+  "yt_no_browser": "Este vídeo não pode tocar em um navegador",
+  "yt_private": "Esse vídeo é privado ou não existe mais",
+  "yt_no_embed": "O dono não permite que este vídeo seja incorporado",
+  "yt_failed": "O YouTube não conseguiu tocar esse vídeo",
+  "yt_autoplay_blocked": "Seu navegador impediu que este vídeo começasse"
 }

@@ -12,7 +12,7 @@
   "hero_sub": "Play ambient sounds while you work, read, or fall asleep. Layer rain over a fireplace and save the blend.",
   "hero_download": "Download for Windows",
   "hero_try": "Mix in the browser",
-  "hero_meta": "Free · GPLv3 · No telemetry · Windows\u00a010 and 11",
+  "hero_meta": "Free · GPLv3 · No telemetry · Windows 10 and 11",
   "features_heading": "What it does",
   "features_sub": "It remembers your blends.",
   "feature_layer_title": "Layer sounds at any volume",
@@ -74,5 +74,336 @@
   "category_generated": "Generated",
   "preset_rainy_cafe": "Rainy café",
   "preset_night_train": "Night train",
-  "preset_seaside_evening": "Seaside evening"
+  "preset_seaside_evening": "Seaside evening",
+  "action_add": "Add",
+  "action_cancel": "Cancel",
+  "action_close": "Close",
+  "action_delete": "Delete",
+  "action_duplicate": "Duplicate",
+  "action_export": "Export",
+  "action_import": "Import",
+  "action_install": "Install",
+  "action_mute": "Mute",
+  "action_unmute": "Unmute",
+  "action_open_youtube": "Open on YouTube",
+  "action_pause": "Pause",
+  "action_play": "Play",
+  "action_play_back": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Play it",
+        "countPlural=other": "Play them"
+      }
+    }
+  ],
+  "action_play_only": "Play only this",
+  "action_reload": "Reload",
+  "action_remove": "Remove",
+  "action_rename": "Rename",
+  "action_rename_ellipsis": "Rename…",
+  "action_reset_level": "Reset level",
+  "action_save": "Save",
+  "action_save_changes": "Save changes",
+  "action_save_mix": "Save mix",
+  "action_save_mix_ellipsis": "Save mix…",
+  "action_share": "Share",
+  "action_start": "Start",
+  "action_turn_all_off": "Turn all off",
+  "action_turn_off": "Turn off",
+  "action_undo": "Undo",
+  "mix_new": "New mix",
+  "mix_custom": "Custom mix",
+  "mix_shared": "Shared mix",
+  "mix_name_pair": "{first} and {second}",
+  "mix_more": "{count} more",
+  "mix_edited": " (edited)",
+  "mix_delete": "Delete mix",
+  "mix_delete_named": "Delete {name}",
+  "mix_more_for": "More for {name}",
+  "mix_copy_suffix": " copy",
+  "mix_copy_suffix_numbered": " copy {n}",
+  "sound_that": "that sound",
+  "sound_volume": "{name} volume",
+  "sound_turn_off_named": "Turn off {name}",
+  "sound_release_named": "Remove {name} from the list",
+  "sound_remove_named": "Remove {name}",
+  "sound_missing_note": "File missing from this browser. Choose it again",
+  "sound_missing_badge": "Missing",
+  "sound_device_level": "Set with your iPhone’s volume buttons",
+  "count_sounds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} sound",
+        "countPlural=other": "{count} sounds"
+      }
+    }
+  ],
+  "count_mixes": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} mix",
+        "countPlural=other": "{count} mixes"
+      }
+    }
+  ],
+  "count_saved_mixes": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} saved mix",
+        "countPlural=other": "{count} saved mixes"
+      }
+    }
+  ],
+  "count_own_sounds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} sound of your own",
+        "countPlural=other": "{count} sounds of your own"
+      }
+    }
+  ],
+  "count_missing_files": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} missing file",
+        "countPlural=other": "{count} missing files"
+      }
+    }
+  ],
+  "count_youtube_sounds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "a YouTube sound",
+        "countPlural=other": "{count} YouTube sounds"
+      }
+    }
+  ],
+  "duration_minutes": "{minutes} min",
+  "duration_hours": "{hours} h",
+  "duration_hours_minutes": "{hours} h {minutes} min",
+  "duration_hour_and_half": "1½ h",
+  "status_nothing": "Nothing playing",
+  "status_playing": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} sound · playing",
+        "countPlural=other": "{count} sounds · playing"
+      }
+    }
+  ],
+  "status_paused": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} sound · paused",
+        "countPlural=other": "{count} sounds · paused"
+      }
+    }
+  ],
+  "status_sleeps": "{status} · sleeps in {time}",
+  "timer_title": "Sleep timer",
+  "timer_left_named": "Sleep timer, {time} left",
+  "timer_fading": "Fading out",
+  "timer_stops_at": "Stops at {time}",
+  "timer_extend": "+{duration}",
+  "timer_length": "Timer length",
+  "timer_fade_minute": "Fades out over the last minute, then pauses.",
+  "timer_fade_seconds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Fades out over the last second, then pauses.",
+        "countPlural=other": "Fades out over the last {count} seconds, then pauses."
+      }
+    }
+  ],
+  "now_playing": "Now playing",
+  "now_playing_show": "Show Now playing",
+  "now_playing_hide": "Hide Now playing",
+  "now_playing_close": "Close Now playing",
+  "now_playing_empty": "Nothing on yet. Tap a sound to add it.",
+  "master": "Master",
+  "master_volume": "Master volume",
+  "view_grid": "Grid view",
+  "view_list": "List view",
+  "turn_all_off_shortcut": "Turn all off (Ctrl+R)",
+  "preferences": "Preferences",
+  "preferences_shortcut": "Preferences (Ctrl+P)",
+  "your_mixes": "Your mixes",
+  "all_mixes": "All mixes",
+  "all_mixes_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} mix, kept in this browser.",
+        "countPlural=other": "{count} mixes, kept in this browser."
+      }
+    }
+  ],
+  "yours": "Yours",
+  "add_sound": "Add sound",
+  "add_own_sound": "Add your own sound",
+  "key_space": "Space",
+  "hint_play": "play",
+  "hint_volume": "volume",
+  "hint_share": "share",
+  "hint_timer": "timer",
+  "hint_preferences": "preferences",
+  "media_album": "Ambient mixer",
+  "save_title": "Save this mix",
+  "save_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} sound at its current level.",
+        "countPlural=other": "{count} sounds at their current levels."
+      }
+    }
+  ],
+  "save_description_empty": "Nothing is playing, so the mix will be empty.",
+  "name_your_mix": "Name your mix",
+  "name_your_sound": "Name your sound",
+  "rename_mix": "Rename mix",
+  "rename_sound": "Rename sound",
+  "add_name_placeholder": "Name (optional)",
+  "add_url_placeholder": "A YouTube link, or https://…/sound.ogg",
+  "add_or": "or",
+  "add_choose_file": "Choose an audio file…",
+  "section_appearance": "Appearance",
+  "section_playback": "Playback",
+  "section_offline": "Offline",
+  "section_data": "Your data",
+  "about": "About",
+  "theme_auto": "Auto",
+  "theme_light": "Light",
+  "theme_dark": "Dark",
+  "colour": "Colour",
+  "scheme_amber": "Amber",
+  "scheme_rose": "Rose",
+  "scheme_sage": "Sage",
+  "scheme_sky": "Sky",
+  "scheme_violet": "Violet",
+  "pref_language_title": "Language",
+  "pref_language_description": "Murmur reloads to switch.",
+  "pref_language_auto": "Automatic",
+  "pref_black_title": "Pure black at night",
+  "pref_black_description": "Black backgrounds when the theme is dark, for OLED screens and dark rooms.",
+  "pref_meters_title": "Level meters",
+  "pref_meters_description": "Animated bars on playing sounds.",
+  "pref_hints_title": "Keyboard hints",
+  "pref_hints_description": "Shortcut strip along the bottom.",
+  "pref_fade_title": "Fade between sounds",
+  "pref_fade_instant": "Instant",
+  "pref_sleep_fade_title": "Sleep timer fade-out",
+  "pref_pause_title": "Pause in background tabs",
+  "pref_pause_description": "Stops when you switch away or lock the screen, resumes on return.",
+  "pref_awake_title": "Keep the screen awake",
+  "pref_awake_description": "Stops the screen dimming while sounds play.",
+  "pref_alongside_title": "Play alongside other apps",
+  "pref_alongside_description": "Music keeps playing. The silent switch mutes Murmur, and it stops when the screen locks.",
+  "offline_title": "Built-in sounds",
+  "offline_saved": "{cached} of {total} saved for offline use.",
+  "offline_saved_reconnect": "{cached} of {total} saved for offline use. Reconnect to download the rest.",
+  "offline_downloading": "Downloading {cached} of {total}…",
+  "offline_download": "Download ({size})",
+  "install_title": "Install Murmur",
+  "install_description_prompt": "Launch it from your dock or home screen.",
+  "install_description_apple": "Tap Share, then Add to Home Screen.",
+  "install_description_menu": "Use your browser’s menu, then Install app or Add to Home screen.",
+  "data_title": "Kept in this browser",
+  "data_summary": "{mixes} and {sounds}.",
+  "data_empty": "Nothing saved yet.",
+  "clear_all": "Clear all",
+  "clear_sure": "Sure?",
+  "backup_title": "Backup",
+  "backup_description": "Save your mixes and sounds to a file, or add them from one.",
+  "backup_damaged": "That backup is damaged",
+  "backup_not_murmur": "That file isn’t a Murmur backup",
+  "backup_too_new": "This backup is from a newer Murmur",
+  "about_tagline": "Ambient sound mixer that runs in your browser.",
+  "about_source": "Source",
+  "about_credits": "Credits",
+  "about_copy_build": "Copy build info",
+  "support_title": "Free, no accounts, no ads",
+  "support_description": "If Murmur helps you focus or sleep, you can chip in for the hosting.",
+  "support_action": "Support",
+  "prefs_shortcut_hint": "Press {key} to open this",
+  "restore_defaults": "Restore defaults",
+  "share_only_own_playing": "Only your own sounds are playing, and those can’t be shared",
+  "share_only_own_mix": "This mix only has your own sounds, and those can’t be shared",
+  "share_nothing_playing": "Nothing playing to share yet",
+  "share_mix_empty": "This mix has no sounds to share",
+  "link_replaced": "This link replaced your unsaved mix",
+  "link_replaced_added": "This link replaced your unsaved mix and added {videos}",
+  "link_added": "This link added {videos} to your mixer",
+  "toast_load_failed": "Couldn’t load {name}. This browser may not support the file",
+  "toast_not_offline": "{name} isn’t saved for offline use yet. Reconnect to add it",
+  "toast_video_exists": "That video is already in your mixer",
+  "toast_not_a_link": "That doesn’t look like a link",
+  "toast_sound_back": "{name} is back",
+  "toast_file_not_saved": "Couldn’t save the file. It’ll play until you close this tab",
+  "toast_sound_removed": "Removed “{name}”",
+  "toast_missing_one": "{name} is missing from this browser. Add the file again from its tile",
+  "toast_missing_many": "{count} of this mix’s sounds are missing from this browser. Add their files again from their tiles",
+  "toast_mix_deleted": "Deleted “{name}”",
+  "toast_changes_saved": "Saved changes to “{name}”",
+  "toast_duplicated": "Duplicated as “{name}”",
+  "toast_backup_saved": "Backup saved ({size})",
+  "toast_backup_partial": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Backup saved ({size}). {count} of your own sounds has no file to include",
+        "countPlural=other": "Backup saved ({size}). {count} of your own sounds have no file to include"
+      }
+    }
+  ],
+  "toast_files_not_saved": "Some sound files couldn’t be saved. They’ll play until you close this tab",
+  "toast_backup_nothing_new": "Nothing new in that backup",
+  "toast_imported": "Imported {mixes} and {sounds}",
+  "toast_imported_relinked": "Imported {mixes} and {sounds}, and brought back {files}",
+  "toast_cleared": "Saved mixes and your own sounds cleared",
+  "toast_saved": "Saved “{name}”",
+  "toast_no_clipboard": "Clipboard unavailable in this browser",
+  "toast_build_copied": "Build info copied",
+  "toast_build_copy_failed": "Couldn’t copy the build info",
+  "toast_link_copied": "Link copied",
+  "toast_link_copied_partial": "Link copied. Your own sounds aren’t included",
+  "toast_link_in_address_bar": "Link is in the address bar",
+  "toast_playing_only": "Playing only {name}",
+  "toast_turned_off": "Turned everything off",
+  "toast_ogg_unsupported": "Murmur’s built-in sounds need Safari 18.4 or later. YouTube sounds and your own MP3 or M4A files still play",
+  "toast_update_ready": "A new version of Murmur is ready",
+  "toast_offline_ready": "All {count} built-in sounds are saved for offline use",
+  "toast_back_online": "You’re back online",
+  "toast_prefs_restored": "Preferences restored to defaults",
+  "yt_placeholder": "YouTube sound",
+  "yt_unreachable": "Couldn’t reach YouTube",
+  "yt_invalid_link": "That video link isn’t valid",
+  "yt_no_browser": "This video can’t play in a browser",
+  "yt_private": "That video is private or no longer exists",
+  "yt_no_embed": "The owner doesn’t allow this video to be embedded",
+  "yt_failed": "YouTube couldn’t play that video",
+  "yt_autoplay_blocked": "Your browser blocked this video from starting"
 }

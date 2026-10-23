@@ -10,6 +10,7 @@
  */
 import {
   baseLocale,
+  getLocale,
   locales,
   setLocale,
   toLocale,
@@ -76,6 +77,34 @@ export function startAppLocale() {
   const locale = readLocaleChoice() ?? browserLocale()
   setLocale(locale, { reload: false })
   document.documentElement.lang = locale
+}
+
+/** Preferences' Language row. Every string was read in the old language, so
+ * a change of language reloads; the mix comes back, paused. */
+export function chooseLocale(choice: Locale | null) {
+  writeLocaleChoice(choice)
+  if ((choice ?? browserLocale()) !== getLocale()) location.reload()
+}
+
+/** The tag for Intl formatting: the app's language with the browser's region
+ * where the two agree, so en-GB keeps its 24-hour clock under English. */
+export function formatLocale(): string {
+  const locale = getLocale()
+  const language = locale.split("-")[0].toLowerCase()
+  return (
+    navigator.languages.find(
+      (tag) => tag.split("-")[0].toLowerCase() === language
+    ) ?? locale
+  )
+}
+
+type Message = (inputs: object, options: { locale: Locale }) => string
+
+/** Whether text is what a message says in any language. For names the app
+ * writes itself and stores, such as "New mix", which a later visit in another
+ * language should still recognise as its own. */
+export function fromAnyLocale(message: Message, text: string) {
+  return locales.some((locale) => message({}, { locale }) === text)
 }
 
 /** Splits a message around one placeholder, so markup can go between the two

@@ -25,6 +25,7 @@ import {
   HeadphonesIcon,
   InstallingUpdates01Icon,
   KeyboardIcon,
+  LanguageSquareIcon,
   LeftToRightListBulletIcon,
   MinusSignCircleIcon,
   Moon02Icon,
@@ -130,6 +131,17 @@ import {
 } from "@/lib/theme"
 import { clampName, isolate, nameFromFile } from "@/lib/text"
 import { cn } from "@/lib/utils"
+import {
+  LOCALE_NAMES,
+  around,
+  chooseLocale,
+  formatLocale,
+  fromAnyLocale,
+  readLocaleChoice,
+  startAppLocale,
+} from "@/lib/i18n"
+import { m } from "@/paraglide/messages.js"
+import { locales, toLocale } from "@/paraglide/runtime.js"
 
 import { DevDataToggle } from "./DevDataToggle"
 import { MiddleTruncate } from "./MiddleTruncate"
@@ -139,6 +151,10 @@ import { persistStorage, usePwa } from "./use-pwa"
 
 /** Vite inlines this at build time, in client islands as well as .astro files. */
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "")
+
+// First, before any module-level formatter below and before the first render:
+// messages and Intl read the locale when they're called.
+startAppLocale()
 
 const TIMER_PRESETS = [15, 30, 45, 60, 90]
 const CATEGORIES: SoundCategory[] = ["nature", "urban", "generated"]
@@ -174,12 +190,6 @@ const VIDEO_ICON =
  */
 const YT_PREFIX = "yt_"
 
-/** Stands in until the player is live and can report the real title. */
-const YT_PLACEHOLDER_NAME = "YouTube sound"
-
-/** What a list row says where a missing sound's slider would be. */
-const MISSING_NOTE = "File missing from this browser. Choose it again"
-
 const ytSoundId = (videoId: string) => `${YT_PREFIX}${videoId}`
 
 const ytVideoId = (id: string): string | null => {
@@ -194,7 +204,6 @@ const ytVideoId = (id: string): string | null => {
  * where a slider would be.
  */
 const deviceSetsLevel = (id: string) => IS_IPHONE && ytVideoId(id) !== null
-const DEVICE_LEVEL_NOTE = "Set with your iPhone’s volume buttons"
 
 /**
  * The free-standing mark: the tile is dropped because the sidebar is already a
@@ -246,9 +255,15 @@ function BrandMark({ size = 18 }: { size?: number }) {
 const prefGroup =
   "segmented-list [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]"
 
-/** A cell of All mixes' action shelf: an icon over its label, as a segment. */
+/**
+ * A cell of All mixes' action shelf: an icon over its label, as a segment.
+ * Five to a row on a phone is 51px each, narrower than one word in some
+ * languages ("Compartilhar"), so a label hyphenates in the page's language,
+ * and breaks anywhere where the browser can't. One that takes a third line
+ * makes the row taller rather than pushing its icon out of the cell.
+ */
 const shelfCell =
-  "flex h-16 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-m3-xs bg-grouped px-0.5 text-center text-label-small state-layer transition-[background-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px"
+  "flex min-h-16 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-m3-xs bg-grouped px-0.5 py-1 text-center text-label-small hyphens-auto wrap-anywhere state-layer transition-[background-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px"
 
 /** About's links and actions, as rows of the list like every other one. */
 const aboutRow =
@@ -290,7 +305,7 @@ function suggestMixName(
 ) {
   const [first, second] = soundsByLevel(mix, nameOf)
   if (!first) return ""
-  const both = second ? `${first} and ${second}` : first
+  const both = second ? m.mix_name_pair({ first, second }) : first
   const base =
     clampName(both, MIX_NAME_MAX) === both
       ? both
@@ -312,11 +327,12 @@ function mixSummary(
   nameOf: (id: string) => string | undefined
 ) {
   const names = soundsByLevel(mix, nameOf).map(isolate)
-  if (names.length <= 1) return names[0] ?? ""
-  if (names.length <= 3) {
-    return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`
-  }
-  return `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`
+  const list = new Intl.ListFormat(formatLocale(), { type: "conjunction" })
+  if (names.length <= 3) return list.format(names)
+  return list.format([
+    ...names.slice(0, 2),
+    m.mix_more({ count: names.length - 2 }),
+  ])
 }
 
 interface MixRowProps {
@@ -411,12 +427,12 @@ function MixRow({
               <MiddleTruncate text={name} />
               {dirty && (
                 <span className="shrink-0 whitespace-pre text-muted-foreground">
-                  {" (edited)"}
+                  {m.mix_edited()}
                 </span>
               )}
             </span>
-            {/* An English sentence around isolated names, so it keeps the
-                page's direction; dir="auto" would take an Arabic name's. */}
+            {/* A sentence around isolated names, so it keeps the page's
+                direction; dir="auto" would take an Arabic name's. */}
             <span className="block truncate text-body-medium text-muted-foreground">
               {detail}
             </span>
@@ -437,8 +453,8 @@ function MixRow({
           // [&>svg]:size-4 with no opt-out, and a descendant rule outranks a
           // class on the child. Same utility family, so cn() dedupes it.
           className="right-1 size-[22px] w-[22px] rounded state-layer text-muted-foreground peer-data-[size=default]/menu-button:top-[5px] hover:text-foreground [&>svg]:size-3"
-          aria-label={`Delete ${name}`}
-          title="Delete mix"
+          aria-label={m.mix_delete_named({ name })}
+          title={m.mix_delete()}
           onClick={onRemove}
         >
           <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
@@ -494,9 +510,9 @@ function RenameDialog({
         />
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {m.action_cancel()}
           </Button>
-          <Button onClick={onRename}>Rename</Button>
+          <Button onClick={onRename}>{m.action_rename()}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -641,8 +657,8 @@ function NowPlayingRow({
               min={0}
               max={100}
               step={1}
-              aria-label={`${name} volume`}
-              aria-valuetext={`${pct}%`}
+              aria-label={m.sound_volume({ name })}
+              aria-valuetext={formatPercent(pct)}
               onValueChange={(value) => onDrag((value as number) / 100)}
               onValueCommitted={(value) => onCommit((value as number) / 100)}
             />
@@ -661,7 +677,9 @@ function NowPlayingRow({
           size="icon"
           className="size-11 shrink-0 rounded-full text-muted-foreground pointer-coarse:hit-target"
           aria-label={
-            level > 0 ? `Turn off ${name}` : `Remove ${name} from the list`
+            level > 0
+              ? m.sound_turn_off_named({ name })
+              : m.sound_release_named({ name })
           }
           onClick={onTurnOff}
         >
@@ -751,7 +769,8 @@ function readInitialState(): {
     Object.keys(state.vols).length > 0 &&
     (state.dirty || !state.saved.some((s) => s.name === state.mixName))
   state.vols = mix
-  state.mixName = clampName(params.get("n") ?? "", MIX_NAME_MAX) || "Shared mix"
+  state.mixName =
+    clampName(params.get("n") ?? "", MIX_NAME_MAX) || m.mix_shared()
   state.dirty = false
 
   // A link can name a video this browser has never seen, so its custom has
@@ -759,7 +778,7 @@ function readInitialState(): {
   for (const id of Object.keys(mix)) {
     const videoId = ytVideoId(id)
     if (!videoId || state.customs.some((c) => c.id === id)) continue
-    state.customs.push({ id, name: YT_PLACEHOLDER_NAME, videoId })
+    state.customs.push({ id, name: m.yt_placeholder(), videoId })
     link.addedVideos.push(id)
   }
 
@@ -797,7 +816,7 @@ function usePaneFits() {
 function formatBytes(bytes: number): string {
   const kb = bytes < 1e6
   const value = kb ? Math.max(1, bytes / 1e3) : bytes / 1e6
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(formatLocale(), {
     style: "unit",
     unit: kb ? "kilobyte" : "megabyte",
     maximumFractionDigits: !kb && value < 10 ? 1 : 0,
@@ -806,18 +825,38 @@ function formatBytes(bytes: number): string {
 
 /** A timer length as people say it: "45 min", "1 h", "1 h 15 min". */
 function formatDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  if (!h) return `${m} min`
-  return m ? `${h} h ${m} min` : `${h} h`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  if (!hours) return m.duration_minutes({ minutes: rest })
+  return rest
+    ? m.duration_hours_minutes({ hours, minutes: rest })
+    : m.duration_hours({ hours })
 }
 
 /** A preset as a chip can hold it: "45 min", "1 h", "1½ h". */
 function presetLabel(minutes: number): string {
-  return minutes === 90 ? "1½ h" : formatDuration(minutes)
+  return minutes === 90 ? m.duration_hour_and_half() : formatDuration(minutes)
 }
 
-const clockTime = new Intl.DateTimeFormat(undefined, {
+/** A level as a screen reader says it: "70%", or "70 %" in Spanish. */
+function formatPercent(pct: number): string {
+  return new Intl.NumberFormat(formatLocale(), { style: "percent" }).format(
+    pct / 100
+  )
+}
+
+/** A short time as Preferences shows it: "1.5s", "30s". */
+function formatSeconds(seconds: number, digits: number): string {
+  return new Intl.NumberFormat(formatLocale(), {
+    style: "unit",
+    unit: "second",
+    unitDisplay: "narrow",
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(seconds)
+}
+
+const clockTime = new Intl.DateTimeFormat(formatLocale(), {
   hour: "numeric",
   minute: "2-digit",
 })
@@ -891,8 +930,8 @@ function SleepTimerPanel({
         {readout(
           formatClock(left),
           left <= fadeSeconds
-            ? "Fading out"
-            : `Stops at ${clockTime.format(end)}`
+            ? m.timer_fading()
+            : m.timer_stops_at({ time: clockTime.format(end) })
         )}
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -900,14 +939,14 @@ function SleepTimerPanel({
             className="h-11 rounded-full"
             onClick={onExtend}
           >
-            +15 min
+            {m.timer_extend({ duration: formatDuration(15) })}
           </Button>
           <Button
             variant="ghost"
             className="h-11 rounded-full"
             onClick={onStop}
           >
-            Turn off
+            {m.action_turn_off()}
           </Button>
         </div>
       </>
@@ -918,7 +957,7 @@ function SleepTimerPanel({
     <>
       {readout(
         formatDuration(choice),
-        `Stops at ${clockTime.format(now + choice * 60_000)}`
+        m.timer_stops_at({ time: clockTime.format(now + choice * 60_000) })
       )}
       <div className="flex flex-col gap-5">
         {/* A segmented row, as the theme swatches are. A chip reads as chosen
@@ -948,13 +987,13 @@ function SleepTimerPanel({
           step={5}
           wheelStep={5}
           resetValue={30}
-          aria-label="Timer length"
+          aria-label={m.timer_length()}
           aria-valuetext={formatDuration(choice)}
           onValueChange={(value) => onChoose(value as number)}
         />
       </div>
       <Button className="h-11 w-full rounded-full" onClick={onStart}>
-        Start
+        {m.action_start()}
       </Button>
     </>
   )
@@ -993,12 +1032,12 @@ function EqBars({ phase, paused }: { phase: number; paused: boolean }) {
 const SCHEMES_SUPPORTED =
   typeof CSS !== "undefined" && CSS.supports("color", "oklch(from red l c h)")
 
-const SCHEME_LABEL: Record<Scheme, string> = {
-  amber: "Amber",
-  rose: "Rose",
-  sage: "Sage",
-  sky: "Sky",
-  violet: "Violet",
+const SCHEME_LABEL: Record<Scheme, () => string> = {
+  amber: m.scheme_amber,
+  rose: m.scheme_rose,
+  sage: m.scheme_sage,
+  sky: m.scheme_sky,
+  violet: m.scheme_violet,
 }
 
 /**
@@ -1036,7 +1075,7 @@ function SchemeSwatch({
           background: `oklch(from #d18a2c l c calc(h + ${turn}))`,
         }}
       />
-      <span className="text-xs font-semibold">{SCHEME_LABEL[scheme]}</span>
+      <span className="text-xs font-semibold">{SCHEME_LABEL[scheme]()}</span>
     </button>
   )
 }
@@ -1050,7 +1089,12 @@ function ThemeSwatch({
   active: boolean
   onSelect: () => void
 }) {
-  const label = mode === "system" ? "Auto" : mode === "light" ? "Light" : "Dark"
+  const label =
+    mode === "system"
+      ? m.theme_auto()
+      : mode === "light"
+        ? m.theme_light()
+        : m.theme_dark()
   const pane = (tone: "light" | "dark", half: boolean) => (
     <div
       className="flex flex-1 flex-col justify-end gap-[3px] p-1"
@@ -1101,6 +1145,41 @@ function ThemeSwatch({
         {label}
       </span>
     </button>
+  )
+}
+
+/**
+ * Preferences' language: the browser's, or one picked here. A native select,
+ * since five options, some of them long, won't fit a segmented row. It's as
+ * wide as "Português (Brasil)", so on a phone it drops under the text, as the
+ * other rows' actions do.
+ */
+function LanguageRow() {
+  const [choice, setChoice] = React.useState(readLocaleChoice)
+  return (
+    <PrefInfo
+      icon={LanguageSquareIcon}
+      title={m.pref_language_title()}
+      description={m.pref_language_description()}
+    >
+      <select
+        aria-label={m.pref_language_title()}
+        value={choice ?? "auto"}
+        onChange={(e) => {
+          const next = toLocale(e.target.value) ?? null
+          setChoice(next)
+          chooseLocale(next)
+        }}
+        className="h-8 cursor-pointer rounded-md border border-input bg-background px-2 text-sm"
+      >
+        <option value="auto">{m.pref_language_auto()}</option>
+        {locales.map((locale) => (
+          <option key={locale} value={locale} lang={locale}>
+            {LOCALE_NAMES[locale]}
+          </option>
+        ))}
+      </select>
+    </PrefInfo>
   )
 }
 
@@ -1295,8 +1374,8 @@ function RemoveSoundButton({
     <Button
       variant="ghost"
       size="icon-xs"
-      aria-label={`Remove ${name}`}
-      title="Remove"
+      aria-label={m.sound_remove_named({ name })}
+      title={m.action_remove()}
       className={cn(
         "relative size-[22px] shrink-0 rounded state-layer text-muted-foreground hover:text-foreground pointer-coarse:after:absolute pointer-coarse:after:-inset-[11px]",
         className
@@ -1513,7 +1592,7 @@ export function MurmurApp() {
   const soundName = (id: string) =>
     sounds.find((s) => s.id === id)?.name ??
     customsRef.current.find((c) => c.id === id)?.name
-  const nameFor = (id: string) => soundName(id) ?? "that sound"
+  const nameFor = (id: string) => soundName(id) ?? m.sound_that()
 
   /**
    * setVolume reports a failed fetch or decode by silently returning the volume
@@ -1535,8 +1614,8 @@ export function MurmurApp() {
     if (!navigator.onLine) offlineFailures.current.add(id)
     toast(
       navigator.onLine
-        ? `Couldn’t load ${isolate(nameFor(id))}. This browser may not support the file`
-        : `${isolate(nameFor(id))} isn’t saved for offline use yet. Reconnect to add it`,
+        ? m.toast_load_failed({ name: isolate(nameFor(id)) })
+        : m.toast_not_offline({ name: isolate(nameFor(id)) }),
       {
         id: "sound-load-failed",
       }
@@ -1624,7 +1703,7 @@ export function MurmurApp() {
       changeVolume(id, Math.max(vols[id] ?? 0, DEFAULT_TOGGLE_VOLUME), {
         keepName: true,
       })
-      toast("That video is already in your mixer")
+      toast(m.toast_video_exists())
       return
     }
 
@@ -1632,7 +1711,7 @@ export function MurmurApp() {
       ...customsRef.current,
       {
         id,
-        name: clampName(name, SOUND_NAME_MAX) || YT_PLACEHOLDER_NAME,
+        name: clampName(name, SOUND_NAME_MAX) || m.yt_placeholder(),
         videoId,
       },
     ])
@@ -1654,7 +1733,7 @@ export function MurmurApp() {
     try {
       parsed = new URL(url)
     } catch {
-      toast("That doesn’t look like a link")
+      toast(m.toast_not_a_link())
       return
     }
     // The file's own name says what it is; the host only where there's none,
@@ -1686,7 +1765,7 @@ export function MurmurApp() {
     void putBlob(id, file).then((stored) => {
       if (stored) persistStorage()
     })
-    toast.success(`${isolate(nameFor(id))} is back`)
+    toast.success(m.toast_sound_back({ name: isolate(nameFor(id)) }))
   }
 
   const addFromFile = (file: File) => {
@@ -1708,7 +1787,7 @@ export function MurmurApp() {
           )
         )
       } else {
-        toast("Couldn’t save the file. It’ll play until you close this tab")
+        toast(m.toast_file_not_saved())
       }
     })
   }
@@ -1773,12 +1852,12 @@ export function MurmurApp() {
       })
     }
     // One toast per sound, so removing two in a row settles neither early.
-    toast(`Removed “${isolate(custom.name)}”`, {
+    toast(m.toast_sound_removed({ name: isolate(custom.name) }), {
       id: `sound-removed:${id}`,
       onAutoClose: purge,
       onDismiss: purge,
       action: {
-        label: "Undo",
+        label: m.action_undo(),
         onClick: () => {
           if (settled) return
           settled = true
@@ -1872,8 +1951,8 @@ export function MurmurApp() {
     if (lost.length) {
       toast(
         lost.length === 1
-          ? `${isolate(nameFor(lost[0]))} is missing from this browser. Add the file again from its tile`
-          : `${lost.length} of this mix’s sounds are missing from this browser. Add their files again from their tiles`,
+          ? m.toast_missing_one({ name: isolate(nameFor(lost[0])) })
+          : m.toast_missing_many({ count: lost.length }),
         { id: "sound-missing" }
       )
     }
@@ -1883,7 +1962,7 @@ export function MurmurApp() {
 
   const cycleMix = (delta: number) => {
     if (allMixes.length < 2) return
-    const at = allMixes.findIndex((m) => m.name === mixName)
+    const at = allMixes.findIndex((s) => s.name === mixName)
     const next = allMixes[(at + delta + allMixes.length) % allMixes.length]
     applyMix(next.name, next.mix)
   }
@@ -1928,10 +2007,10 @@ export function MurmurApp() {
     setSaved((prev) => prev.filter((s) => s.name !== name))
     // Still loaded but no longer stored, so it must read as unsaved.
     if (name === mixName) setDirty(true)
-    toast(`Deleted “${isolate(name)}”`, {
+    toast(m.toast_mix_deleted({ name: isolate(name) }), {
       id: "mix-deleted",
       action: {
-        label: "Undo",
+        label: m.action_undo(),
         onClick: () => undoRef.current.undoDelete(removed, at),
       },
     })
@@ -1956,10 +2035,10 @@ export function MurmurApp() {
     for (const [id, v] of Object.entries(vols)) if (v > 0) mix[id] = v
     setSaved((prev) => prev.map((s) => (s.name === name ? { ...s, mix } : s)))
     setDirty(false)
-    toast.success(`Saved changes to “${isolate(name)}”`, {
+    toast.success(m.toast_changes_saved({ name: isolate(name) }), {
       id: "mix-saved",
       action: {
-        label: "Undo",
+        label: m.action_undo(),
         onClick: () => undoRef.current.undoSaveChanges(name, previous),
       },
     })
@@ -1978,16 +2057,16 @@ export function MurmurApp() {
     // way to it at the length limit, never the other way round.
     const copy = (suffix: string) =>
       `${clampName(mix.name, MIX_NAME_MAX - suffix.length)}${suffix}`
-    let name = copy(" copy")
+    let name = copy(m.mix_copy_suffix())
     for (let n = 2; saved.some((s) => s.name === name); n++)
-      name = copy(` copy ${n}`)
+      name = copy(m.mix_copy_suffix_numbered({ n }))
     setSaved((prev) => {
       const at = prev.findIndex((s) => s.name === mix.name)
       const next = [...prev]
       next.splice(at + 1, 0, { name, mix: { ...mix.mix } })
       return next
     })
-    toast.success(`Duplicated as “${isolate(name)}”`)
+    toast.success(m.toast_duplicated({ name: isolate(name) }))
   }
 
   /**
@@ -2019,10 +2098,13 @@ export function MurmurApp() {
     ).length
     if (withoutFile) {
       toast(
-        `Backup saved (${formatBytes(file.size)}). ${withoutFile} of your own ${withoutFile === 1 ? "sounds has" : "sounds have"} no file to include`
+        m.toast_backup_partial({
+          size: formatBytes(file.size),
+          count: withoutFile,
+        })
       )
     } else {
-      toast.success(`Backup saved (${formatBytes(file.size)})`)
+      toast.success(m.toast_backup_saved({ size: formatBytes(file.size) }))
     }
   }
 
@@ -2038,9 +2120,7 @@ export function MurmurApp() {
       read = await readBackup(file)
     } catch (error) {
       toast.error(
-        error instanceof BackupError
-          ? error.message
-          : "That file isn’t a Murmur backup"
+        error instanceof BackupError ? error.message : m.backup_not_murmur()
       )
       return
     }
@@ -2082,9 +2162,7 @@ export function MurmurApp() {
         written.map((id) => putBlob(id, read.blobs.get(id) as Blob))
       ).then((stored) => {
         if (stored.includes(false)) {
-          toast(
-            "Some sound files couldn’t be saved. They’ll play until you close this tab"
-          )
+          toast(m.toast_files_not_saved())
         }
       })
     }
@@ -2095,34 +2173,38 @@ export function MurmurApp() {
       return next
     })
 
-    const names = new Set(saved.map((m) => m.name))
+    const names = new Set(saved.map((s) => s.name))
     const addedMixes: SavedMix[] = []
-    for (const m of incoming.saved) {
-      if (saved.some((x) => x.name === m.name && sameMix(x.mix, m.mix)))
+    for (const mix of incoming.saved) {
+      if (saved.some((x) => x.name === mix.name && sameMix(x.mix, mix.mix)))
         continue
-      let name = m.name
+      let name = mix.name
       for (let n = 2; names.has(name); n++) {
-        name = `${clampName(m.name, MIX_NAME_MAX - ` (${n})`.length)} (${n})`
+        name = `${clampName(mix.name, MIX_NAME_MAX - ` (${n})`.length)} (${n})`
       }
       names.add(name)
-      addedMixes.push({ name, mix: m.mix })
+      addedMixes.push({ name, mix: mix.mix })
     }
     setSaved((prev) => [...prev, ...addedMixes])
 
     if (!addedMixes.length && !added.length && !relinked.length) {
-      toast("Nothing new in that backup")
+      toast(m.toast_backup_nothing_new())
       return
     }
-    const parts = [
-      `${addedMixes.length} ${addedMixes.length === 1 ? "mix" : "mixes"}`,
-      `${added.length} ${added.length === 1 ? "sound" : "sounds"}`,
-    ]
+    const mixCount = m.count_mixes({ count: addedMixes.length })
+    const soundCount = m.count_sounds({ count: added.length })
     toast.success(
-      `Imported ${parts.join(" and ")}${relinked.length ? `, and brought back ${relinked.length} missing ${relinked.length === 1 ? "file" : "files"}` : ""}`,
+      relinked.length
+        ? m.toast_imported_relinked({
+            mixes: mixCount,
+            sounds: soundCount,
+            files: m.count_missing_files({ count: relinked.length }),
+          })
+        : m.toast_imported({ mixes: mixCount, sounds: soundCount }),
       {
         id: "backup-imported",
         action: {
-          label: "Undo",
+          label: m.action_undo(),
           onClick: () => undoRef.current.undoImport(addedMixes, added),
         },
       }
@@ -2131,7 +2213,7 @@ export function MurmurApp() {
 
   /** Takes back exactly what an import added; files it brought back stay. */
   const undoImport = (mixes: SavedMix[], sounds: CustomSound[]) => {
-    setSaved((prev) => prev.filter((m) => !mixes.includes(m)))
+    setSaved((prev) => prev.filter((s) => !mixes.includes(s)))
     for (const c of sounds) removeCustom(c.id)
   }
 
@@ -2179,12 +2261,12 @@ export function MurmurApp() {
       }
     }
     pendingClear.current = purge
-    toast.success("Saved mixes and your own sounds cleared", {
+    toast.success(m.toast_cleared(), {
       id: "data-cleared",
       onAutoClose: purge,
       onDismiss: purge,
       action: {
-        label: "Undo",
+        label: m.action_undo(),
         onClick: () => {
           if (settled) return
           settled = true
@@ -2232,19 +2314,19 @@ export function MurmurApp() {
     setMixName(name)
     setDirty(false)
     setSaveOpen(false)
-    toast.success(`Saved “${isolate(name)}”`)
+    toast.success(m.toast_saved({ name: isolate(name) }))
   }
 
   /** What a bug report needs: which build, and which browser rendered it. */
   const copyBuildInfo = () => {
     const info = `Murmur ${__APP_VERSION__}\n${navigator.userAgent}`
     if (!navigator.clipboard) {
-      toast("Clipboard unavailable in this browser")
+      toast(m.toast_no_clipboard())
       return
     }
     navigator.clipboard.writeText(info).then(
-      () => toast.success("Build info copied"),
-      () => toast("Couldn’t copy the build info")
+      () => toast.success(m.toast_build_copied()),
+      () => toast(m.toast_build_copy_failed())
     )
   }
 
@@ -2270,24 +2352,24 @@ export function MurmurApp() {
       toast(
         droppedCustoms
           ? current
-            ? "Only your own sounds are playing, and those can’t be shared"
-            : "This mix only has your own sounds, and those can’t be shared"
+            ? m.share_only_own_playing()
+            : m.share_only_own_mix()
           : current
-            ? "Nothing playing to share yet"
-            : "This mix has no sounds to share"
+            ? m.share_nothing_playing()
+            : m.share_mix_empty()
       )
       return
     }
     const url = `${window.location.origin}${window.location.pathname}#mix=${fragment}&n=${encodeURIComponent(name)}`
     const done = () =>
       droppedCustoms
-        ? toast.success("Link copied. Your own sounds aren’t included")
-        : toast.success("Link copied")
+        ? toast.success(m.toast_link_copied_partial())
+        : toast.success(m.toast_link_copied())
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(done, done)
     } else {
       window.history.replaceState(null, "", url)
-      toast("Link is in the address bar")
+      toast(m.toast_link_in_address_bar())
     }
   }
 
@@ -2356,8 +2438,9 @@ export function MurmurApp() {
     mixer.onStreamTitle = (id, title) => {
       commitCustoms(
         customsRef.current.map((c) =>
-          // Only fills the placeholder: a name the user typed is theirs.
-          c.id === id && c.name === YT_PLACEHOLDER_NAME
+          // Only fills the placeholder, in whichever language it was left
+          // in: a name the user typed is theirs.
+          c.id === id && fromAnyLocale(m.yt_placeholder, c.name)
             ? { ...c, name: clampName(title, SOUND_NAME_MAX) }
             : c
         )
@@ -2459,10 +2542,10 @@ export function MurmurApp() {
       setPlaying(true)
       mixer.setPlaying(true)
     }
-    toast(`Playing only ${isolate(nameFor(id))}`, {
+    toast(m.toast_playing_only({ name: isolate(nameFor(id)) }), {
       id: "play-only",
       action: {
-        label: "Undo",
+        label: m.action_undo(),
         onClick: () => {
           undoRef.current.restoreMix(before)
           // This started playback, so undoing it pauses again.
@@ -2479,10 +2562,10 @@ export function MurmurApp() {
   const turnAllOff = () => {
     const before = { vols, mixName, dirty }
     resetMix()
-    toast("Turned everything off", {
+    toast(m.toast_turned_off(), {
       id: "turn-all-off",
       action: {
-        label: "Undo",
+        label: m.action_undo(),
         onClick: () => undoRef.current.restoreMix(before),
       },
     })
@@ -2500,19 +2583,22 @@ export function MurmurApp() {
     )
 
     const added = link.addedVideos.length
-    const videos = added === 1 ? "a YouTube sound" : `${added} YouTube sounds`
+    const videos = m.count_youtube_sounds({ count: added })
     const message = link.replacedUnsaved
       ? added
-        ? `This link replaced your unsaved mix and added ${videos}`
-        : "This link replaced your unsaved mix"
+        ? m.link_replaced_added({ videos })
+        : m.link_replaced()
       : added
-        ? `This link added ${videos} to your mixer`
+        ? m.link_added({ videos })
         : null
     if (!message) return
     toast(message, {
       id: "shared-link",
       duration: 10_000,
-      action: { label: "Undo", onClick: () => undoRef.current.undoLink(link) },
+      action: {
+        label: m.action_undo(),
+        onClick: () => undoRef.current.undoLink(link),
+      },
     })
   }, [boot.link])
 
@@ -2628,10 +2714,10 @@ export function MurmurApp() {
   // Said once, up front, rather than as one card failing at a time.
   React.useEffect(() => {
     if (canPlayOgg()) return
-    toast(
-      "Murmur’s built-in sounds need Safari 18.4 or later. YouTube sounds and your own MP3 or M4A files still play",
-      { id: "ogg-unsupported", duration: Infinity }
-    )
+    toast(m.toast_ogg_unsupported(), {
+      id: "ogg-unsupported",
+      duration: Infinity,
+    })
   }, [])
 
   // "Pause in background tabs": stop on hide, resume only if we were the one
@@ -2670,10 +2756,10 @@ export function MurmurApp() {
   const { needRefresh, updateNow } = pwa
   React.useEffect(() => {
     if (!needRefresh) return
-    toast("A new version of Murmur is ready", {
+    toast(m.toast_update_ready(), {
       id: "app-update",
       duration: Infinity,
-      action: { label: "Reload", onClick: () => void updateNow() },
+      action: { label: m.action_reload(), onClick: () => void updateNow() },
     })
   }, [needRefresh, updateNow])
 
@@ -2691,7 +2777,7 @@ export function MurmurApp() {
     }
     if (!sawIncompleteAudio.current) return
     sawIncompleteAudio.current = false
-    toast(`All ${status.total} built-in sounds are saved for offline use`, {
+    toast(m.toast_offline_ready({ count: status.total }), {
       id: "offline-ready",
     })
   }, [pwa.audio])
@@ -2710,10 +2796,10 @@ export function MurmurApp() {
       // Cleared here, so the offer appears once per outage rather than on
       // every flap of a bad connection.
       offlineFailures.current.clear()
-      toast("You’re back online", {
+      toast(m.toast_back_online(), {
         id: "back-online",
         action: {
-          label: ids.length === 1 ? "Play it" : "Play them",
+          label: m.action_play_back({ count: ids.length }),
           onClick: () => {
             for (const id of ids) {
               changeVolumeRef.current(
@@ -2742,7 +2828,7 @@ export function MurmurApp() {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: "Murmur",
       artist: mixName,
-      album: "Ambient mixer",
+      album: m.media_album(),
       // The "any" icons, not the maskable pair, which a media notification
       // would crop wrongly. Both are precached, because the OS fetches these
       // at a moment when the app may well be offline.
@@ -2841,13 +2927,12 @@ export function MurmurApp() {
   // playStatus; the header has no such button and gets the full line.
   const playStatus =
     activeIds.length === 0
-      ? "Nothing playing"
-      : [
-          activeIds.length === 1 ? "1 sound" : `${activeIds.length} sounds`,
-          playing ? "playing" : "paused",
-        ].join(" · ")
+      ? m.status_nothing()
+      : playing
+        ? m.status_playing({ count: activeIds.length })
+        : m.status_paused({ count: activeIds.length })
   const status = timerOn
-    ? `${playStatus} · sleeps in ${formatClock(timerLeft)}`
+    ? m.status_sleeps({ status: playStatus, time: formatClock(timerLeft) })
     : playStatus
 
   // A name from the sounds, shown in the empty field and used if it's left
@@ -2860,7 +2945,7 @@ export function MurmurApp() {
     : ""
   const openSaveDialog = () => {
     // A clean, named mix (a shared one) still starts from its own name.
-    setSaveName(dirty || mixName === "Shared mix" ? "" : mixName)
+    setSaveName(dirty || fromAnyLocale(m.mix_shared, mixName) ? "" : mixName)
     setSaveOpen(true)
   }
   // What the level meters claim is sound reaching the speakers, so they stop
@@ -2912,7 +2997,7 @@ export function MurmurApp() {
           onClick={() => playOnly(sound.id)}
         >
           <HugeiconsIcon icon={HeadphonesIcon} strokeWidth={2} />
-          Play only this
+          {m.action_play_only()}
         </ContextMenuItem>
         {/* Disabled rather than hidden, as M3 and Windows menus do, so the
             menu keeps its shape and says what it can do. */}
@@ -2925,7 +3010,7 @@ export function MurmurApp() {
           onClick={() => changeVolume(sound.id, DEFAULT_TOGGLE_VOLUME)}
         >
           <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
-          Reset level
+          {m.action_reset_level()}
         </ContextMenuItem>
         {removable && (
           <>
@@ -2937,7 +3022,7 @@ export function MurmurApp() {
               }}
             >
               <HugeiconsIcon icon={PencilEdit02Icon} strokeWidth={2} />
-              Rename…
+              {m.action_rename_ellipsis()}
             </ContextMenuItem>
             {videoId && (
               <ContextMenuItem
@@ -2950,7 +3035,7 @@ export function MurmurApp() {
                 }
               >
                 <HugeiconsIcon icon={YoutubeIcon} strokeWidth={2} />
-                Open on YouTube
+                {m.action_open_youtube()}
               </ContextMenuItem>
             )}
             <ContextMenuSeparator />
@@ -2959,7 +3044,7 @@ export function MurmurApp() {
               onClick={() => removeSound(sound.id)}
             >
               <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
-              Remove
+              {m.action_remove()}
             </ContextMenuItem>
           </>
         )}
@@ -2987,11 +3072,11 @@ export function MurmurApp() {
           onClick={() => saveChanges(mix.name)}
         >
           <HugeiconsIcon icon={FloppyDiskIcon} strokeWidth={2} />
-          Save changes
+          {m.action_save_changes()}
         </ContextMenuItem>
         <ContextMenuItem onClick={() => shareMix(mix.name, mix.mix, false)}>
           <HugeiconsIcon icon={Share01Icon} strokeWidth={2} />
-          Share
+          {m.action_share()}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
@@ -3001,11 +3086,11 @@ export function MurmurApp() {
           }}
         >
           <HugeiconsIcon icon={PencilEdit02Icon} strokeWidth={2} />
-          Rename…
+          {m.action_rename_ellipsis()}
         </ContextMenuItem>
         <ContextMenuItem onClick={() => duplicateMix(mix)}>
           <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} />
-          Duplicate
+          {m.action_duplicate()}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
@@ -3013,7 +3098,7 @@ export function MurmurApp() {
           onClick={() => removeSaved(mix.name)}
         >
           <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
-          Delete
+          {m.action_delete()}
         </ContextMenuItem>
       </ContextMenuContent>
     )
@@ -3028,16 +3113,16 @@ export function MurmurApp() {
     <ContextMenuContent>
       <ContextMenuItem disabled={!canSave} onClick={openSaveDialog}>
         <HugeiconsIcon icon={FloppyDiskIcon} strokeWidth={2} />
-        Save mix…
+        {m.action_save_mix_ellipsis()}
       </ContextMenuItem>
       <ContextMenuItem onClick={share}>
         <HugeiconsIcon icon={Share01Icon} strokeWidth={2} />
-        Share
+        {m.action_share()}
       </ContextMenuItem>
       <ContextMenuSeparator />
       <ContextMenuItem disabled={activeIds.length === 0} onClick={turnAllOff}>
         <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
-        Turn all off
+        {m.action_turn_all_off()}
       </ContextMenuItem>
     </ContextMenuContent>
   )
@@ -3071,7 +3156,7 @@ export function MurmurApp() {
                 className="size-[18px]"
               />
             }
-            name="Master"
+            name={m.master()}
             level={master}
             onDrag={dragMaster}
             onCommit={commitMaster}
@@ -3083,14 +3168,14 @@ export function MurmurApp() {
             onClick={() => changeMaster(DEFAULT_MASTER)}
           >
             <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
-            Reset level
+            {m.action_reset_level()}
           </ContextMenuItem>
           <ContextMenuItem onClick={toggleMute}>
             <HugeiconsIcon
               icon={master > 0 ? VolumeOffIcon : VolumeHighIcon}
               strokeWidth={2}
             />
-            {master > 0 ? "Mute" : "Unmute"}
+            {master > 0 ? m.action_mute() : m.action_unmute()}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -3114,7 +3199,7 @@ export function MurmurApp() {
               }
               name={nameFor(id)}
               level={vols[id] ?? 0}
-              note={deviceSetsLevel(id) ? DEVICE_LEVEL_NOTE : undefined}
+              note={deviceSetsLevel(id) ? m.sound_device_level() : undefined}
               onDrag={(v) => {
                 if (v === 0) holdRow(id)
                 dragVolume(id, v)
@@ -3140,7 +3225,7 @@ export function MurmurApp() {
         })
       ) : (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          Nothing on yet. Tap a sound to add it.
+          {m.now_playing_empty()}
         </p>
       )}
     </div>
@@ -3153,7 +3238,7 @@ export function MurmurApp() {
           className="h-11 rounded-full px-5"
           onClick={onSave}
         >
-          Save mix
+          {m.action_save_mix()}
         </Button>
       ) : (
         <span />
@@ -3164,7 +3249,7 @@ export function MurmurApp() {
         disabled={activeIds.length === 0}
         onClick={turnAllOff}
       >
-        Turn all off
+        {m.action_turn_all_off()}
       </Button>
     </>
   )
@@ -3192,8 +3277,8 @@ export function MurmurApp() {
         step={1}
         wheelStep={5}
         resetValue={Math.round(DEFAULT_TOGGLE_VOLUME * 100)}
-        aria-label={`${sound.name} volume`}
-        aria-valuetext={`${pct}%`}
+        aria-label={m.sound_volume({ name: sound.name })}
+        aria-valuetext={formatPercent(pct)}
         onValueChange={(value) => dragVolume(sound.id, (value as number) / 100)}
         onValueCommitted={(value) =>
           commitVolume(sound.id, (value as number) / 100)
@@ -3292,7 +3377,7 @@ export function MurmurApp() {
             </span>
             {lost ? (
               <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                {MISSING_NOTE}
+                {m.sound_missing_note()}
               </span>
             ) : (
               <>
@@ -3360,7 +3445,7 @@ export function MurmurApp() {
             </span>
             {lost ? (
               <span className="shrink-0 text-[0.6875rem] text-destructive">
-                Missing
+                {m.sound_missing_badge()}
               </span>
             ) : (
               !coarse && readout
@@ -3386,6 +3471,10 @@ export function MurmurApp() {
       </ContextMenu>
     )
   }
+
+  // Preferences' footer: the key sits inside the sentence, wherever the
+  // language puts it.
+  const [pressBefore, pressAfter] = around(m.prefs_shortcut_hint, "key")
 
   return (
     // SidebarProvider is the app root rather than a wrapper around it: Sidebar
@@ -3424,7 +3513,7 @@ export function MurmurApp() {
             size="icon-lg"
             className="hidden size-12 rounded-full bg-primary hover:bg-primary/80 wide:inline-flex"
             disabled={!playing && activeIds.length === 0}
-            aria-label={playing ? "Pause" : "Play"}
+            aria-label={playing ? m.action_pause() : m.action_play()}
             onClick={togglePlay}
           >
             <HugeiconsIcon
@@ -3498,8 +3587,8 @@ export function MurmurApp() {
               variant="ghost"
               size="icon-sm"
               className="shrink-0 text-muted-foreground hover:text-foreground"
-              aria-label={master > 0 ? "Mute" : "Unmute"}
-              title={master > 0 ? "Mute" : "Unmute"}
+              aria-label={master > 0 ? m.action_mute() : m.action_unmute()}
+              title={master > 0 ? m.action_mute() : m.action_unmute()}
               onClick={toggleMute}
             >
               <HugeiconsIcon
@@ -3515,8 +3604,8 @@ export function MurmurApp() {
               step={1}
               wheelStep={5}
               resetValue={Math.round(DEFAULT_MASTER * 100)}
-              aria-label="Master volume"
-              aria-valuetext={`${Math.round(master * 100)}%`}
+              aria-label={m.master_volume()}
+              aria-valuetext={formatPercent(Math.round(master * 100))}
               onValueChange={(value) => dragMaster((value as number) / 100)}
               onValueCommitted={(value) =>
                 commitMaster((value as number) / 100)
@@ -3549,14 +3638,14 @@ export function MurmurApp() {
             size="sm"
             className={coarse ? "hidden" : "hidden sm:flex"}
           >
-            <ToggleGroupItem value="grid" aria-label="Grid view">
+            <ToggleGroupItem value="grid" aria-label={m.view_grid()}>
               <HugeiconsIcon
                 icon={GridViewIcon}
                 strokeWidth={2}
                 className="size-4"
               />
             </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label="List view">
+            <ToggleGroupItem value="list" aria-label={m.view_list()}>
               <HugeiconsIcon
                 icon={LeftToRightListBulletIcon}
                 strokeWidth={2}
@@ -3571,9 +3660,9 @@ export function MurmurApp() {
             size="icon-sm"
             className="hidden wide:expanded:inline-flex"
             ref={paneToggle}
-            aria-label="Now playing"
+            aria-label={m.now_playing()}
             aria-pressed={pane}
-            title={pane ? "Hide Now playing" : "Show Now playing"}
+            title={pane ? m.now_playing_hide() : m.now_playing_show()}
             onClick={() => showPane(!pane)}
           >
             <HugeiconsIcon icon={PanelRightIcon} strokeWidth={2} />
@@ -3585,8 +3674,8 @@ export function MurmurApp() {
             variant="ghost"
             size="icon-sm"
             className="hidden wide:inline-flex"
-            aria-label="Turn all off"
-            title="Turn all off (Ctrl+R)"
+            aria-label={m.action_turn_all_off()}
+            title={m.turn_all_off_shortcut()}
             disabled={activeIds.length === 0}
             onClick={turnAllOff}
           >
@@ -3602,7 +3691,7 @@ export function MurmurApp() {
             size="sm"
             className="hidden wide:inline-flex"
             // The label goes below lg, so it needs a name of its own there.
-            aria-label="Share"
+            aria-label={m.action_share()}
             onClick={share}
           >
             <HugeiconsIcon
@@ -3610,7 +3699,7 @@ export function MurmurApp() {
               strokeWidth={2}
               className="size-3.5"
             />
-            <span className="hidden @5xl:inline">Share</span>
+            <span className="hidden @5xl:inline">{m.action_share()}</span>
           </Button>
 
           {/* The phone header keeps two actions, at a finger's 44px. Preferences
@@ -3621,7 +3710,7 @@ export function MurmurApp() {
               variant="ghost"
               size="icon"
               className="size-11 rounded-full pointer-coarse:hit-target"
-              aria-label="Share"
+              aria-label={m.action_share()}
               onClick={share}
             >
               <HugeiconsIcon
@@ -3634,7 +3723,7 @@ export function MurmurApp() {
               variant="ghost"
               size="icon"
               className="size-11 rounded-full pointer-coarse:hit-target"
-              aria-label="Preferences"
+              aria-label={m.preferences()}
               onClick={() => setSettingsOpen(true)}
             >
               <HugeiconsIcon
@@ -3661,7 +3750,7 @@ export function MurmurApp() {
           <SidebarContent className="scroll-fade gap-0 px-3 pt-6 scroll-fade-5">
             <SidebarGroup className="gap-1 p-0">
               <SidebarGroupLabel className="h-auto px-2 pb-1 text-label-small text-muted-foreground">
-                Your mixes
+                {m.your_mixes()}
               </SidebarGroupLabel>
               <SidebarMenu>
                 {saved.map((mix) => {
@@ -3700,7 +3789,7 @@ export function MurmurApp() {
                   strokeWidth={2}
                   className="size-3.5"
                 />
-                Save mix
+                {m.action_save_mix()}
               </Button>
             </SidebarGroup>
           </SidebarContent>
@@ -3725,7 +3814,7 @@ export function MurmurApp() {
                 strokeWidth={2}
                 className={cn("size-3.5", timerOn && "text-brand")}
               />
-              Sleep timer
+              {m.timer_title()}
               {timerOn && (
                 <span className="ml-auto text-xs font-semibold text-brand tabular-nums">
                   {formatClock(timerLeft)}
@@ -3739,7 +3828,7 @@ export function MurmurApp() {
                 className="text-xs text-muted-foreground hover:text-foreground"
                 href={`${BASE}/`}
               >
-                About
+                {m.about()}
               </a>
               <a
                 className="text-xs text-muted-foreground hover:text-foreground"
@@ -3753,8 +3842,8 @@ export function MurmurApp() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label="Preferences"
-                title="Preferences (Ctrl+P)"
+                aria-label={m.preferences()}
+                title={m.preferences_shortcut()}
                 onClick={() => setSettingsOpen(true)}
               >
                 <HugeiconsIcon
@@ -3777,7 +3866,7 @@ export function MurmurApp() {
             <div className="flex shrink-0 flex-col px-4 pb-3 medium:px-6 wide:hidden">
               <div className="flex h-11 items-center justify-between">
                 <p className="text-label-small text-muted-foreground">
-                  Your mixes
+                  {m.your_mixes()}
                 </p>
                 {/* A label, not a "···": whatever scrolls past the edge is one
                     tap away, and the tap says where it goes. */}
@@ -3787,7 +3876,7 @@ export function MurmurApp() {
                   aria-haspopup="dialog"
                   onClick={() => setAllMixesOpen(true)}
                 >
-                  All mixes
+                  {m.all_mixes()}
                 </Button>
               </div>
               {/* The fade is scroll-aware, so it only marks an edge that still
@@ -3849,7 +3938,7 @@ export function MurmurApp() {
 
                 <section>
                   <h2 className="mb-3 text-label-small text-muted-foreground">
-                    Yours
+                    {m.yours()}
                   </h2>
                   <div
                     className={cn(
@@ -3892,9 +3981,7 @@ export function MurmurApp() {
                         strokeWidth={2}
                         className="size-4"
                       />
-                      {shownView === "grid"
-                        ? "Add sound"
-                        : "Add your own sound"}
+                      {shownView === "grid" ? m.add_sound() : m.add_own_sound()}
                     </button>
                   </div>
                 </section>
@@ -3902,18 +3989,17 @@ export function MurmurApp() {
             </ScrollArea>
             {pane && (
               <aside
-                aria-label="Now playing"
+                aria-label={m.now_playing()}
                 className="hidden w-[22.5rem] shrink-0 flex-col border-l border-border large:w-[25.75rem] wide:expanded:flex"
               >
                 <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-2">
                   <div className="min-w-0">
-                    <h2 className="text-title-medium">Now playing</h2>
+                    <h2 className="text-title-medium">{m.now_playing()}</h2>
                     <p className="flex min-w-0 text-xs text-muted-foreground">
                       <MiddleTruncate text={mixName} />
                       {dirty && (
                         <span className="shrink-0 whitespace-pre">
-                          {" "}
-                          (edited)
+                          {m.mix_edited()}
                         </span>
                       )}
                     </p>
@@ -3923,8 +4009,8 @@ export function MurmurApp() {
                     variant="ghost"
                     size="icon-sm"
                     className="rounded-full bg-secondary"
-                    aria-label="Close Now playing"
-                    title="Close"
+                    aria-label={m.now_playing_close()}
+                    title={m.action_close()}
                     onClick={() => {
                       showPane(false)
                       paneToggle.current?.focus()
@@ -3949,11 +4035,11 @@ export function MurmurApp() {
           {prefs.hints && !coarse && (
             <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[0.6875rem] text-muted-foreground medium:px-6">
               {[
-                ["Space", "play"],
-                ["↑↓", "volume"],
-                ["S", "share"],
-                ["T", "timer"],
-                [",", "preferences"],
+                [m.key_space(), m.hint_play()],
+                ["↑↓", m.hint_volume()],
+                ["S", m.hint_share()],
+                ["T", m.hint_timer()],
+                [",", m.hint_preferences()],
               ].map(([key, action]) => (
                 <span key={key}>
                   <b className="font-mono font-semibold text-foreground">
@@ -3975,7 +4061,7 @@ export function MurmurApp() {
               size="icon"
               className="size-12 shrink-0 rounded-full bg-primary shadow-level-2 hover:bg-primary/80"
               disabled={!playing && activeIds.length === 0}
-              aria-label={playing ? "Pause" : "Play"}
+              aria-label={playing ? m.action_pause() : m.action_play()}
               onClick={togglePlay}
             >
               <HugeiconsIcon
@@ -4019,8 +4105,8 @@ export function MurmurApp() {
               )}
               aria-label={
                 timerOn
-                  ? `Sleep timer, ${formatClock(timerLeft)} left`
-                  : "Sleep timer"
+                  ? m.timer_left_named({ time: formatClock(timerLeft) })
+                  : m.timer_title()
               }
               onClick={() => setTimerOpen(true)}
             >
@@ -4056,10 +4142,10 @@ export function MurmurApp() {
             a fade, and the title and the actions stay put. */}
         <DialogContent className="flex flex-col overflow-hidden sm:max-w-md">
           <DialogHeader className="shrink-0">
-            <DialogTitle className="text-lg">Now playing</DialogTitle>
+            <DialogTitle className="text-lg">{m.now_playing()}</DialogTitle>
             <DialogDescription>
               {mixName}
-              {dirty && " (edited)"}
+              {dirty && m.mix_edited()}
             </DialogDescription>
           </DialogHeader>
           <div className="-mx-6 min-h-0 flex-1 scroll-fade overflow-y-auto px-6 scroll-fade-5">
@@ -4090,10 +4176,9 @@ export function MurmurApp() {
       >
         <DialogContent className="flex flex-col overflow-hidden sm:max-w-sm">
           <DialogHeader className="shrink-0">
-            <DialogTitle>All mixes</DialogTitle>
+            <DialogTitle>{m.all_mixes()}</DialogTitle>
             <DialogDescription>
-              {saved.length} {saved.length === 1 ? "mix" : "mixes"}, kept in
-              this browser.
+              {m.all_mixes_description({ count: saved.length })}
             </DialogDescription>
           </DialogHeader>
           <SidebarMenu className="-mx-6 min-h-0 w-auto flex-1 scroll-fade overflow-y-auto px-6 scroll-fade-5">
@@ -4146,7 +4231,7 @@ export function MurmurApp() {
                             variant="ghost"
                             size="icon"
                             className="size-11 shrink-0 rounded-full text-muted-foreground"
-                            aria-label={`More for ${mix.name}`}
+                            aria-label={m.mix_more_for({ name: mix.name })}
                           />
                         }
                       >
@@ -4188,7 +4273,7 @@ export function MurmurApp() {
                                   strokeWidth={2}
                                   className="size-5"
                                 />
-                                Save changes
+                                {m.action_save_changes()}
                               </button>
                             )}
                             <button
@@ -4204,7 +4289,7 @@ export function MurmurApp() {
                                 strokeWidth={2}
                                 className="size-5"
                               />
-                              Share
+                              {m.action_share()}
                             </button>
                             <button
                               type="button"
@@ -4223,7 +4308,7 @@ export function MurmurApp() {
                                 strokeWidth={2}
                                 className="size-5"
                               />
-                              Rename…
+                              {m.action_rename_ellipsis()}
                             </button>
                             <button
                               type="button"
@@ -4238,7 +4323,7 @@ export function MurmurApp() {
                                 strokeWidth={2}
                                 className="size-5"
                               />
-                              Duplicate
+                              {m.action_duplicate()}
                             </button>
                             <button
                               type="button"
@@ -4265,7 +4350,7 @@ export function MurmurApp() {
                                 strokeWidth={2}
                                 className="size-5"
                               />
-                              Delete
+                              {m.action_delete()}
                             </button>
                           </div>
                         </Popover.Popup>
@@ -4282,18 +4367,18 @@ export function MurmurApp() {
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogContent className="content-start max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none">
           <DialogHeader>
-            <DialogTitle className="text-lg">Save this mix</DialogTitle>
+            <DialogTitle className="text-lg">{m.save_title()}</DialogTitle>
             <DialogDescription>
               {activeIds.length
-                ? `${activeIds.length} sound${activeIds.length === 1 ? "" : "s"} at their current levels.`
-                : "Nothing is playing, so the mix will be empty."}
+                ? m.save_description({ count: activeIds.length })
+                : m.save_description_empty()}
             </DialogDescription>
           </DialogHeader>
           <Input
             autoFocus
             value={saveName}
             maxLength={MIX_NAME_MAX}
-            placeholder={saveSuggestion || "Name your mix"}
+            placeholder={saveSuggestion || m.name_your_mix()}
             autoComplete="off"
             enterKeyHint="done"
             // Select the prefilled name so typing replaces it instead of
@@ -4306,9 +4391,9 @@ export function MurmurApp() {
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setSaveOpen(false)}>
-              Cancel
+              {m.action_cancel()}
             </Button>
-            <Button onClick={saveMix}>Save</Button>
+            <Button onClick={saveMix}>{m.action_save()}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -4319,13 +4404,13 @@ export function MurmurApp() {
           instant={keyDriven}
         >
           <DialogHeader>
-            <DialogTitle className="text-lg">Add your own sound</DialogTitle>
+            <DialogTitle className="text-lg">{m.add_own_sound()}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Input
               value={addName}
               maxLength={SOUND_NAME_MAX}
-              placeholder="Name (optional)"
+              placeholder={m.add_name_placeholder()}
               // Otherwise phones offer the user's own name here.
               autoComplete="off"
               enterKeyHint="next"
@@ -4334,7 +4419,7 @@ export function MurmurApp() {
             <div className="flex gap-2">
               <Input
                 value={addUrl}
-                placeholder="A YouTube link, or https://…/sound.ogg"
+                placeholder={m.add_url_placeholder()}
                 type="url"
                 inputMode="url"
                 autoCapitalize="none"
@@ -4347,13 +4432,15 @@ export function MurmurApp() {
                   if (e.key === "Enter") addFromUrl()
                 }}
               />
-              <Button onClick={addFromUrl}>Add</Button>
+              <Button onClick={addFromUrl}>{m.action_add()}</Button>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5">
             <Separator className="flex-1" />
-            <span className="text-[0.6875rem] text-muted-foreground">or</span>
+            <span className="text-[0.6875rem] text-muted-foreground">
+              {m.add_or()}
+            </span>
             <Separator className="flex-1" />
           </div>
 
@@ -4363,7 +4450,7 @@ export function MurmurApp() {
               strokeWidth={2}
               className="size-3.5"
             />
-            Choose an audio file…
+            {m.add_choose_file()}
             <input
               type="file"
               accept="audio/*"
@@ -4381,13 +4468,11 @@ export function MurmurApp() {
       <Dialog open={timerOpen} onOpenChange={setTimerOpen}>
         <DialogContent className="sm:max-w-sm" instant={keyDriven}>
           <DialogHeader>
-            <DialogTitle className="text-lg">Sleep timer</DialogTitle>
+            <DialogTitle className="text-lg">{m.timer_title()}</DialogTitle>
             <DialogDescription>
-              Fades out over the last{" "}
               {prefs.sleepFade === 60
-                ? "1 minute"
-                : `${prefs.sleepFade} seconds`}
-              , then pauses.
+                ? m.timer_fade_minute()
+                : m.timer_fade_seconds({ count: prefs.sleepFade })}
             </DialogDescription>
           </DialogHeader>
           <SleepTimerPanel
@@ -4415,7 +4500,7 @@ export function MurmurApp() {
           instant={keyDriven}
         >
           <DialogHeader className="shrink-0 px-5 py-4">
-            <DialogTitle className="text-lg">Preferences</DialogTitle>
+            <DialogTitle className="text-lg">{m.preferences()}</DialogTitle>
           </DialogHeader>
 
           {/* both-edges, not stable: the scrollbar was eating 10px of the
@@ -4424,7 +4509,7 @@ export function MurmurApp() {
               and reserving it at all stops the jump when a pref toggle changes
               the content past the scroll threshold. */}
           <div className="flex min-h-0 flex-1 scroll-fade [scrollbar-gutter:stable_both-edges] flex-col gap-5 overflow-y-auto px-5 py-4 scroll-fade-5">
-            <PrefSection title="Appearance">
+            <PrefSection title={m.section_appearance()}>
               <div className="mb-2 grid grid-cols-3 gap-0.5 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]">
                 {(["system", "light", "dark"] as ThemeMode[]).map((mode) => (
                   <ThemeSwatch
@@ -4440,7 +4525,7 @@ export function MurmurApp() {
               {SCHEMES_SUPPORTED && (
                 <div
                   role="group"
-                  aria-label="Colour"
+                  aria-label={m.colour()}
                   className="mb-2 grid grid-cols-5 gap-0.5 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]"
                 >
                   {SCHEMES.map((s) => (
@@ -4454,25 +4539,26 @@ export function MurmurApp() {
                 </div>
               )}
               <div className={prefGroup}>
+                <LanguageRow />
                 <PrefRow
                   icon={DarkModeIcon}
-                  title="Pure black at night"
-                  description="Black backgrounds when the theme is dark, for OLED screens and dark rooms."
+                  title={m.pref_black_title()}
+                  description={m.pref_black_description()}
                   checked={blackNight}
                   onChange={changeBlackNight}
                 />
                 <PrefRow
                   icon={AudioWave01Icon}
-                  title="Level meters"
-                  description="Animated bars on playing sounds."
+                  title={m.pref_meters_title()}
+                  description={m.pref_meters_description()}
                   checked={prefs.eq}
                   onChange={(v) => setPref("eq", v)}
                 />
                 {!coarse && (
                   <PrefRow
                     icon={KeyboardIcon}
-                    title="Keyboard hints"
-                    description="Shortcut strip along the bottom."
+                    title={m.pref_hints_title()}
+                    description={m.pref_hints_description()}
                     checked={prefs.hints}
                     onChange={(v) => setPref("hints", v)}
                   />
@@ -4480,16 +4566,16 @@ export function MurmurApp() {
               </div>
             </PrefSection>
 
-            <PrefSection title="Playback">
+            <PrefSection title={m.section_playback()}>
               <div className={prefGroup}>
                 <PrefSlider
                   icon={ArrowDataTransferHorizontalIcon}
-                  title="Fade between sounds"
+                  title={m.pref_fade_title()}
                   value={prefs.fadeMs}
                   display={
                     prefs.fadeMs < 100
-                      ? "Instant"
-                      : `${(prefs.fadeMs / 1000).toFixed(1)}s`
+                      ? m.pref_fade_instant()
+                      : formatSeconds(prefs.fadeMs / 1000, 1)
                   }
                   min={0}
                   max={3000}
@@ -4502,9 +4588,9 @@ export function MurmurApp() {
                 />
                 <PrefSlider
                   icon={Moon02Icon}
-                  title="Sleep timer fade-out"
+                  title={m.pref_sleep_fade_title()}
                   value={prefs.sleepFade}
-                  display={`${prefs.sleepFade}s`}
+                  display={formatSeconds(prefs.sleepFade, 0)}
                   min={2}
                   max={60}
                   step={1}
@@ -4513,23 +4599,23 @@ export function MurmurApp() {
                 />
                 <PrefRow
                   icon={BrowserIcon}
-                  title="Pause in background tabs"
-                  description="Stops when you switch away or lock the screen, resumes on return."
+                  title={m.pref_pause_title()}
+                  description={m.pref_pause_description()}
                   checked={prefs.pauseHidden}
                   onChange={(v) => setPref("pauseHidden", v)}
                 />
                 <PrefRow
                   icon={Sun03Icon}
-                  title="Keep the screen awake"
-                  description="Stops the screen dimming while sounds play."
+                  title={m.pref_awake_title()}
+                  description={m.pref_awake_description()}
                   checked={prefs.keepAwake}
                   onChange={(v) => setPref("keepAwake", v)}
                 />
                 {"audioSession" in navigator && (
                   <PrefRow
                     icon={MusicNote01Icon}
-                    title="Play alongside other apps"
-                    description="Music keeps playing. The silent switch mutes Murmur, and it stops when the screen locks."
+                    title={m.pref_alongside_title()}
+                    description={m.pref_alongside_description()}
                     checked={prefs.mixWithOthers}
                     onChange={(v) => setPref("mixWithOthers", v)}
                   />
@@ -4544,21 +4630,23 @@ export function MurmurApp() {
                 that needs a connection) already appear where they matter. */
             }
             {(pwa.audio || installRow) && (
-              <PrefSection title="Offline">
+              <PrefSection title={m.section_offline()}>
                 <div className={prefGroup}>
                   {pwa.audio && (
                     <PrefInfo
                       icon={Download04Icon}
-                      title="Built-in sounds"
+                      title={m.offline_title()}
                       description={
-                        <>
-                          {pwa.audio.cached} of {pwa.audio.total} saved for
-                          offline use.
-                          {/* Offline there is nothing to press, so say why. */}
-                          {!pwa.online &&
-                            pwa.audio.cached < pwa.audio.total &&
-                            " Reconnect to download the rest."}
-                        </>
+                        // Offline there is nothing to press, so say why.
+                        !pwa.online && pwa.audio.cached < pwa.audio.total
+                          ? m.offline_saved_reconnect({
+                              cached: pwa.audio.cached,
+                              total: pwa.audio.total,
+                            })
+                          : m.offline_saved({
+                              cached: pwa.audio.cached,
+                              total: pwa.audio.total,
+                            })
                       }
                     >
                       {pwa.online && pwa.audio.cached < pwa.audio.total && (
@@ -4569,8 +4657,13 @@ export function MurmurApp() {
                           onClick={pwa.downloadSounds}
                         >
                           {pwa.downloading
-                            ? `Downloading ${pwa.audio.cached} of ${pwa.audio.total}…`
-                            : `Download (${formatBytes(pwa.audio.remainingBytes)})`}
+                            ? m.offline_downloading({
+                                cached: pwa.audio.cached,
+                                total: pwa.audio.total,
+                              })
+                            : m.offline_download({
+                                size: formatBytes(pwa.audio.remainingBytes),
+                              })}
                         </Button>
                       )}
                     </PrefInfo>
@@ -4578,13 +4671,13 @@ export function MurmurApp() {
                   {installRow && (
                     <PrefInfo
                       icon={InstallingUpdates01Icon}
-                      title="Install Murmur"
+                      title={m.install_title()}
                       description={
                         pwa.canInstall
-                          ? "Launch it from your dock or home screen."
+                          ? m.install_description_prompt()
                           : IS_APPLE_TOUCH
-                            ? "Tap Share, then Add to Home Screen."
-                            : "Use your browser’s menu, then Install app or Add to Home screen."
+                            ? m.install_description_apple()
+                            : m.install_description_menu()
                       }
                     >
                       {pwa.canInstall && (
@@ -4593,7 +4686,7 @@ export function MurmurApp() {
                           size="sm"
                           onClick={() => void pwa.install()}
                         >
-                          Install
+                          {m.action_install()}
                         </Button>
                       )}
                     </PrefInfo>
@@ -4602,15 +4695,18 @@ export function MurmurApp() {
               </PrefSection>
             )}
 
-            <PrefSection title="Your data">
+            <PrefSection title={m.section_data()}>
               <div className={prefGroup}>
                 <PrefInfo
                   icon={Database01Icon}
-                  title="Kept in this browser"
+                  title={m.data_title()}
                   description={
                     saved.length || customs.length
-                      ? `${saved.length} saved ${saved.length === 1 ? "mix" : "mixes"} and ${customs.length} ${customs.length === 1 ? "sound" : "sounds"} of your own.`
-                      : "Nothing saved yet."
+                      ? m.data_summary({
+                          mixes: m.count_saved_mixes({ count: saved.length }),
+                          sounds: m.count_own_sounds({ count: customs.length }),
+                        })
+                      : m.data_empty()
                   }
                 >
                   {/* Armed, it turns destructive red. Both labels share one
@@ -4630,7 +4726,7 @@ export function MurmurApp() {
                           dataArmed && "invisible"
                         )}
                       >
-                        Clear all
+                        {m.clear_all()}
                       </span>
                       <span
                         className={cn(
@@ -4638,15 +4734,15 @@ export function MurmurApp() {
                           !dataArmed && "invisible"
                         )}
                       >
-                        Sure?
+                        {m.clear_sure()}
                       </span>
                     </span>
                   </Button>
                 </PrefInfo>
                 <PrefInfo
                   icon={Archive01Icon}
-                  title="Backup"
-                  description="Save your mixes and sounds to a file, or add them from one."
+                  title={m.backup_title()}
+                  description={m.backup_description()}
                 >
                   <Button
                     variant="outline"
@@ -4654,14 +4750,14 @@ export function MurmurApp() {
                     disabled={saved.length === 0 && customs.length === 0}
                     onClick={() => void exportBackup()}
                   >
-                    Export
+                    {m.action_export()}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => importInput.current?.click()}
                   >
-                    Import
+                    {m.action_import()}
                   </Button>
                   <input
                     ref={importInput}
@@ -4680,7 +4776,7 @@ export function MurmurApp() {
               </div>
             </PrefSection>
 
-            <PrefSection title="About">
+            <PrefSection title={m.about()}>
               <div className={prefGroup}>
                 <div className="flex items-center gap-4 px-4 py-3">
                   <img
@@ -4698,7 +4794,7 @@ export function MurmurApp() {
                       </span>
                     </div>
                     <p className="mt-0.5 text-body-medium text-muted-foreground">
-                      Ambient sound mixer that runs in your browser.
+                      {m.about_tagline()}
                     </p>
                   </div>
                 </div>
@@ -4714,7 +4810,7 @@ export function MurmurApp() {
                     strokeWidth={2}
                     className="size-5 shrink-0"
                   />
-                  <span className="flex-1">Source</span>
+                  <span className="flex-1">{m.about_source()}</span>
                   <HugeiconsIcon
                     icon={ArrowUpRight01Icon}
                     strokeWidth={2}
@@ -4728,7 +4824,7 @@ export function MurmurApp() {
                     strokeWidth={2}
                     className="size-5 shrink-0"
                   />
-                  <span className="flex-1">Credits</span>
+                  <span className="flex-1">{m.about_credits()}</span>
                   <HugeiconsIcon
                     icon={ArrowUpRight01Icon}
                     strokeWidth={2}
@@ -4745,7 +4841,7 @@ export function MurmurApp() {
                     strokeWidth={2}
                     className="size-5 shrink-0"
                   />
-                  Copy build info
+                  {m.about_copy_build()}
                 </button>
 
                 {/* The tint is a gradient layer, so it lies over the tile's
@@ -4753,10 +4849,9 @@ export function MurmurApp() {
                     under the text instead of squeezing it. */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-linear-to-b from-brand/5 to-brand/5 px-4 py-3">
                   <div className="min-w-0 flex-1 basis-48">
-                    <p className="text-body-large">Free, no accounts, no ads</p>
+                    <p className="text-body-large">{m.support_title()}</p>
                     <p className="mt-0.5 text-body-medium text-muted-foreground">
-                      If Murmur helps you focus or sleep, you can chip in for
-                      the hosting.
+                      {m.support_description()}
                     </p>
                   </div>
                   <a
@@ -4770,7 +4865,7 @@ export function MurmurApp() {
                       strokeWidth={2}
                       className="size-3.5"
                     />
-                    Support
+                    {m.support_action()}
                   </a>
                 </div>
               </div>
@@ -4786,11 +4881,11 @@ export function MurmurApp() {
           <div className="flex shrink-0 items-center gap-3 border-t border-border bg-popover px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:pb-3">
             {!coarse && (
               <span>
-                Press{" "}
+                {pressBefore}
                 <b className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
                   ,
-                </b>{" "}
-                to open this
+                </b>
+                {pressAfter}
               </span>
             )}
             <span className="flex-1" />
@@ -4819,10 +4914,10 @@ export function MurmurApp() {
                     writeBlackNight(false)
                   })
                 }
-                toast.success("Preferences restored to defaults", {
+                toast.success(m.toast_prefs_restored(), {
                   id: "prefs-restored",
                   action: {
-                    label: "Undo",
+                    label: m.action_undo(),
                     onClick: () => {
                       setPrefs(previous.prefs)
                       selectScheme(previous.scheme)
@@ -4832,7 +4927,7 @@ export function MurmurApp() {
                 })
               }}
             >
-              Restore defaults
+              {m.restore_defaults()}
             </Button>
           </div>
         </DialogContent>
@@ -4840,8 +4935,8 @@ export function MurmurApp() {
 
       <RenameDialog
         open={renaming !== null}
-        title="Rename mix"
-        placeholder="Name your mix"
+        title={m.rename_mix()}
+        placeholder={m.name_your_mix()}
         value={renameValue}
         maxLength={MIX_NAME_MAX}
         onValueChange={setRenameValue}
@@ -4850,8 +4945,8 @@ export function MurmurApp() {
       />
       <RenameDialog
         open={renamingSound !== null}
-        title="Rename sound"
-        placeholder="Name your sound"
+        title={m.rename_sound()}
+        placeholder={m.name_your_sound()}
         value={renameValue}
         maxLength={SOUND_NAME_MAX}
         onValueChange={setRenameValue}

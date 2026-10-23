@@ -12,7 +12,7 @@
   "hero_sub": "仕事中も、読書中も、眠りにつくときも、環境音を流しておけます。暖炉の音に雨を重ねて、その組み合わせを保存しましょう。",
   "hero_download": "Windows 版をダウンロード",
   "hero_try": "ブラウザーでミックス",
-  "hero_meta": "無料 · GPLv3 · テレメトリなし · Windows\u00a010 / 11",
+  "hero_meta": "無料 · GPLv3 · テレメトリなし · Windows 10 / 11",
   "features_heading": "できること",
   "features_sub": "作ったミックスを覚えておきます。",
   "feature_layer_title": "好きな音量で音を重ねる",
@@ -74,5 +74,323 @@
   "category_generated": "生成音",
   "preset_rainy_cafe": "雨のカフェ",
   "preset_night_train": "夜行列車",
-  "preset_seaside_evening": "海辺の夕暮れ"
+  "preset_seaside_evening": "海辺の夕暮れ",
+  "action_add": "追加",
+  "action_cancel": "キャンセル",
+  "action_close": "閉じる",
+  "action_delete": "削除",
+  "action_duplicate": "複製",
+  "action_export": "エクスポート",
+  "action_import": "インポート",
+  "action_install": "インストール",
+  "action_mute": "ミュート",
+  "action_unmute": "ミュート解除",
+  "action_open_youtube": "YouTube で開く",
+  "action_pause": "一時停止",
+  "action_play": "再生",
+  "action_play_back": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "再生する"
+      }
+    }
+  ],
+  "action_play_only": "これだけ再生",
+  "action_reload": "再読み込み",
+  "action_remove": "削除",
+  "action_rename": "名前を変更",
+  "action_rename_ellipsis": "名前を変更…",
+  "action_reset_level": "音量をリセット",
+  "action_save": "保存",
+  "action_save_changes": "変更を保存",
+  "action_save_mix": "ミックスを保存",
+  "action_save_mix_ellipsis": "ミックスを保存…",
+  "action_share": "共有",
+  "action_start": "開始",
+  "action_turn_all_off": "すべてオフ",
+  "action_turn_off": "オフにする",
+  "action_undo": "元に戻す",
+  "mix_new": "新しいミックス",
+  "mix_custom": "カスタムミックス",
+  "mix_shared": "共有されたミックス",
+  "mix_name_pair": "{first}と{second}",
+  "mix_more": "他 {count} 件",
+  "mix_edited": "（編集済み）",
+  "mix_delete": "ミックスを削除",
+  "mix_delete_named": "{name} を削除",
+  "mix_more_for": "{name} のその他の操作",
+  "mix_copy_suffix": " のコピー",
+  "mix_copy_suffix_numbered": " のコピー {n}",
+  "sound_that": "そのサウンド",
+  "sound_volume": "{name} の音量",
+  "sound_turn_off_named": "{name} をオフにする",
+  "sound_release_named": "{name} をリストから外す",
+  "sound_remove_named": "{name} を削除",
+  "sound_missing_note": "このブラウザーにファイルがありません。もう一度選んでください",
+  "sound_missing_badge": "ファイルなし",
+  "sound_device_level": "iPhone の音量ボタンで調整します",
+  "count_sounds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "{count} 個のサウンド"
+      }
+    }
+  ],
+  "count_mixes": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "{count} 個のミックス"
+      }
+    }
+  ],
+  "count_saved_mixes": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "保存済みミックス {count} 個"
+      }
+    }
+  ],
+  "count_own_sounds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "自分のサウンド {count} 個"
+      }
+    }
+  ],
+  "count_missing_files": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "見つからなかったファイル {count} 個"
+      }
+    }
+  ],
+  "count_youtube_sounds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "YouTube のサウンド {count} 個"
+      }
+    }
+  ],
+  "duration_minutes": "{minutes} 分",
+  "duration_hours": "{hours} 時間",
+  "duration_hours_minutes": "{hours} 時間 {minutes} 分",
+  "duration_hour_and_half": "90 分",
+  "status_nothing": "再生していません",
+  "status_playing": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "{count} 個のサウンド · 再生中"
+      }
+    }
+  ],
+  "status_paused": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "{count} 個のサウンド · 一時停止中"
+      }
+    }
+  ],
+  "status_sleeps": "{status} · あと {time} で停止",
+  "timer_title": "スリープタイマー",
+  "timer_left_named": "スリープタイマー、残り {time}",
+  "timer_fading": "フェードアウト中",
+  "timer_stops_at": "{time} に停止",
+  "timer_extend": "+{duration}",
+  "timer_length": "タイマーの長さ",
+  "timer_fade_minute": "最後の 1 分間でフェードアウトし、一時停止します。",
+  "timer_fade_seconds": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "最後の {count} 秒間でフェードアウトし、一時停止します。"
+      }
+    }
+  ],
+  "now_playing": "再生中",
+  "now_playing_show": "再生中を表示",
+  "now_playing_hide": "再生中を隠す",
+  "now_playing_close": "再生中を閉じる",
+  "now_playing_empty": "まだ何もオンになっていません。サウンドをタップして追加しましょう。",
+  "master": "マスター",
+  "master_volume": "マスター音量",
+  "view_grid": "グリッド表示",
+  "view_list": "リスト表示",
+  "turn_all_off_shortcut": "すべてオフ (Ctrl+R)",
+  "preferences": "設定",
+  "preferences_shortcut": "設定 (Ctrl+P)",
+  "your_mixes": "マイミックス",
+  "all_mixes": "すべてのミックス",
+  "all_mixes_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "{count} 個のミックスをこのブラウザーに保存しています。"
+      }
+    }
+  ],
+  "yours": "マイサウンド",
+  "add_sound": "サウンドを追加",
+  "add_own_sound": "自分のサウンドを追加",
+  "key_space": "Space",
+  "hint_play": "再生",
+  "hint_volume": "音量",
+  "hint_share": "共有",
+  "hint_timer": "タイマー",
+  "hint_preferences": "設定",
+  "media_album": "環境音ミキサー",
+  "save_title": "このミックスを保存",
+  "save_description": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "{count} 個のサウンドを今の音量で保存します。"
+      }
+    }
+  ],
+  "save_description_empty": "何も再生していないので、空のミックスになります。",
+  "name_your_mix": "ミックスの名前",
+  "name_your_sound": "サウンドの名前",
+  "rename_mix": "ミックスの名前を変更",
+  "rename_sound": "サウンドの名前を変更",
+  "add_name_placeholder": "名前（省略可）",
+  "add_url_placeholder": "YouTube のリンク、または https://…/sound.ogg",
+  "add_or": "または",
+  "add_choose_file": "音声ファイルを選択…",
+  "section_appearance": "外観",
+  "section_playback": "再生",
+  "section_offline": "オフライン",
+  "section_data": "データ",
+  "about": "概要",
+  "theme_auto": "自動",
+  "theme_light": "ライト",
+  "theme_dark": "ダーク",
+  "colour": "カラー",
+  "scheme_amber": "アンバー",
+  "scheme_rose": "ローズ",
+  "scheme_sage": "セージ",
+  "scheme_sky": "スカイ",
+  "scheme_violet": "パープル",
+  "pref_language_title": "言語",
+  "pref_language_description": "切り替えると Murmur を再読み込みします。",
+  "pref_language_auto": "自動",
+  "pref_black_title": "夜は純粋な黒に",
+  "pref_black_description": "ダークテーマのときに背景を黒にします。OLED 画面や暗い部屋に。",
+  "pref_meters_title": "レベルメーター",
+  "pref_meters_description": "再生中のサウンドにアニメーションのバーを表示します。",
+  "pref_hints_title": "キーボードのヒント",
+  "pref_hints_description": "画面下部にショートカットを表示します。",
+  "pref_fade_title": "フェード時間",
+  "pref_fade_instant": "即時",
+  "pref_sleep_fade_title": "スリープタイマーのフェードアウト",
+  "pref_pause_title": "バックグラウンドで一時停止",
+  "pref_pause_description": "別のタブに切り替えたり画面をロックしたりすると停止し、戻ると再開します。",
+  "pref_awake_title": "画面をオンのままにする",
+  "pref_awake_description": "サウンドの再生中は画面を暗くしません。",
+  "pref_alongside_title": "他のアプリと同時に再生",
+  "pref_alongside_description": "音楽は再生を続けます。消音スイッチで Murmur がミュートになり、画面をロックすると停止します。",
+  "offline_title": "内蔵サウンド",
+  "offline_saved": "{total} 個中 {cached} 個をオフライン用に保存済みです。",
+  "offline_saved_reconnect": "{total} 個中 {cached} 個をオフライン用に保存済みです。残りをダウンロードするにはオンラインにしてください。",
+  "offline_downloading": "{total} 個中 {cached} 個をダウンロード中…",
+  "offline_download": "ダウンロード ({size})",
+  "install_title": "Murmur をインストール",
+  "install_description_prompt": "Dock やホーム画面から起動できます。",
+  "install_description_apple": "共有をタップして、「ホーム画面に追加」を選びます。",
+  "install_description_menu": "ブラウザーのメニューから「アプリをインストール」または「ホーム画面に追加」を選びます。",
+  "data_title": "このブラウザーに保存",
+  "data_summary": "{mixes}、{sounds}。",
+  "data_empty": "まだ何も保存されていません。",
+  "clear_all": "すべて削除",
+  "clear_sure": "本当に？",
+  "backup_title": "バックアップ",
+  "backup_description": "ミックスとサウンドをファイルに保存したり、ファイルから追加したりできます。",
+  "backup_damaged": "そのバックアップは破損しています",
+  "backup_not_murmur": "そのファイルは Murmur のバックアップではありません",
+  "backup_too_new": "このバックアップは新しいバージョンの Murmur で作成されています",
+  "about_tagline": "ブラウザーで動く環境音ミキサーです。",
+  "about_source": "ソースコード",
+  "about_credits": "クレジット",
+  "about_copy_build": "ビルド情報をコピー",
+  "support_title": "無料、アカウント不要、広告なし",
+  "support_description": "Murmur が集中や睡眠の役に立っているなら、ホスティング費用の支援をお願いします。",
+  "support_action": "支援する",
+  "prefs_shortcut_hint": "{key} キーで開きます",
+  "restore_defaults": "初期設定に戻す",
+  "share_only_own_playing": "再生中なのは自分のサウンドだけで、これは共有できません",
+  "share_only_own_mix": "このミックスには自分のサウンドしかなく、これは共有できません",
+  "share_nothing_playing": "共有できる再生中のサウンドがまだありません",
+  "share_mix_empty": "このミックスには共有できるサウンドがありません",
+  "link_replaced": "このリンクで、保存していないミックスが置き換えられました",
+  "link_replaced_added": "このリンクで、保存していないミックスが置き換えられ、{videos}が追加されました",
+  "link_added": "このリンクで、{videos}がミキサーに追加されました",
+  "toast_load_failed": "{name} を読み込めませんでした。このブラウザーはこのファイルに対応していない可能性があります",
+  "toast_not_offline": "{name} はまだオフライン用に保存されていません。オンラインにすると追加されます",
+  "toast_video_exists": "その動画はすでにミキサーにあります",
+  "toast_not_a_link": "リンクではないようです",
+  "toast_sound_back": "{name} が戻りました",
+  "toast_file_not_saved": "ファイルを保存できませんでした。このタブを閉じるまでは再生できます",
+  "toast_sound_removed": "「{name}」を削除しました",
+  "toast_missing_one": "{name} がこのブラウザーにありません。タイルからファイルをもう一度追加してください",
+  "toast_missing_many": "このミックスのサウンドのうち {count} 個がこのブラウザーにありません。それぞれのタイルからファイルをもう一度追加してください",
+  "toast_mix_deleted": "「{name}」を削除しました",
+  "toast_changes_saved": "「{name}」に変更を保存しました",
+  "toast_duplicated": "「{name}」として複製しました",
+  "toast_backup_saved": "バックアップを保存しました ({size})",
+  "toast_backup_partial": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=other": "バックアップを保存しました ({size})。自分のサウンドのうち {count} 個は、含めるファイルがありません"
+      }
+    }
+  ],
+  "toast_files_not_saved": "一部のサウンドファイルを保存できませんでした。このタブを閉じるまでは再生できます",
+  "toast_backup_nothing_new": "そのバックアップに新しいものはありません",
+  "toast_imported": "{mixes}と{sounds}をインポートしました",
+  "toast_imported_relinked": "{mixes}と{sounds}をインポートし、{files}を復元しました",
+  "toast_cleared": "保存したミックスと自分のサウンドを削除しました",
+  "toast_saved": "「{name}」を保存しました",
+  "toast_no_clipboard": "このブラウザーではクリップボードを使えません",
+  "toast_build_copied": "ビルド情報をコピーしました",
+  "toast_build_copy_failed": "ビルド情報をコピーできませんでした",
+  "toast_link_copied": "リンクをコピーしました",
+  "toast_link_copied_partial": "リンクをコピーしました。自分のサウンドは含まれていません",
+  "toast_link_in_address_bar": "リンクはアドレスバーにあります",
+  "toast_playing_only": "{name} だけを再生中",
+  "toast_turned_off": "すべてオフにしました",
+  "toast_ogg_unsupported": "Murmur の内蔵サウンドには Safari 18.4 以降が必要です。YouTube のサウンドや自分の MP3、M4A ファイルは再生できます",
+  "toast_update_ready": "Murmur の新しいバージョンを利用できます",
+  "toast_offline_ready": "内蔵サウンド {count} 個すべてをオフライン用に保存しました",
+  "toast_back_online": "オンラインに戻りました",
+  "toast_prefs_restored": "設定を初期状態に戻しました",
+  "yt_placeholder": "YouTube のサウンド",
+  "yt_unreachable": "YouTube に接続できませんでした",
+  "yt_invalid_link": "その動画のリンクは無効です",
+  "yt_no_browser": "この動画はブラウザーでは再生できません",
+  "yt_private": "その動画は非公開か、すでに削除されています",
+  "yt_no_embed": "この動画は所有者によって埋め込みが許可されていません",
+  "yt_failed": "YouTube でその動画を再生できませんでした",
+  "yt_autoplay_blocked": "ブラウザーがこの動画の再生開始をブロックしました"
 }

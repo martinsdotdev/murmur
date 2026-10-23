@@ -8,6 +8,7 @@
  * the header's order. Building it is one Blob of parts, so nothing is copied;
  * reading it is slices of the File, so nothing is loaded until it is stored.
  */
+import { m } from "@/paraglide/messages.js"
 
 const MAGIC = "MURMURBK"
 const VERSION = 1
@@ -59,14 +60,14 @@ export function buildBackup(
 export async function readBackup(
   file: Blob
 ): Promise<{ contents: BackupContents; blobs: Map<string, Blob> }> {
-  const damaged = new BackupError("That backup is damaged")
+  const damaged = new BackupError(m.backup_damaged())
   const prefix = new Uint8Array(await file.slice(0, PREFIX).arrayBuffer())
   const magic = new TextDecoder().decode(prefix.subarray(0, MAGIC.length))
   if (prefix.length < PREFIX || magic !== MAGIC) {
-    throw new BackupError("That file isn’t a Murmur backup")
+    throw new BackupError(m.backup_not_murmur())
   }
   if (prefix[MAGIC.length] > VERSION) {
-    throw new BackupError("This backup is from a newer Murmur")
+    throw new BackupError(m.backup_too_new())
   }
   const headerLength = new DataView(prefix.buffer).getUint32(
     MAGIC.length + 1,
