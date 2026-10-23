@@ -32,3 +32,23 @@ export function clampName(text: string, max: number): string {
 export function isolate(name: string): string {
   return `⁨${name}⁩`
 }
+
+/**
+ * A sound's name from a file name or a link's path: the last segment, decoded,
+ * without its extension, its separators as spaces and its first letter raised,
+ * so "ocean-waves_at-dawn.mp3" reads "Ocean waves at dawn". The rest keeps its
+ * case, so "NYC traffic" survives. Empty when there is no file name to read.
+ */
+export function nameFromFile(path: string): string {
+  let last = path.split("/").filter(Boolean).at(-1) ?? ""
+  try {
+    last = decodeURIComponent(last)
+  } catch {
+    /* A stray % stays as it is. */
+  }
+  const words = last
+    .replace(/\.[^.]+$/, "")
+    .replace(/[-_.\s]+/g, " ")
+    .trim()
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}

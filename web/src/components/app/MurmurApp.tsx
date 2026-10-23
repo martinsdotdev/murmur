@@ -117,7 +117,7 @@ import {
   writeThemeMode,
   type ThemeMode,
 } from "@/lib/theme"
-import { clampName, isolate } from "@/lib/text"
+import { clampName, isolate, nameFromFile } from "@/lib/text"
 import { cn } from "@/lib/utils"
 
 import { DevDataToggle } from "./DevDataToggle"
@@ -256,21 +256,51 @@ function mixIconPath(mix: MixerState) {
   return sounds.find((s) => s.id === top)?.iconPath ?? MUSIC_ICON
 }
 
+/** A mix's sound names, loudest first, leaving out any sound since removed. */
+function soundsByLevel(
+  mix: MixerState,
+  nameOf: (id: string) => string | undefined
+) {
+  return Object.entries(mix)
+    .sort(([, a], [, b]) => b - a)
+    .map(([id]) => nameOf(id))
+    .filter((name): name is string => name !== undefined)
+}
+
+/**
+ * The name Save offers: the loudest sound, and the next if both fit, so
+ * "Rain and Coffee shop". Numbered past any mix already called that, since
+ * saving under a taken name replaces it and accepting the offer shouldn't.
+ */
+function suggestMixName(
+  mix: MixerState,
+  nameOf: (id: string) => string | undefined,
+  taken: (name: string) => boolean
+) {
+  const [first, second] = soundsByLevel(mix, nameOf)
+  if (!first) return ""
+  const both = second ? `${first} and ${second}` : first
+  const base =
+    clampName(both, MIX_NAME_MAX) === both
+      ? both
+      : clampName(first, MIX_NAME_MAX)
+  let name = base
+  for (let n = 2; taken(name); n++) {
+    name = `${clampName(base, MIX_NAME_MAX - ` ${n}`.length)} ${n}`
+  }
+  return name
+}
+
 /**
  * What a mix is made of, loudest first: "Rain", "Rain and Fireplace",
  * "Rain, Fireplace and Birds", "Rain, Fireplace and 3 more". Two mixes can
- * share a name; they rarely share their sounds. A sound since removed is
- * left out rather than named "that sound".
+ * share a name; they rarely share their sounds.
  */
 function mixSummary(
   mix: MixerState,
   nameOf: (id: string) => string | undefined
 ) {
-  const names = Object.entries(mix)
-    .sort(([, a], [, b]) => b - a)
-    .map(([id]) => nameOf(id))
-    .filter((name): name is string => name !== undefined)
-    .map(isolate)
+  const names = soundsByLevel(mix, nameOf).map(isolate)
   if (names.length <= 1) return names[0] ?? ""
   if (names.length <= 3) {
     return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`
@@ -1392,17 +1422,23 @@ export function MurmurApp() {
       addYouTube(videoId)
       return
     }
-    let host: string
+    let parsed: URL
     try {
-      host = new URL(url).hostname.replace(/^www\./, "")
+      parsed = new URL(url)
     } catch {
       toast("That doesn’t look like a link")
       return
     }
+    // The file's own name says what it is; the host only where there's none,
+    // or two links from one site would share a name.
+    const name =
+      addName.trim() ||
+      nameFromFile(parsed.pathname) ||
+      parsed.hostname.replace(/^www\./, "")
     const id = `cu${Date.now()}`
     commitCustoms([
       ...customsRef.current,
-      { id, name: clampName(addName.trim() || host, SOUND_NAME_MAX), url },
+      { id, name: clampName(name, SOUND_NAME_MAX), url },
     ])
     setAddOpen(false)
     changeVolume(id, DEFAULT_TOGGLE_VOLUME, { keepName: true })
@@ -1429,7 +1465,7 @@ export function MurmurApp() {
     const id = `cf${Date.now()}`
     blobUrls.current.set(id, URL.createObjectURL(file))
     const name = clampName(
-      addName.trim() || file.name.replace(/\.[^.]+$/, ""),
+      addName.trim() || nameFromFile(file.name) || file.name,
       SOUND_NAME_MAX
     )
     commitCustoms([...customsRef.current, { id, name }])
@@ -2575,7 +2611,15 @@ export function MurmurApp() {
     : playStatus
 
   const openSaveDialog = () => {
-    setSaveName(dirty || mixName === "Shared mix" ? "" : mixName)
+    // A clean, named mix offers its own name; anything else is offered a name
+    // from its sounds, ready to accept with Enter or type over.
+    setSaveName(
+      dirty || mixName === "Shared mix"
+        ? suggestMixName(vols, soundName, (name) =>
+            saved.some((s) => s.name === name)
+          )
+        : mixName
+    )
     setSaveOpen(true)
   }
   // What the level meters claim is sound reaching the speakers, so they stop
