@@ -1996,7 +1996,7 @@ export function MurmurApp() {
   }
 
   const saveMix = () => {
-    const name = saveName.trim()
+    const name = saveName.trim() || saveSuggestion
     if (!name) return
     const mix: MixerState = {}
     for (const [id, v] of Object.entries(vols)) if (v > 0) mix[id] = v
@@ -2610,16 +2610,17 @@ export function MurmurApp() {
     ? `${playStatus} · sleeps in ${formatClock(timerLeft)}`
     : playStatus
 
+  // A name from the sounds, shown in the empty field and used if it's left
+  // empty. Not filled in: iOS Safari often ignores the select-on-focus, which
+  // left the keyboard typing onto the end of it.
+  const saveSuggestion = saveOpen
+    ? suggestMixName(vols, soundName, (name) =>
+        saved.some((s) => s.name === name)
+      )
+    : ""
   const openSaveDialog = () => {
-    // A clean, named mix offers its own name; anything else is offered a name
-    // from its sounds, ready to accept with Enter or type over.
-    setSaveName(
-      dirty || mixName === "Shared mix"
-        ? suggestMixName(vols, soundName, (name) =>
-            saved.some((s) => s.name === name)
-          )
-        : mixName
-    )
+    // A clean, named mix (a shared one) still starts from its own name.
+    setSaveName(dirty || mixName === "Shared mix" ? "" : mixName)
     setSaveOpen(true)
   }
   // What the level meters claim is sound reaching the speakers, so they stop
@@ -3924,13 +3925,17 @@ export function MurmurApp() {
               {activeIds.length
                 ? `${activeIds.length} sound${activeIds.length === 1 ? "" : "s"} at their current levels.`
                 : "Nothing is playing, so the mix will be empty."}
+              {/* A placeholder reads as a hint and some screen readers skip
+                  it, so the default it shows is said here as well. */}
+              {saveSuggestion &&
+                ` Leave the name blank to save it as “${isolate(saveSuggestion)}”.`}
             </DialogDescription>
           </DialogHeader>
           <Input
             autoFocus
             value={saveName}
             maxLength={MIX_NAME_MAX}
-            placeholder="Name your mix"
+            placeholder={saveSuggestion || "Name your mix"}
             autoComplete="off"
             enterKeyHint="done"
             // Select the prefilled name so typing replaces it instead of
