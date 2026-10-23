@@ -4589,8 +4589,9 @@ export function MurmurApp() {
           instant={keyDriven}
         >
           <DialogHeader className="shrink-0 px-5 py-4">
+            {/* The title moves with its page, from the same side. */}
             {prefsPage === "language" ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 transition-[opacity,translate] duration-200 ease-(--ease-out) starting:opacity-0 motion-safe:starting:translate-x-6">
                 {/* The close button's look, on the other side: -my-1 keeps
                     the header the title's height. */}
                 <Button
@@ -4607,7 +4608,15 @@ export function MurmurApp() {
                 </DialogTitle>
               </div>
             ) : (
-              <DialogTitle className="text-lg">{m.preferences()}</DialogTitle>
+              <DialogTitle
+                className={cn(
+                  "text-lg",
+                  prefsBack &&
+                    "transition-[opacity,translate] duration-200 ease-(--ease-out) starting:opacity-0 motion-safe:starting:-translate-x-6"
+                )}
+              >
+                {m.preferences()}
+              </DialogTitle>
             )}
           </DialogHeader>
 
@@ -4617,7 +4626,7 @@ export function MurmurApp() {
               property belongs to scroll-fade, whose edges are a scroll-driven
               animation, and an entrance keyframe there replaced it. */}
           {prefsPage === "language" && (
-            <div className="flex min-h-0 flex-1 scroll-fade [scrollbar-gutter:stable_both-edges] flex-col overflow-y-auto px-5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] transition-[opacity,translate] duration-200 ease-(--ease-out) scroll-fade-5 sm:pb-4 starting:opacity-0 motion-safe:starting:translate-x-6">
+            <div className="flex min-h-0 flex-1 scroll-fade [scrollbar-gutter:stable_both-edges] flex-col overflow-y-auto px-5 py-4 transition-[opacity,translate] duration-200 ease-(--ease-out) scroll-fade-5 starting:opacity-0 motion-safe:starting:translate-x-6">
               <LanguagePage />
             </div>
           )}
@@ -5005,66 +5014,72 @@ export function MurmurApp() {
             </div>
           )}
 
-          {prefsPage === "main" && (
-            /* This dialog sets p-0, which takes the sheet's safe-area padding
+          {/* This dialog sets p-0, which takes the sheet's safe-area padding
               with it, so the footer has to clear the home indicator itself.
               It sits a layer below the dialog's background-3, on the
               background-2 popovers use, the way a WinUI ContentDialog's command
               area does, so it reads as the dialog's base rather than more of
-              its content. The language page has nothing for it to do. */
-            <div className="flex shrink-0 items-center gap-3 border-t border-border bg-popover px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:pb-3">
-              {!coarse && (
-                <span>
-                  {pressBefore}
-                  <b className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
-                    ,
-                  </b>
-                  {pressAfter}
-                </span>
-              )}
-              <span className="flex-1" />
-              {/* Undo rather than a confirmation: this only resets the rows
+              its content. The language page has nothing for it to do, so
+              there it slides down out of the sheet and goes inert, keeping
+              its place so the page above doesn't jump. */}
+          <div
+            inert={prefsPage !== "main"}
+            className={cn(
+              "flex shrink-0 items-center gap-3 border-t border-border bg-popover px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted-foreground transition-[opacity,translate] duration-200 ease-(--ease-out) sm:pb-3",
+              prefsPage !== "main" && "opacity-0 motion-safe:translate-y-full"
+            )}
+          >
+            {!coarse && (
+              <span>
+                {pressBefore}
+                <b className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+                  ,
+                </b>
+                {pressAfter}
+              </span>
+            )}
+            <span className="flex-1" />
+            {/* Undo rather than a confirmation: this only resets the rows
                 above, and on a phone a confirmation would be a second sheet
                 over this one. */}
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={prefsAreDefault && appearanceIsDefault}
-                onClick={() => {
-                  // The colour scheme and pure black are rows above as well, so
-                  // they reset and undo with the rest. The theme mode doesn't:
-                  // it's the site's, shared with the landing page's toggle.
-                  const previous = { prefs, scheme, blackNight }
-                  setPrefs({ ...DEFAULT_PREFS })
-                  if (!appearanceIsDefault) {
-                    crossfadeTheme(() => {
-                      applyScheme("amber")
-                      applyBlackNight(false)
-                      flushSync(() => {
-                        setScheme("amber")
-                        setBlackNight(false)
-                      })
-                      writeScheme("amber")
-                      writeBlackNight(false)
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={prefsAreDefault && appearanceIsDefault}
+              onClick={() => {
+                // The colour scheme and pure black are rows above as well, so
+                // they reset and undo with the rest. The theme mode doesn't:
+                // it's the site's, shared with the landing page's toggle.
+                const previous = { prefs, scheme, blackNight }
+                setPrefs({ ...DEFAULT_PREFS })
+                if (!appearanceIsDefault) {
+                  crossfadeTheme(() => {
+                    applyScheme("amber")
+                    applyBlackNight(false)
+                    flushSync(() => {
+                      setScheme("amber")
+                      setBlackNight(false)
                     })
-                  }
-                  toast.success(m.toast_prefs_restored(), {
-                    id: "prefs-restored",
-                    action: {
-                      label: m.action_undo(),
-                      onClick: () => {
-                        setPrefs(previous.prefs)
-                        selectScheme(previous.scheme)
-                        changeBlackNight(previous.blackNight)
-                      },
-                    },
+                    writeScheme("amber")
+                    writeBlackNight(false)
                   })
-                }}
-              >
-                {m.restore_defaults()}
-              </Button>
-            </div>
-          )}
+                }
+                toast.success(m.toast_prefs_restored(), {
+                  id: "prefs-restored",
+                  action: {
+                    label: m.action_undo(),
+                    onClick: () => {
+                      setPrefs(previous.prefs)
+                      selectScheme(previous.scheme)
+                      changeBlackNight(previous.blackNight)
+                    },
+                  },
+                })
+              }}
+            >
+              {m.restore_defaults()}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
