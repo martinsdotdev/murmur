@@ -4,6 +4,7 @@ import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowUp01Icon,
+  Cancel01Icon,
   Delete02Icon,
   Clock01Icon,
   Copy01Icon,
@@ -21,6 +22,7 @@ import {
   Moon02Icon,
   MoreHorizontalIcon,
   PauseIcon,
+  PanelRightIcon,
   PencilEdit02Icon,
   PlayIcon,
   PlusSignIcon,
@@ -624,6 +626,24 @@ function formatClock(totalSeconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 }
 
+/** Where the Now playing pane fits: the desktop shell, from 840px. */
+const PANE_QUERY =
+  "(width >= 52.5rem) and (not ((pointer: coarse) and (height < 30rem)))"
+
+function subscribePane(onChange: () => void) {
+  const media = window.matchMedia(PANE_QUERY)
+  media.addEventListener("change", onChange)
+  return () => media.removeEventListener("change", onChange)
+}
+
+function usePaneFits() {
+  return React.useSyncExternalStore(
+    subscribePane,
+    () => window.matchMedia(PANE_QUERY).matches,
+    () => false
+  )
+}
+
 /** A file size: "18 MB", one decimal under 10 MB ("2.4 MB"), kB below 1 MB. */
 function formatBytes(bytes: number): string {
   const kb = bytes < 1e6
@@ -946,6 +966,8 @@ export function MurmurApp() {
   const [mixName, setMixName] = React.useState(initial.mixName)
   const [dirty, setDirty] = React.useState(initial.dirty)
   const [view, setView] = React.useState<View>(initial.view)
+  const [pane, setPane] = React.useState(initial.pane)
+  const paneFits = usePaneFits()
   const [saved, setSaved] = React.useState<SavedMix[]>(initial.saved)
   const [customs, setCustoms] = React.useState<CustomSound[]>(initial.customs)
   const [playing, setPlaying] = React.useState(false)
@@ -2076,13 +2098,14 @@ export function MurmurApp() {
         mixName,
         dirty,
         view,
+        pane,
         saved,
         customs,
         prefs,
       })
     }, 250)
     return () => window.clearTimeout(id)
-  }, [vols, master, mixName, dirty, view, saved, customs, prefs])
+  }, [vols, master, mixName, dirty, view, pane, saved, customs, prefs])
 
   // ThemeBootstrap resolved the theme before paint, so this only re-resolves
   // after a picker change, and tracks the OS while the preference is 'system'.
@@ -2386,6 +2409,81 @@ export function MurmurApp() {
     activeIds.length > 0 && (dirty || !saved.some((s) => s.name === mixName))
 
   // Starters stand in for an empty list, so they return if every mix is deleted.
+
+  // Now playing's body, shared by the phone sheet and the desktop pane: the
+  // master, every sound that's on, and what to do with them.
+  const nowPlayingRows = (
+    <div className="flex flex-col">
+      <NowPlayingRow
+        icon={
+          <HugeiconsIcon
+            icon={VolumeHighIcon}
+            strokeWidth={2}
+            className="size-[18px]"
+          />
+        }
+        name="Master"
+        level={master}
+        onDrag={dragMaster}
+        onCommit={commitMaster}
+      />
+      <Separator className="my-1" />
+      {activeIds.length ? (
+        activeIds.map((id) => (
+          <NowPlayingRow
+            key={id}
+            icon={
+              <SoundIcon
+                path={
+                  sounds.find((s) => s.id === id)?.iconPath ??
+                  (ytVideoId(id) ? VIDEO_ICON : MUSIC_ICON)
+                }
+                size={18}
+                className="text-brand"
+              />
+            }
+            name={nameFor(id)}
+            level={vols[id] ?? 0}
+            note={
+              IS_IPHONE && ytVideoId(id)
+                ? "Uses your iPhone’s volume"
+                : undefined
+            }
+            onDrag={(v) => dragVolume(id, v)}
+            onCommit={(v) => commitVolume(id, v)}
+            onTurnOff={() => toggleSound(id)}
+          />
+        ))
+      ) : (
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          Nothing on yet. Tap a sound to add it.
+        </p>
+      )}
+    </div>
+  )
+  const nowPlayingActions = (onSave: () => void) => (
+    <>
+      {canSave ? (
+        <Button
+          variant="outline"
+          className="h-11 rounded-full px-5"
+          onClick={onSave}
+        >
+          Save mix
+        </Button>
+      ) : (
+        <span />
+      )}
+      <Button
+        variant="ghost"
+        className="h-11 rounded-full px-4"
+        disabled={activeIds.length === 0}
+        onClick={turnAllOff}
+      >
+        Turn all off
+      </Button>
+    </>
+  )
 
   const renderSound = (sound: RenderableSound, removable = false) => {
     const volume = vols[sound.id] ?? 0
@@ -2711,8 +2809,11 @@ export function MurmurApp() {
           {coarse ? (
             <button
               type="button"
-              aria-haspopup="dialog"
-              onClick={() => setNowPlayingOpen(true)}
+              aria-haspopup={paneFits ? undefined : "dialog"}
+              aria-expanded={paneFits ? pane : undefined}
+              onClick={() =>
+                paneFits ? setPane((open) => !open) : setNowPlayingOpen(true)
+              }
               className="hidden min-h-11 min-w-0 items-center gap-2 rounded-md text-left wide:flex"
             >
               <span className="min-w-0">
@@ -2817,6 +2918,19 @@ export function MurmurApp() {
               />
             </ToggleGroupItem>
           </ToggleGroup>
+
+          {/* Shows or hides the Now playing pane; only where it fits. */}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="hidden wide:expanded:inline-flex"
+            aria-label="Now playing"
+            aria-pressed={pane}
+            title={pane ? "Hide Now playing" : "Show Now playing"}
+            onClick={() => setPane((open) => !open)}
+          >
+            <HugeiconsIcon icon={PanelRightIcon} strokeWidth={2} />
+          </Button>
 
           {/* The same action as Now playing's "Turn all off" on a phone, and
               the same Undo instead of a confirmation. */}
@@ -3085,15 +3199,37 @@ export function MurmurApp() {
             </div>
           )}
 
-          <ScrollArea
-            className="min-h-0 flex-1"
-            viewportClassName="scroll-fade scroll-fade-6"
-          >
-            <div className="space-y-6 p-4 medium:p-6">
-              {CATEGORIES.map((category) => (
-                <section key={category}>
+          {/* M3's supporting pane: Now playing beside the grid on screens wide
+              enough for both (840px), as a fixed 360px, 412px from 1200px. The
+              grid's auto-fill columns make room on their own. */}
+          <div className="flex min-h-0 flex-1">
+            <ScrollArea
+              className="min-h-0 min-w-0 flex-1"
+              viewportClassName="scroll-fade scroll-fade-6"
+            >
+              <div className="space-y-6 p-4 medium:p-6">
+                {CATEGORIES.map((category) => (
+                  <section key={category}>
+                    <h2 className="mb-3 text-label-small text-muted-foreground">
+                      {categoryLabel[category]}
+                    </h2>
+                    <div
+                      className={cn(
+                        shownView === "grid"
+                          ? "grid grid-cols-[repeat(auto-fill,minmax(9.375rem,1fr))] gap-2.5"
+                          : "flex flex-col gap-1.5"
+                      )}
+                    >
+                      {sounds
+                        .filter((s) => s.category === category)
+                        .map((s) => renderSound(s))}
+                    </div>
+                  </section>
+                ))}
+
+                <section>
                   <h2 className="mb-3 text-label-small text-muted-foreground">
-                    {categoryLabel[category]}
+                    Yours
                   </h2>
                   <div
                     className={cn(
@@ -3102,64 +3238,85 @@ export function MurmurApp() {
                         : "flex flex-col gap-1.5"
                     )}
                   >
-                    {sounds
-                      .filter((s) => s.category === category)
-                      .map((s) => renderSound(s))}
+                    {customs.map((c) =>
+                      renderSound(
+                        {
+                          id: c.id,
+                          name: c.name,
+                          iconPath: c.videoId ? VIDEO_ICON : MUSIC_ICON,
+                        },
+                        true
+                      )
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddName("")
+                        setAddUrl("")
+                        setAddOpen(true)
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-2 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground",
+                        // 83px is what a sound card measures. It only matters when
+                        // this tile is alone, since the grid stretches it to the
+                        // cards beside it otherwise, but it has to be the card's
+                        // height, not a round number: the 92px that was here made
+                        // the whole Yours row 9px taller than every other section.
+                        shownView === "grid"
+                          ? "min-h-[5.1875rem] flex-col p-3"
+                          : "px-4 py-3"
+                      )}
+                    >
+                      <HugeiconsIcon
+                        icon={PlusSignIcon}
+                        strokeWidth={2}
+                        className="size-4"
+                      />
+                      {shownView === "grid"
+                        ? "Add sound"
+                        : "Add your own sound"}
+                    </button>
                   </div>
                 </section>
-              ))}
-
-              <section>
-                <h2 className="mb-3 text-label-small text-muted-foreground">
-                  Yours
-                </h2>
-                <div
-                  className={cn(
-                    shownView === "grid"
-                      ? "grid grid-cols-[repeat(auto-fill,minmax(9.375rem,1fr))] gap-2.5"
-                      : "flex flex-col gap-1.5"
-                  )}
-                >
-                  {customs.map((c) =>
-                    renderSound(
-                      {
-                        id: c.id,
-                        name: c.name,
-                        iconPath: c.videoId ? VIDEO_ICON : MUSIC_ICON,
-                      },
-                      true
-                    )
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddName("")
-                      setAddUrl("")
-                      setAddOpen(true)
-                    }}
-                    className={cn(
-                      "flex items-center justify-center gap-2 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground",
-                      // 83px is what a sound card measures. It only matters when
-                      // this tile is alone, since the grid stretches it to the
-                      // cards beside it otherwise, but it has to be the card's
-                      // height, not a round number: the 92px that was here made
-                      // the whole Yours row 9px taller than every other section.
-                      shownView === "grid"
-                        ? "min-h-[5.1875rem] flex-col p-3"
-                        : "px-4 py-3"
-                    )}
+              </div>
+            </ScrollArea>
+            {pane && (
+              <aside
+                aria-label="Now playing"
+                className="hidden w-[22.5rem] shrink-0 flex-col border-l border-border large:w-[25.75rem] wide:expanded:flex"
+              >
+                <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-2">
+                  <div className="min-w-0">
+                    <h2 className="text-title-medium">Now playing</h2>
+                    <p className="flex min-w-0 text-xs text-muted-foreground">
+                      <MiddleTruncate text={mixName} />
+                      {dirty && (
+                        <span className="shrink-0 whitespace-pre">
+                          {" "}
+                          (edited)
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Close Now playing"
+                    title="Close"
+                    onClick={() => setPane(false)}
                   >
-                    <HugeiconsIcon
-                      icon={PlusSignIcon}
-                      strokeWidth={2}
-                      className="size-4"
-                    />
-                    {shownView === "grid" ? "Add sound" : "Add your own sound"}
-                  </button>
+                    <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+                  </Button>
                 </div>
-              </section>
-            </div>
-          </ScrollArea>
+                <ScrollArea className="min-h-0 flex-1" viewportClassName="px-5">
+                  {nowPlayingRows}
+                </ScrollArea>
+                <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border px-5 py-3">
+                  {nowPlayingActions(openSaveDialog)}
+                </div>
+              </aside>
+            )}
+          </div>
 
           {prefs.hints && !coarse && (
             <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[0.6875rem] text-muted-foreground medium:px-6">
@@ -3267,76 +3424,12 @@ export function MurmurApp() {
               {dirty && " (edited)"}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col">
-            <NowPlayingRow
-              icon={
-                <HugeiconsIcon
-                  icon={VolumeHighIcon}
-                  strokeWidth={2}
-                  className="size-[18px]"
-                />
-              }
-              name="Master"
-              level={master}
-              onDrag={dragMaster}
-              onCommit={commitMaster}
-            />
-            <Separator className="my-1" />
-            {activeIds.length ? (
-              activeIds.map((id) => (
-                <NowPlayingRow
-                  key={id}
-                  icon={
-                    <SoundIcon
-                      path={
-                        sounds.find((s) => s.id === id)?.iconPath ??
-                        (ytVideoId(id) ? VIDEO_ICON : MUSIC_ICON)
-                      }
-                      size={18}
-                      className="text-brand"
-                    />
-                  }
-                  name={nameFor(id)}
-                  level={vols[id] ?? 0}
-                  note={
-                    IS_IPHONE && ytVideoId(id)
-                      ? "Uses your iPhone’s volume"
-                      : undefined
-                  }
-                  onDrag={(v) => dragVolume(id, v)}
-                  onCommit={(v) => commitVolume(id, v)}
-                  onTurnOff={() => toggleSound(id)}
-                />
-              ))
-            ) : (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                Nothing on yet. Tap a sound to add it.
-              </p>
-            )}
-          </div>
+          {nowPlayingRows}
           <DialogFooter className="flex-row justify-between sm:justify-between">
-            {canSave ? (
-              <Button
-                variant="outline"
-                className="h-11 rounded-full px-5"
-                onClick={() => {
-                  afterClose.current = openSaveDialog
-                  setNowPlayingOpen(false)
-                }}
-              >
-                Save mix
-              </Button>
-            ) : (
-              <span />
-            )}
-            <Button
-              variant="ghost"
-              className="h-11 rounded-full px-4"
-              disabled={activeIds.length === 0}
-              onClick={turnAllOff}
-            >
-              Turn all off
-            </Button>
+            {nowPlayingActions(() => {
+              afterClose.current = openSaveDialog
+              setNowPlayingOpen(false)
+            })}
           </DialogFooter>
         </DialogContent>
       </Dialog>

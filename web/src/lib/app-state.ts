@@ -98,6 +98,8 @@ export interface PersistedState {
   mixName: string
   dirty: boolean
   view: View
+  /** The Now playing pane beside the grid, on screens wide enough for it. */
+  pane: boolean
   saved: SavedMix[]
   customs: CustomSound[]
   prefs: Prefs
@@ -209,6 +211,7 @@ function coerce(raw: unknown, defaultMaster: number): PersistedState {
         ? r.dirty
         : false,
     view: r.view === "list" ? "list" : "grid",
+    pane: r.pane === true,
     saved: cleanSaved(r.saved),
     customs: cleanCustoms(r.customs),
     prefs: cleanPrefs(r.prefs),
