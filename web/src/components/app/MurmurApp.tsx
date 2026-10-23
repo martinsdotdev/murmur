@@ -3908,9 +3908,11 @@ export function MurmurApp() {
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         {/* A column that clips: the base DialogContent scrolls itself, which
             put a second scrollbar on this dialog and let the header and footer
-            scroll away with the content. Only the body below scrolls now. */}
+            scroll away with the content. Only the body below scrolls now. Its
+            height is the dialog's: the sheet's 85% on a phone, and up to 760px
+            on a desktop with 2rem clear above and below. */}
         <DialogContent
-          className="flex flex-col gap-0 overflow-hidden p-0 max-sm:pt-8 max-sm:pb-0 sm:max-w-md"
+          className="flex flex-col gap-0 overflow-hidden p-0 max-sm:pt-8 max-sm:pb-0 sm:max-h-[min(calc(100dvh-4rem),47.5rem)] sm:max-w-lg"
           instant={keyDriven}
         >
           <DialogHeader className="shrink-0 px-5 py-4">
@@ -3922,7 +3924,7 @@ export function MurmurApp() {
               the right. Reserving the gutter on both sides keeps it symmetric,
               and reserving it at all stops the jump when a pref toggle changes
               the content past the scroll threshold. */}
-          <div className="flex max-h-[min(60vh,520px)] min-h-0 flex-1 scroll-fade [scrollbar-gutter:stable_both-edges] flex-col gap-5 overflow-y-auto px-5 py-4 scroll-fade-5">
+          <div className="flex min-h-0 flex-1 scroll-fade [scrollbar-gutter:stable_both-edges] flex-col gap-5 overflow-y-auto px-5 py-4 scroll-fade-5">
             <PrefSection title="Appearance">
               <div className="mb-2 grid grid-cols-3 gap-0.5 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]">
                 {(["system", "light", "dark"] as ThemeMode[]).map((mode) => (
