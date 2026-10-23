@@ -5,8 +5,39 @@ import { cn } from "@/lib/utils"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon, Tick02Icon } from "@hugeicons/core-free-icons"
 
-function ContextMenu({ ...props }: ContextMenuPrimitive.Root.Props) {
-  return <ContextMenuPrimitive.Root data-slot="context-menu" {...props} />
+/**
+ * DIVERGES FROM THE REGISTRY: one context menu open at a time. Base UI's are
+ * independent, and on touch only a tap or a drag dismisses one, never the
+ * long press that opens the next. The Now playing sheet sits above an open
+ * menu's backdrop, so holding row after row there stacked their menus.
+ * Opening one now closes whichever was open.
+ */
+let openMenu: React.RefObject<ContextMenuPrimitive.Root.Actions | null> | null =
+  null
+
+function ContextMenu({
+  onOpenChange,
+  ...props
+}: Omit<ContextMenuPrimitive.Root.Props, "actionsRef">) {
+  const actions = React.useRef<ContextMenuPrimitive.Root.Actions>(null)
+  return (
+    <ContextMenuPrimitive.Root
+      data-slot="context-menu"
+      actionsRef={actions}
+      onOpenChange={(open, details) => {
+        onOpenChange?.(open, details)
+        if (details.isCanceled) return
+        if (open) {
+          const previous = openMenu
+          openMenu = actions
+          if (previous !== actions) previous?.current?.close()
+        } else if (openMenu === actions) {
+          openMenu = null
+        }
+      }}
+      {...props}
+    />
+  )
 }
 
 function ContextMenuPortal({ ...props }: ContextMenuPrimitive.Portal.Props) {
