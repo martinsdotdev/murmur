@@ -123,6 +123,14 @@ const CATALOG_IDS = new Set(sounds.map((s) => s.id))
 
 /** YouTube's player ignores setVolume on iPhone; iPadOS lets it through. */
 const IS_IPHONE = /iPhone|iPod/.test(navigator.userAgent)
+/**
+ * iPhone or iPad Safari, where installing is Share, then Add to Home Screen.
+ * iPadOS reports itself as a Mac, so a Mac with a touch screen counts.
+ */
+const IS_APPLE_TOUCH =
+  IS_IPHONE ||
+  /iPad/.test(navigator.userAgent) ||
+  (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1)
 const MUSIC_ICON =
   "M9 18V5l12-2v13 M3 18A3 3 0 1 0 9 18A3 3 0 1 0 3 18Z M15 16A3 3 0 1 0 21 16A3 3 0 1 0 15 16Z"
 
@@ -612,6 +620,16 @@ function readInitialState(): {
 function formatClock(totalSeconds: number): string {
   const s = Math.ceil(totalSeconds)
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
+}
+
+/** A download size: "18 MB", or one decimal under 10 MB ("2.4 MB"). */
+function formatBytes(bytes: number): string {
+  const mb = bytes / 1e6
+  return new Intl.NumberFormat(undefined, {
+    style: "unit",
+    unit: "megabyte",
+    maximumFractionDigits: mb < 10 ? 1 : 0,
+  }).format(mb)
 }
 
 /** A timer length as people say it: "45 min", "1 h", "1 h 15 min". */
@@ -2055,7 +2073,7 @@ export function MurmurApp() {
     }
     if (!sawIncompleteAudio.current) return
     sawIncompleteAudio.current = false
-    toast(`All ${status.total} sounds are saved for offline use`, {
+    toast(`All ${status.total} built-in sounds are saved for offline use`, {
       id: "offline-ready",
     })
   }, [pwa.audio])
@@ -3614,18 +3632,24 @@ export function MurmurApp() {
                   {pwa.audio && (
                     <div className="flex items-center gap-3 px-3.5 py-3">
                       <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-                        {pwa.audio.cached} of {pwa.audio.total} sounds saved in
-                        this browser.
+                        {pwa.audio.cached} of {pwa.audio.total} built-in sounds
+                        saved for offline use.
+                        {/* Offline there is nothing to press, so say why. */}
+                        {!pwa.online &&
+                          pwa.audio.cached < pwa.audio.total &&
+                          " Reconnect to download the rest."}
                       </p>
-                      {pwa.audio.cached < pwa.audio.total && (
+                      {pwa.online && pwa.audio.cached < pwa.audio.total && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="shrink-0"
-                          disabled={!pwa.online}
+                          disabled={pwa.downloading}
                           onClick={pwa.downloadSounds}
                         >
-                          Download
+                          {pwa.downloading
+                            ? `Downloading ${pwa.audio.cached} of ${pwa.audio.total}…`
+                            : `Download (${formatBytes(pwa.audio.remainingBytes)})`}
                         </Button>
                       )}
                     </div>
@@ -3635,7 +3659,9 @@ export function MurmurApp() {
                       <p className="min-w-0 flex-1 text-xs text-muted-foreground">
                         {pwa.canInstall
                           ? "Install Murmur to launch it from your dock or home screen."
-                          : "To install, use your browser’s Add to Home Screen option."}
+                          : IS_APPLE_TOUCH
+                            ? "To install, tap Share, then Add to Home Screen."
+                            : "To install, use your browser’s menu, then Install app or Add to Home screen."}
                       </p>
                       {pwa.canInstall && (
                         <Button

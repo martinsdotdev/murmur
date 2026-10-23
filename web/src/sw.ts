@@ -49,7 +49,8 @@ const AUDIO_CACHE = "murmur-audio-v1"
 /** Every /app navigation resolves to this one precached document. */
 const SHELL_URL = "/app/"
 
-const AUDIO_URLS = sounds.map((sound) => `/sounds/${sound.id}.ogg`)
+const AUDIO_IDS = sounds.map((sound) => sound.id)
+const audioUrl = (id: string) => `/sounds/${id}.ogg`
 
 // Throws here, at worker evaluation, if the manifest transform in
 // astro.config.mjs ever stops producing /app/. A worker that fails to install
@@ -132,29 +133,39 @@ function primeAudio(): Promise<void> {
  */
 async function stageAudio() {
   const cache = await caches.open(AUDIO_CACHE)
-  let cached = 0
-  for (const url of AUDIO_URLS) {
-    // Re-read per file rather than once up front, so a sound the /sounds/
-    // route stored while this loop was running is not fetched twice.
-    if (await cache.match(url)) {
-      cached += 1
-      continue
-    }
-    try {
-      const response = await fetch(url)
-      if (!response.ok) throw new Error(`${url}: ${response.status}`)
-      await cache.put(url, response)
-      cached += 1
-    } catch {
-      /* Offline, or one bad file. The next launch asks again. */
-    }
-    await post(cached)
+  // One pass of lookups first, so the page learns exactly what is missing
+  // (and so how much is left to download) before anything is fetched.
+  const missing: string[] = []
+  for (const id of AUDIO_IDS) {
+    if (!(await cache.match(audioUrl(id)))) missing.push(id)
   }
-  await post(cached)
+  await post(missing)
+  for (const id of [...missing]) {
+    const url = audioUrl(id)
+    // Re-read per file, so a sound the /sounds/ route stored while this loop
+    // was running is not fetched twice.
+    if (!(await cache.match(url))) {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) throw new Error(`${url}: ${response.status}`)
+        await cache.put(url, response)
+      } catch {
+        /* Offline, or one bad file. The next launch asks again. */
+        continue
+      }
+    }
+    missing.splice(missing.indexOf(id), 1)
+    await post(missing)
+  }
 }
 
-async function post(cached: number) {
-  const message = { type: "AUDIO_STATUS", cached, total: AUDIO_URLS.length }
+async function post(missing: string[]) {
+  const message = {
+    type: "AUDIO_STATUS",
+    cached: AUDIO_IDS.length - missing.length,
+    total: AUDIO_IDS.length,
+    missing,
+  }
   for (const client of await self.clients.matchAll()) {
     client.postMessage(message)
   }

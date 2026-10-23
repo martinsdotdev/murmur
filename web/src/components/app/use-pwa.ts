@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useRegisterSW } from "virtual:pwa-register/react"
 
+import soundSizes from "@/data/sound-sizes.json"
 import { canPlayOgg } from "@/lib/mixer"
 
 /** Data Saver, or Chrome on Android reporting a cellular link. */
@@ -25,7 +26,16 @@ export interface AudioStatus {
   /** Sounds already in the worker's audio cache. */
   cached: number
   total: number
+  /** Ids not cached yet, so the bytes left can be quoted. */
+  missing: string[]
+  /** Bytes still to download, from the build's size manifest. */
+  remainingBytes: number
 }
+
+const SIZES: Record<string, number> = soundSizes
+
+/** A download stalled this long without a file landing is given up on. */
+const STALL_MS = 60_000
 
 /**
  * Service worker registration, offline audio progress, and the install prompt.
@@ -46,6 +56,16 @@ export function usePwa() {
   // download would be Ogg this browser can't decode.
   const [oggPlayable] = React.useState(canPlayOgg)
   const [online, setOnline] = React.useState(() => navigator.onLine)
+  /** From a Download press until the cache is full, or the download stalls. */
+  const [downloading, setDownloading] = React.useState(false)
+
+  // Each status message is progress and restarts the clock; a quiet minute
+  // ends it. A full cache or a dropped connection end it in the return below.
+  React.useEffect(() => {
+    if (!downloading) return
+    const stall = window.setTimeout(() => setDownloading(false), STALL_MS)
+    return () => window.clearTimeout(stall)
+  }, [downloading, audio])
 
   React.useEffect(() => {
     const sync = () => setOnline(navigator.onLine)
@@ -73,7 +93,13 @@ export function usePwa() {
     const onMessage = (event: MessageEvent) => {
       const data = event.data as Partial<AudioStatus> & { type?: string }
       if (data?.type !== "AUDIO_STATUS") return
-      setAudio({ cached: data.cached ?? 0, total: data.total ?? 0 })
+      const missing = Array.isArray(data.missing) ? data.missing : []
+      setAudio({
+        cached: data.cached ?? 0,
+        total: data.total ?? 0,
+        missing,
+        remainingBytes: missing.reduce((sum, id) => sum + (SIZES[id] ?? 0), 0),
+      })
     }
     navigator.serviceWorker.addEventListener("message", onMessage)
 
@@ -118,6 +144,7 @@ export function usePwa() {
   const downloadSounds = React.useCallback(() => {
     if (!("serviceWorker" in navigator)) return
     persistStorage()
+    setDownloading(true)
     void navigator.serviceWorker.ready.then((registration) => {
       registration.active?.postMessage({ type: "PRIME_AUDIO" })
     })
@@ -136,6 +163,8 @@ export function usePwa() {
     needRefresh,
     updateNow: updateServiceWorker,
     audio: oggPlayable ? audio : null,
+    downloading:
+      downloading && online && !(audio && audio.cached >= audio.total),
     online,
     downloadSounds,
     canInstall: prompt !== null,

@@ -6,6 +6,8 @@ import {
   statSync,
   copyFileSync,
   readdirSync,
+  readFileSync,
+  writeFileSync,
 } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -44,9 +46,20 @@ function copyIfStale(src, dst) {
 for (const { src, dst } of targets) copyIfStale(src, dst)
 
 if (existsSync(soundsSrc)) {
-  for (const file of readdirSync(soundsSrc)) {
+  const sizes = {}
+  for (const file of readdirSync(soundsSrc).sort()) {
     if (!file.endsWith(".ogg")) continue
     copyIfStale(join(soundsSrc, file), join(soundsDst, file))
+    sizes[file.slice(0, -".ogg".length)] = statSync(join(soundsSrc, file)).size
+  }
+  // What Preferences quotes for a download ("Download (18 MB)"). Committed, so
+  // a build without the sounds alongside still knows; rewritten only when a
+  // size actually changes.
+  const sizesPath = join(webRoot, "src", "data", "sound-sizes.json")
+  const json = JSON.stringify(sizes, null, 2) + "\n"
+  if (!existsSync(sizesPath) || readFileSync(sizesPath, "utf8") !== json) {
+    writeFileSync(sizesPath, json)
+    console.log(`[copy-assets] wrote ${sizesPath}`)
   }
 } else {
   console.warn(`[copy-assets] missing sounds dir: ${soundsSrc}`)
