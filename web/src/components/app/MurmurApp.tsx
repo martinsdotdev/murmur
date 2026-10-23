@@ -2807,6 +2807,168 @@ export function MurmurApp() {
 
   // Starters stand in for an empty list, so they return if every mix is deleted.
 
+  // Base UI's long press doesn't swallow the click that can follow it, so a
+  // trigger that also acts on a tap ignores one landing just after its menu
+  // opened: the cards, the phone's mix chips, the tablet's mix name.
+  const noteMenuOpen = (open: boolean) => {
+    if (open) menuOpenedAt.current = performance.now()
+  }
+  const guardAfterMenu = (act: () => void) => () => {
+    if (performance.now() - menuOpenedAt.current < 600) return
+    act()
+  }
+
+  /** A sound's menu, the same on its card and on its Now playing row. */
+  const soundMenu = (sound: RenderableSound, removable: boolean) => {
+    const volume = vols[sound.id] ?? 0
+    const active = volume > 0
+    const lost = missing.has(sound.id)
+    const videoId = ytVideoId(sound.id)
+    return (
+      <ContextMenuContent>
+        <ContextMenuItem
+          // Already the only sound playing, so there is nothing to turn off.
+          disabled={lost || (playing && active && activeIds.length === 1)}
+          onClick={() => playOnly(sound.id)}
+        >
+          <HugeiconsIcon icon={HeadphonesIcon} strokeWidth={2} />
+          Play only this
+        </ContextMenuItem>
+        {/* Disabled rather than hidden, as M3 and Windows menus do, so the
+            menu keeps its shape and says what it can do. */}
+        <ContextMenuItem
+          disabled={
+            deviceSetsLevel(sound.id) ||
+            !active ||
+            volume === DEFAULT_TOGGLE_VOLUME
+          }
+          onClick={() => changeVolume(sound.id, DEFAULT_TOGGLE_VOLUME)}
+        >
+          <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
+          Reset level
+        </ContextMenuItem>
+        {removable && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={() => {
+                setRenameValue(sound.name)
+                setRenamingSound(sound.id)
+              }}
+            >
+              <HugeiconsIcon icon={PencilEdit02Icon} strokeWidth={2} />
+              Rename…
+            </ContextMenuItem>
+            {videoId && (
+              <ContextMenuItem
+                onClick={() =>
+                  window.open(
+                    `https://www.youtube.com/watch?v=${videoId}`,
+                    "_blank",
+                    "noopener"
+                  )
+                }
+              >
+                <HugeiconsIcon icon={YoutubeIcon} strokeWidth={2} />
+                Open on YouTube
+              </ContextMenuItem>
+            )}
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              variant="destructive"
+              onClick={() => removeSound(sound.id)}
+            >
+              <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+              Remove
+            </ContextMenuItem>
+          </>
+        )}
+      </ContextMenuContent>
+    )
+  }
+
+  /** A Now playing row's sound as its card renders it, so the menus agree. */
+  const soundById = (id: string): [RenderableSound, boolean] | null => {
+    const builtIn = sounds.find((s) => s.id === id)
+    if (builtIn) return [builtIn, false]
+    const custom = customs.find((c) => c.id === id)
+    if (!custom) return null
+    const iconPath = custom.videoId ? VIDEO_ICON : MUSIC_ICON
+    return [{ id, name: custom.name, iconPath }, true]
+  }
+
+  /** A saved mix's menu: the sidebar's, the phone strip's and the header's. */
+  const mixMenu = (mix: SavedMix) => {
+    const loaded = mix.name === mixName
+    return (
+      <ContextMenuContent>
+        <ContextMenuItem
+          disabled={!(loaded && dirty)}
+          onClick={() => saveChanges(mix.name)}
+        >
+          <HugeiconsIcon icon={FloppyDiskIcon} strokeWidth={2} />
+          Save changes
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => shareMix(mix.name, mix.mix, false)}>
+          <HugeiconsIcon icon={Share01Icon} strokeWidth={2} />
+          Share
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onClick={() => {
+            setRenameValue(mix.name)
+            setRenaming(mix.name)
+          }}
+        >
+          <HugeiconsIcon icon={PencilEdit02Icon} strokeWidth={2} />
+          Rename…
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => duplicateMix(mix)}>
+          <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} />
+          Duplicate
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          variant="destructive"
+          onClick={() => removeSaved(mix.name)}
+        >
+          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+          Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    )
+  }
+
+  // The header's mix name: a saved mix's own menu, or what an unsaved one
+  // can do, the header's actions in its words.
+  const currentSaved = saved.find((s) => s.name === mixName)
+  const currentMixMenu = currentSaved ? (
+    mixMenu(currentSaved)
+  ) : (
+    <ContextMenuContent>
+      <ContextMenuItem disabled={!canSave} onClick={openSaveDialog}>
+        <HugeiconsIcon icon={FloppyDiskIcon} strokeWidth={2} />
+        Save mix…
+      </ContextMenuItem>
+      <ContextMenuItem onClick={share}>
+        <HugeiconsIcon icon={Share01Icon} strokeWidth={2} />
+        Share
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem disabled={activeIds.length === 0} onClick={turnAllOff}>
+        <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
+        Turn all off
+      </ContextMenuItem>
+    </ContextMenuContent>
+  )
+
+  // A row holds the pressed layer while its menu is open, as a card does, so
+  // the menu reads as belonging to it. Pulled out by its own padding, so the
+  // row's content stays where it was.
+  const rowTrigger = (
+    <div className="-mx-2 rounded-m3-md px-2 transition-colors data-popup-open:bg-foreground/[0.06]" />
+  )
+
   // Now playing's body, shared by the phone sheet and the desktop pane: the
   // master, every sound that's on, and what to do with them. In the grid's
   // order, so a row keeps its place however the sounds were turned on, and a
@@ -2819,53 +2981,83 @@ export function MurmurApp() {
   ]
   const nowPlayingRows = (
     <div className="flex flex-col">
-      <NowPlayingRow
-        icon={
-          <HugeiconsIcon
-            icon={VolumeHighIcon}
-            strokeWidth={2}
-            className="size-[18px]"
-          />
-        }
-        name="Master"
-        level={master}
-        onDrag={dragMaster}
-        onCommit={commitMaster}
-      />
-      <Separator className="my-1" />
-      {nowPlayingIds.length ? (
-        nowPlayingIds.map((id) => (
+      <ContextMenu>
+        <ContextMenuTrigger render={rowTrigger}>
           <NowPlayingRow
-            key={id}
             icon={
-              <SoundIcon
-                path={
-                  sounds.find((s) => s.id === id)?.iconPath ??
-                  (ytVideoId(id) ? VIDEO_ICON : MUSIC_ICON)
-                }
-                size={18}
-                className={
-                  (vols[id] ?? 0) > 0 ? "text-brand" : "text-muted-foreground"
-                }
+              <HugeiconsIcon
+                icon={VolumeHighIcon}
+                strokeWidth={2}
+                className="size-[18px]"
               />
             }
-            name={nameFor(id)}
-            level={vols[id] ?? 0}
-            note={deviceSetsLevel(id) ? DEVICE_LEVEL_NOTE : undefined}
-            onDrag={(v) => {
-              if (v === 0) holdRow(id)
-              dragVolume(id, v)
-            }}
-            onCommit={(v) => {
-              if (v === 0) holdRow(id)
-              commitVolume(id, v)
-            }}
-            // A row held at zero is already off, so its button only lets it go.
-            onTurnOff={() =>
-              (vols[id] ?? 0) > 0 ? toggleSound(id) : releaseRow(id)
-            }
+            name="Master"
+            level={master}
+            onDrag={dragMaster}
+            onCommit={commitMaster}
           />
-        ))
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem
+            disabled={master === DEFAULT_MASTER}
+            onClick={() => changeMaster(DEFAULT_MASTER)}
+          >
+            <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
+            Reset level
+          </ContextMenuItem>
+          <ContextMenuItem onClick={toggleMute}>
+            <HugeiconsIcon
+              icon={master > 0 ? VolumeOffIcon : VolumeHighIcon}
+              strokeWidth={2}
+            />
+            {master > 0 ? "Mute" : "Unmute"}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+      <Separator className="my-1" />
+      {nowPlayingIds.length ? (
+        nowPlayingIds.map((id) => {
+          const found = soundById(id)
+          const row = (
+            <NowPlayingRow
+              icon={
+                <SoundIcon
+                  path={
+                    sounds.find((s) => s.id === id)?.iconPath ??
+                    (ytVideoId(id) ? VIDEO_ICON : MUSIC_ICON)
+                  }
+                  size={18}
+                  className={
+                    (vols[id] ?? 0) > 0 ? "text-brand" : "text-muted-foreground"
+                  }
+                />
+              }
+              name={nameFor(id)}
+              level={vols[id] ?? 0}
+              note={deviceSetsLevel(id) ? DEVICE_LEVEL_NOTE : undefined}
+              onDrag={(v) => {
+                if (v === 0) holdRow(id)
+                dragVolume(id, v)
+              }}
+              onCommit={(v) => {
+                if (v === 0) holdRow(id)
+                commitVolume(id, v)
+              }}
+              // A row held at zero is already off, so its button only lets it go.
+              onTurnOff={() =>
+                (vols[id] ?? 0) > 0 ? toggleSound(id) : releaseRow(id)
+              }
+            />
+          )
+          return found ? (
+            <ContextMenu key={id}>
+              <ContextMenuTrigger render={rowTrigger}>{row}</ContextMenuTrigger>
+              {soundMenu(...found)}
+            </ContextMenu>
+          ) : (
+            <React.Fragment key={id}>{row}</React.Fragment>
+          )
+        })
       ) : (
         <p className="py-6 text-center text-sm text-muted-foreground">
           Nothing on yet. Tap a sound to add it.
@@ -2974,64 +3166,8 @@ export function MurmurApp() {
       active ? "text-brand" : "text-muted-foreground"
     )
 
-    const videoId = ytVideoId(sound.id)
     const askRemove = () => removeSound(sound.id)
-    const menu = (
-      <ContextMenuContent>
-        <ContextMenuItem
-          // Already the only sound playing, so there is nothing to turn off.
-          disabled={lost || (playing && active && activeIds.length === 1)}
-          onClick={() => playOnly(sound.id)}
-        >
-          <HugeiconsIcon icon={HeadphonesIcon} strokeWidth={2} />
-          Play only this
-        </ContextMenuItem>
-        {/* Disabled rather than hidden, as M3 and Windows menus do, so the
-            menu keeps its shape and says what it can do. */}
-        <ContextMenuItem
-          disabled={fixedLevel || !active || volume === DEFAULT_TOGGLE_VOLUME}
-          onClick={() => changeVolume(sound.id, DEFAULT_TOGGLE_VOLUME)}
-        >
-          <HugeiconsIcon icon={RefreshIcon} strokeWidth={2} />
-          Reset level
-        </ContextMenuItem>
-        {removable && (
-          <>
-            <ContextMenuSeparator />
-            <ContextMenuItem
-              onClick={() => {
-                setRenameValue(sound.name)
-                setRenamingSound(sound.id)
-              }}
-            >
-              <HugeiconsIcon icon={PencilEdit02Icon} strokeWidth={2} />
-              Rename…
-            </ContextMenuItem>
-            {videoId && (
-              <ContextMenuItem
-                onClick={() =>
-                  window.open(
-                    `https://www.youtube.com/watch?v=${videoId}`,
-                    "_blank",
-                    "noopener"
-                  )
-                }
-              >
-                <HugeiconsIcon icon={YoutubeIcon} strokeWidth={2} />
-                Open on YouTube
-              </ContextMenuItem>
-            )}
-            <ContextMenuSeparator />
-            <ContextMenuItem variant="destructive" onClick={askRemove}>
-              <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
-              Remove
-            </ContextMenuItem>
-          </>
-        )}
-      </ContextMenuContent>
-    )
-    // Base UI's long press doesn't swallow the click that can follow it, so
-    // the card ignores one that lands just after its menu opened.
+    const menu = soundMenu(sound, removable)
     // Click and Enter both come here: a missing sound asks for its file.
     const activate = () => {
       if (lost) {
@@ -3041,13 +3177,7 @@ export function MurmurApp() {
       }
       toggleSound(sound.id)
     }
-    const toggle = () => {
-      if (performance.now() - menuOpenedAt.current < 600) return
-      activate()
-    }
-    const noteMenuOpen = (open: boolean) => {
-      if (open) menuOpenedAt.current = performance.now()
-    }
+    const toggle = guardAfterMenu(activate)
 
     if (shownView === "list") {
       return (
@@ -3227,38 +3357,54 @@ export function MurmurApp() {
           {/* On touch the name is the way into Now playing, as it is in the
               phone bar: the grid has no sliders there to set levels with. */}
           {coarse ? (
-            <button
-              type="button"
-              aria-haspopup={paneFits ? undefined : "dialog"}
-              aria-expanded={paneFits ? pane : undefined}
-              onClick={() =>
-                paneFits ? showPane(!pane) : setNowPlayingOpen(true)
-              }
-              className="hidden min-h-11 min-w-0 items-center gap-2 rounded-md text-left wide:flex"
-            >
-              <span className="min-w-0">
-                <span className="flex min-w-0 text-sm font-medium">
+            <ContextMenu onOpenChange={noteMenuOpen}>
+              <ContextMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-haspopup={paneFits ? undefined : "dialog"}
+                    aria-expanded={paneFits ? pane : undefined}
+                    onClick={guardAfterMenu(() =>
+                      paneFits ? showPane(!pane) : setNowPlayingOpen(true)
+                    )}
+                    className="hidden min-h-11 min-w-0 items-center gap-2 rounded-md text-left wide:flex"
+                  />
+                }
+              >
+                <span className="min-w-0">
+                  <span className="flex min-w-0 text-sm font-medium">
+                    <MiddleTruncate text={mixName} />
+                    {dirty && (
+                      <span className="shrink-0 whitespace-pre"> *</span>
+                    )}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {status}
+                  </span>
+                </span>
+                <HugeiconsIcon
+                  icon={ArrowUp01Icon}
+                  strokeWidth={2}
+                  className="size-4 shrink-0 text-muted-foreground"
+                />
+              </ContextMenuTrigger>
+              {currentMixMenu}
+            </ContextMenu>
+          ) : (
+            <ContextMenu>
+              <ContextMenuTrigger
+                render={<div className="hidden min-w-0 wide:block" />}
+              >
+                <p className="flex min-w-0 text-sm font-medium">
                   <MiddleTruncate text={mixName} />
                   {dirty && <span className="shrink-0 whitespace-pre"> *</span>}
-                </span>
-                <span className="block truncate text-xs text-muted-foreground">
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
                   {status}
-                </span>
-              </span>
-              <HugeiconsIcon
-                icon={ArrowUp01Icon}
-                strokeWidth={2}
-                className="size-4 shrink-0 text-muted-foreground"
-              />
-            </button>
-          ) : (
-            <div className="hidden min-w-0 wide:block">
-              <p className="flex min-w-0 text-sm font-medium">
-                <MiddleTruncate text={mixName} />
-                {dirty && <span className="shrink-0 whitespace-pre"> *</span>}
-              </p>
-              <p className="truncate text-xs text-muted-foreground">{status}</p>
-            </div>
+                </p>
+              </ContextMenuTrigger>
+              {currentMixMenu}
+            </ContextMenu>
           )}
 
           <div className="flex-1" />
@@ -3458,49 +3604,7 @@ export function MurmurApp() {
                           onRemove={() => removeSaved(mix.name)}
                         />
                       </ContextMenuTrigger>
-                      <ContextMenuContent>
-                        <ContextMenuItem
-                          disabled={!(loaded && dirty)}
-                          onClick={() => saveChanges(mix.name)}
-                        >
-                          <HugeiconsIcon
-                            icon={FloppyDiskIcon}
-                            strokeWidth={2}
-                          />
-                          Save changes
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                          onClick={() => shareMix(mix.name, mix.mix, false)}
-                        >
-                          <HugeiconsIcon icon={Share01Icon} strokeWidth={2} />
-                          Share
-                        </ContextMenuItem>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem
-                          onClick={() => {
-                            setRenameValue(mix.name)
-                            setRenaming(mix.name)
-                          }}
-                        >
-                          <HugeiconsIcon
-                            icon={PencilEdit02Icon}
-                            strokeWidth={2}
-                          />
-                          Rename…
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => duplicateMix(mix)}>
-                          <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} />
-                          Duplicate
-                        </ContextMenuItem>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem
-                          variant="destructive"
-                          onClick={() => removeSaved(mix.name)}
-                        >
-                          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
-                          Delete
-                        </ContextMenuItem>
-                      </ContextMenuContent>
+                      {mixMenu(mix)}
                     </ContextMenu>
                   )
                 })}
@@ -3613,14 +3717,23 @@ export function MurmurApp() {
                   taken back from the padding below; the top is not, since it
                   would lie over the All mixes button. */}
               <div className="-mx-4 -mb-2 no-scrollbar flex scroll-fade-x gap-2 overflow-x-auto px-4 pt-1.5 pb-2 scroll-fade-5">
+                {/* Each chip's long press opens the sidebar's mix menu. The
+                    trigger is display: contents, so the chip stays the flex
+                    item and its own events reach the trigger as they bubble. */}
                 {saved.map((mix) => (
-                  <MixChip
-                    key={mix.name}
-                    label={mix.name}
-                    iconPath={mixIconPath(mix.mix)}
-                    active={mix.name === mixName && !dirty}
-                    onClick={() => applyMix(mix.name, mix.mix)}
-                  />
+                  <ContextMenu key={mix.name} onOpenChange={noteMenuOpen}>
+                    <ContextMenuTrigger render={<span className="contents" />}>
+                      <MixChip
+                        label={mix.name}
+                        iconPath={mixIconPath(mix.mix)}
+                        active={mix.name === mixName && !dirty}
+                        onClick={guardAfterMenu(() =>
+                          applyMix(mix.name, mix.mix)
+                        )}
+                      />
+                    </ContextMenuTrigger>
+                    {mixMenu(mix)}
+                  </ContextMenu>
                 ))}
               </div>
             </div>
