@@ -1,17 +1,19 @@
 import * as React from "react"
 
-const MOBILE_BREAKPOINT = 768
+/** The negation of tailwind.css's `wide` variant: the phone shell. */
+const PHONE_SHELL =
+  "not all and (width >= 48rem) and (not ((pointer: coarse) and (height < 30rem)))"
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+    const mql = window.matchMedia(PHONE_SHELL)
     const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+      setIsMobile(mql.matches)
     }
     mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    setIsMobile(mql.matches)
     return () => mql.removeEventListener("change", onChange)
   }, [])
 

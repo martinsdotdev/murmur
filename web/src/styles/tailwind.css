@@ -15,6 +15,12 @@
    has no classes of its own, so nothing is lost. */
 @custom-variant dark (&:is([data-theme="dark"] *));
 
+/* The desktop shell: the sidebar, the wide header and their controls. From
+   md, except on a touch screen under 480px tall, which M3 classes as compact
+   height and Android gives the bottom bar: a landscape phone keeps the phone
+   bar and Now playing rather than a sidebar it has no height for. */
+@custom-variant wide (@media (width >= 48rem) and (not ((pointer: coarse) and (height < 30rem))));
+
 @theme inline {
   /* Murmur's type pairing: Instrument Sans throughout, Young Serif for the
        wordmark alone. Mirrors web/src/styles/tokens.css. */
@@ -437,6 +443,21 @@
     width: max(100%, 48px);
     height: max(100%, 48px);
     translate: -50% -50%;
+  }
+}
+
+/* Windows contrast themes repaint fills as Canvas, which would erase the
+   selected states and the slider's level. Selection takes a Highlight
+   outline, and the slider keeps its own Highlight fill. */
+@media (forced-colors: active) {
+  [aria-pressed="true"]:not(:focus-visible) {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  [data-slot="slider-range"],
+  [data-slot="slider-thumb"] {
+    forced-color-adjust: none;
+    background-color: Highlight;
   }
 }
 

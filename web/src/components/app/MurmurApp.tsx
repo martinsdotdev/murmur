@@ -824,7 +824,7 @@ function PrefSection({
 }) {
   return (
     <section>
-      <h3 className="mb-2.5 flex items-center gap-2 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+      <h3 className="mb-2.5 flex items-center gap-2 text-label-small text-muted-foreground">
         <HugeiconsIcon icon={icon} strokeWidth={2} className="size-3" />
         {title}
       </h3>
@@ -2301,23 +2301,23 @@ export function MurmurApp() {
       {/* From md up the header sits on the frame beside the sidebar, the two
           reading as one title bar over the inset panel. On a phone there is
           no panel, so it keeps its own surface and rule. */}
-      <header className="flex shrink-0 items-center border-b bg-background py-3 md:border-b-0 md:bg-transparent">
+      <header className="flex shrink-0 items-center border-b bg-background py-3 wide:border-b-0 wide:bg-transparent">
         {/* Exactly the sidebar's width, so the controls start where the
             panel does; pl-5 is the sidebar's own inset. */}
-        <div className="flex shrink-0 items-center gap-[7px] pl-4 md:w-(--sidebar-width) md:pl-5">
+        <div className="flex shrink-0 items-center gap-[7px] pl-4 wide:w-(--sidebar-width) wide:pl-5">
           <BrandMark />
           <span className="font-serif text-[17px]">Murmur</span>
         </div>
 
         {/* px-6 is the panel's p-6, so the play button and Share sit on the
             grid's content edges. */}
-        <div className="flex min-w-0 flex-1 items-center gap-3 px-4 md:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-3 px-4 medium:px-6">
           {/* Play, title and status move to the phone transport bar. */}
           {/* Play keeps the amber itself: an icon needs 3:1, which it clears,
               where the labelled buttons' darker fill is for text. */}
           <Button
             size="icon-lg"
-            className="hidden rounded-full bg-primary hover:bg-primary/80 md:inline-flex"
+            className="hidden rounded-full bg-primary hover:bg-primary/80 wide:inline-flex"
             aria-label={playing ? "Pause" : "Play"}
             onClick={togglePlay}
           >
@@ -2335,7 +2335,7 @@ export function MurmurApp() {
               type="button"
               aria-haspopup="dialog"
               onClick={() => setNowPlayingOpen(true)}
-              className="hidden min-h-11 min-w-0 items-center gap-2 rounded-md text-left md:flex"
+              className="hidden min-h-11 min-w-0 items-center gap-2 rounded-md text-left wide:flex"
             >
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">
@@ -2353,7 +2353,7 @@ export function MurmurApp() {
               />
             </button>
           ) : (
-            <div className="hidden min-w-0 md:block">
+            <div className="hidden min-w-0 wide:block">
               <p className="truncate text-sm font-medium">
                 {mixName}
                 {dirty && " *"}
@@ -2368,7 +2368,7 @@ export function MurmurApp() {
               the phone bar stops. The level is always shown here: one number,
               where the cards have fourteen and keep theirs for hover. The
               speaker mutes, as on any player. */}
-          <div className="hidden w-52 min-w-0 items-center gap-1.5 md:flex">
+          <div className="hidden w-52 min-w-0 items-center gap-1.5 wide:flex">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -2408,7 +2408,7 @@ export function MurmurApp() {
 
           <Separator
             orientation="vertical"
-            className="mx-1 hidden md:block data-vertical:h-5 data-vertical:self-center"
+            className="mx-1 hidden data-vertical:h-5 data-vertical:self-center wide:block"
           />
 
           <ToggleGroup
@@ -2442,7 +2442,7 @@ export function MurmurApp() {
           <Button
             variant="ghost"
             size="icon-sm"
-            className="hidden md:inline-flex"
+            className="hidden wide:inline-flex"
             aria-label="Reset mix"
             title="Reset mix (Ctrl+R)"
             disabled={activeIds.length === 0}
@@ -2458,7 +2458,7 @@ export function MurmurApp() {
           <Button
             variant="outline"
             size="sm"
-            className="hidden md:inline-flex"
+            className="hidden wide:inline-flex"
             // The label goes below lg, so it needs a name of its own there.
             aria-label="Share"
             onClick={share}
@@ -2472,9 +2472,9 @@ export function MurmurApp() {
           </Button>
 
           {/* The phone header keeps two actions, at a finger's 44px. Preferences
-              lives in the sidebar footer, which md:hidden takes away; the sleep
+              lives in the sidebar footer, which wide:hidden takes away; the sleep
               timer moves to the phone bar. */}
-          <div className="-mr-2 flex md:hidden">
+          <div className="-mr-2 flex wide:hidden">
             <Button
               variant="ghost"
               size="icon"
@@ -2509,12 +2509,16 @@ export function MurmurApp() {
         {/* collapsible="none": below md the mixes become the chip strip and the
             overflow dialog, so the off-canvas drawer would be a second,
             competing answer to the same problem. */}
-        <Sidebar variant="inset" collapsible="none" className="hidden md:flex">
+        <Sidebar
+          variant="inset"
+          collapsible="none"
+          className="hidden wide:flex"
+        >
           {/* pt-6 matches the panel's p-6, so "Your mixes" sits level with
               the first category heading. */}
           <SidebarContent className="scroll-fade gap-0 px-3 pt-6 scroll-fade-5">
             <SidebarGroup className="gap-1 p-0">
-              <SidebarGroupLabel className="h-auto px-2 pb-1 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+              <SidebarGroupLabel className="h-auto px-2 pb-1 text-label-small text-muted-foreground">
                 Your mixes
               </SidebarGroupLabel>
               <SidebarMenu>
@@ -2665,9 +2669,9 @@ export function MurmurApp() {
               own. Saving lives in Now playing, so with no saved mixes there is
               nothing for this strip to show. */}
           {saved.length > 0 && (
-            <div className="flex shrink-0 flex-col px-4 pb-3 md:hidden">
+            <div className="flex shrink-0 flex-col px-4 pb-3 medium:px-6 wide:hidden">
               <div className="flex h-11 items-center justify-between">
-                <p className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                <p className="text-label-small text-muted-foreground">
                   Your mixes
                 </p>
                 {/* A label, not a "···": whatever scrolls past the edge is one
@@ -2700,10 +2704,10 @@ export function MurmurApp() {
             className="min-h-0 flex-1"
             viewportClassName="scroll-fade scroll-fade-6"
           >
-            <div className="space-y-6 p-4 md:p-6">
+            <div className="space-y-6 p-4 medium:p-6">
               {CATEGORIES.map((category) => (
                 <section key={category}>
-                  <h2 className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                  <h2 className="mb-3 text-label-small text-muted-foreground">
                     {categoryLabel[category]}
                   </h2>
                   <div
@@ -2721,7 +2725,7 @@ export function MurmurApp() {
               ))}
 
               <section>
-                <h2 className="mb-3 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">
+                <h2 className="mb-3 text-label-small text-muted-foreground">
                   Yours
                 </h2>
                 <div
@@ -2773,7 +2777,7 @@ export function MurmurApp() {
           </ScrollArea>
 
           {prefs.hints && !coarse && (
-            <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[11px] text-muted-foreground md:px-6">
+            <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[11px] text-muted-foreground medium:px-6">
               {[
                 ["Space", "play"],
                 ["↑↓", "volume"],
@@ -2796,7 +2800,7 @@ export function MurmurApp() {
               playing, where the levels and the master volume are set, and the
               sleep timer sits beside it, counting down while it runs. Only the
               top is rounded: the bottom meets the screen's own corners. */}
-          <div className="flex shrink-0 items-center gap-2.5 rounded-t-m3-xl border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+          <div className="flex shrink-0 items-center gap-2.5 rounded-t-m3-xl border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] wide:hidden">
             <Button
               size="icon"
               className="size-12 shrink-0 rounded-full bg-primary shadow-md hover:bg-primary/80"
@@ -3568,7 +3572,7 @@ export function MurmurApp() {
         theme={themeMode}
         offset={{ bottom: "var(--toast-bottom)" }}
         mobileOffset={{ bottom: "var(--toast-bottom)" }}
-        className="toaster group [--toast-bottom:calc(67px_+_max(12px,env(safe-area-inset-bottom)))] md:[--toast-bottom:24px]"
+        className="toaster group [--toast-bottom:calc(67px_+_max(12px,env(safe-area-inset-bottom)))] wide:[--toast-bottom:24px]"
       />
     </SidebarProvider>
   )
