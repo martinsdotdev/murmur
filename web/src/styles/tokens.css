@@ -17,6 +17,8 @@
   --color-brand-background: #d18a2c; /* button rest */
   --color-brand-background-hover: #e09a3a; /* button hover */
   --color-brand-background-pressed: #a85820; /* button pressed */
+  /* Selected text: the app's translucent amber, so text keeps its colour. */
+  --color-selection: rgba(245, 195, 117, 0.3);
   /* Fills behind text labels (.btn-primary). Dark text on the amber already
      clears AA here; the light theme needs a darker tone, as the app does. */
   --color-brand-fill: var(--color-brand-background);
@@ -193,6 +195,7 @@
 
 /* === Light theme inverts the neutral ramp ========================== */
 :root[data-theme="light"] {
+  --color-selection: rgba(138, 76, 16, 0.22);
   --color-neutral-background-0: #e7e0d0;
   --color-neutral-background-side: #f4eee0;
   --color-neutral-background-1: #faf6ee;

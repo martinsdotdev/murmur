@@ -333,7 +333,7 @@ section {
   border: 0;
 }
 
+/* The app's tint, so a selection looks the same on both surfaces. */
 ::selection {
-  background: var(--color-brand-background);
-  color: var(--color-neutral-foreground-on-brand);
+  background: var(--color-selection);
 }
