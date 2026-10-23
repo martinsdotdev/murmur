@@ -81,6 +81,7 @@ import {
   MIX_NAME_MAX,
   SOUND_NAME_MAX,
   loadPersisted,
+  parseBackupData,
   savePersisted,
   type CustomSound,
   type PersistedState,
@@ -88,6 +89,7 @@ import {
   type SavedMix,
   type View,
 } from "@/lib/app-state"
+import { BackupError, buildBackup, readBackup } from "@/lib/backup"
 import { deleteBlob, getAllBlobs, putBlob } from "@/lib/blob-store"
 import {
   Mixer,
@@ -622,14 +624,15 @@ function formatClock(totalSeconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 }
 
-/** A download size: "18 MB", or one decimal under 10 MB ("2.4 MB"). */
+/** A file size: "18 MB", one decimal under 10 MB ("2.4 MB"), kB below 1 MB. */
 function formatBytes(bytes: number): string {
-  const mb = bytes / 1e6
+  const kb = bytes < 1e6
+  const value = kb ? Math.max(1, bytes / 1e3) : bytes / 1e6
   return new Intl.NumberFormat(undefined, {
     style: "unit",
-    unit: "megabyte",
-    maximumFractionDigits: mb < 10 ? 1 : 0,
-  }).format(mb)
+    unit: kb ? "kilobyte" : "megabyte",
+    maximumFractionDigits: !kb && value < 10 ? 1 : 0,
+  }).format(value)
 }
 
 /** A timer length as people say it: "45 min", "1 h", "1 h 15 min". */
@@ -1021,6 +1024,7 @@ export function MurmurApp() {
   const relinkTarget = React.useRef<string | null>(null)
   /** Finishes the last Clear all, if its toast is still open. */
   const pendingClear = React.useRef<(() => void) | null>(null)
+  const importInput = React.useRef<HTMLInputElement>(null)
   /** Clear all's first press arms it; it disarms itself after 3s. */
   const [dataArmed, setDataArmed] = React.useState(false)
 
@@ -1538,6 +1542,127 @@ export function MurmurApp() {
    * The sound files outlive the toast's Undo and are only deleted once it
    * closes; a tab closed first leaves them to the boot-time sweep.
    */
+  /**
+   * Everything this browser holds for Murmur, as one file: saved mixes, your
+   * own sounds with their audio, and preferences. A missing file goes as its
+   * record alone and comes back as a missing tile.
+   */
+  const exportBackup = async () => {
+    const stored = await getAllBlobs()
+    const blobs = new Map(
+      [...stored].filter(([id]) =>
+        customsRef.current.some((c) => c.id === id && c.hasFile)
+      )
+    )
+    const file = buildBackup(
+      { saved, customs: customsRef.current, prefs },
+      blobs
+    )
+    const url = URL.createObjectURL(file)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `murmur-backup-${new Date().toISOString().slice(0, 10)}.murmur`
+    link.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    toast.success(`Backup saved (${formatBytes(file.size)})`)
+  }
+
+  /**
+   * Adds a backup to what is here, with Undo. Mixes already here, same name
+   * and same levels, are skipped; a clashing name gets a number. Your sounds
+   * are matched by id, and one whose file is missing takes the backup's.
+   * Preferences stay this device's own.
+   */
+  const importBackup = async (file: File) => {
+    let read: Awaited<ReturnType<typeof readBackup>>
+    try {
+      read = await readBackup(file)
+    } catch (error) {
+      toast.error(
+        error instanceof BackupError
+          ? error.message
+          : "That file isn’t a Murmur backup"
+      )
+      return
+    }
+    const incoming = parseBackupData(read.contents)
+
+    const current = customsRef.current
+    const added = incoming.customs.filter(
+      (c) => !current.some((x) => x.id === c.id)
+    )
+    const relinked = incoming.customs
+      .filter((c) => missing.has(c.id) && read.blobs.has(c.id))
+      .map((c) => c.id)
+    // Records before blobs: the boot-time sweep deletes any blob with none.
+    commitCustoms([...current, ...added])
+    for (const c of added) {
+      if (c.videoId) mixer.registerStream(c.id, c.videoId)
+    }
+    const written: string[] = []
+    const stillMissing: string[] = []
+    for (const id of [
+      ...added.filter((c) => c.hasFile).map((c) => c.id),
+      ...relinked,
+    ]) {
+      const blob = read.blobs.get(id)
+      if (!blob) {
+        stillMissing.push(id)
+        continue
+      }
+      mixer.unregister(id)
+      blobUrls.current.set(id, URL.createObjectURL(blob))
+      written.push(id)
+      void putBlob(id, blob)
+    }
+    if (written.length) persistStorage()
+    setMissing((prev) => {
+      const next = new Set(prev)
+      for (const id of relinked) next.delete(id)
+      for (const id of stillMissing) next.add(id)
+      return next
+    })
+
+    const names = new Set(saved.map((m) => m.name))
+    const addedMixes: SavedMix[] = []
+    for (const m of incoming.saved) {
+      if (saved.some((x) => x.name === m.name && sameMix(x.mix, m.mix)))
+        continue
+      let name = m.name
+      for (let n = 2; names.has(name); n++) {
+        name = `${clampName(m.name, MIX_NAME_MAX - ` (${n})`.length)} (${n})`
+      }
+      names.add(name)
+      addedMixes.push({ name, mix: m.mix })
+    }
+    setSaved((prev) => [...prev, ...addedMixes])
+
+    if (!addedMixes.length && !added.length && !relinked.length) {
+      toast("Nothing new in that backup")
+      return
+    }
+    const parts = [
+      `${addedMixes.length} ${addedMixes.length === 1 ? "mix" : "mixes"}`,
+      `${added.length} ${added.length === 1 ? "sound" : "sounds"}`,
+    ]
+    toast.success(
+      `Imported ${parts.join(" and ")}${relinked.length ? `, and brought back ${relinked.length} missing ${relinked.length === 1 ? "file" : "files"}` : ""}`,
+      {
+        id: "backup-imported",
+        action: {
+          label: "Undo",
+          onClick: () => undoRef.current.undoImport(addedMixes, added),
+        },
+      }
+    )
+  }
+
+  /** Takes back exactly what an import added; files it brought back stay. */
+  const undoImport = (mixes: SavedMix[], sounds: CustomSound[]) => {
+    setSaved((prev) => prev.filter((m) => !mixes.includes(m)))
+    for (const c of sounds) removeCustom(c.id)
+  }
+
   const armClearData = () => {
     setDataArmed(true)
     window.setTimeout(() => setDataArmed(false), 3000)
@@ -1820,6 +1945,7 @@ export function MurmurApp() {
     undoSaveChanges,
     undoClear,
     undoRemoveSound,
+    undoImport,
   })
   React.useEffect(() => {
     undoRef.current = {
@@ -1829,6 +1955,7 @@ export function MurmurApp() {
       undoSaveChanges,
       undoClear,
       undoRemoveSound,
+      undoImport,
     }
   })
 
@@ -3680,23 +3807,60 @@ export function MurmurApp() {
             )}
 
             <PrefSection icon={Database01Icon} title="Your data">
-              <div className="flex items-center gap-3 rounded-md border border-border px-3.5 py-3">
-                <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-                  {saved.length || customs.length
-                    ? `${saved.length} saved ${saved.length === 1 ? "mix" : "mixes"} and ${customs.length} ${customs.length === 1 ? "sound" : "sounds"} of your own, kept in this browser.`
-                    : "Nothing saved yet."}
-                </p>
-                {/* Armed, it turns destructive red, and its short label keeps
+              <div className="divide-y divide-border overflow-hidden rounded-md border border-border">
+                <div className="flex items-center gap-3 px-3.5 py-3">
+                  <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+                    {saved.length || customs.length
+                      ? `${saved.length} saved ${saved.length === 1 ? "mix" : "mixes"} and ${customs.length} ${customs.length === 1 ? "sound" : "sounds"} of your own, kept in this browser.`
+                      : "Nothing saved yet."}
+                  </p>
+                  {/* Armed, it turns destructive red, and its short label keeps
                     the row from reflowing on a phone. */}
-                <Button
-                  variant={dataArmed ? "destructive" : "outline"}
-                  size="sm"
-                  className="shrink-0"
-                  disabled={saved.length === 0 && customs.length === 0}
-                  onClick={dataArmed ? clearData : armClearData}
-                >
-                  {dataArmed ? "Sure?" : "Clear all"}
-                </Button>
+                  <Button
+                    variant={dataArmed ? "destructive" : "outline"}
+                    size="sm"
+                    className="shrink-0"
+                    disabled={saved.length === 0 && customs.length === 0}
+                    onClick={dataArmed ? clearData : armClearData}
+                  >
+                    {dataArmed ? "Sure?" : "Clear all"}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-3 px-3.5 py-3">
+                  <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+                    Save your mixes and sounds to a file, or add them from one.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    disabled={saved.length === 0 && customs.length === 0}
+                    onClick={() => void exportBackup()}
+                  >
+                    Export
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => importInput.current?.click()}
+                  >
+                    Import
+                  </Button>
+                  <input
+                    ref={importInput}
+                    type="file"
+                    accept=".murmur"
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      e.target.value = ""
+                      if (file) void importBackup(file)
+                    }}
+                  />
+                </div>
               </div>
             </PrefSection>
 

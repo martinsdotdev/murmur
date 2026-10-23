@@ -260,6 +260,18 @@ function migrateV1(): PersistedState | null {
  * A migrating user is deliberately not seeded; they are not new, and three mixes
  * appearing in a list they already curated would be presumptuous.
  */
+/**
+ * A backup file's contents, validated exactly as storage is, so nothing a file
+ * says reaches state unchecked.
+ */
+export function parseBackupData(raw: unknown): {
+  saved: SavedMix[]
+  customs: CustomSound[]
+} {
+  const r = isRecord(raw) ? raw : {}
+  return { saved: cleanSaved(r.saved), customs: cleanCustoms(r.customs) }
+}
+
 export function loadPersisted(): PersistedState {
   // import.meta.env.DEV inline, not just via DEV_FIXTURE: a literal false is
   // what lets the production build drop the fixtures module.
