@@ -421,6 +421,25 @@
   }
 }
 
+/*
+ * M3's 48px touch target around a control drawn smaller. A centred
+ * pseudo-element, so the visual size and the layout stay as they are; used as
+ * pointer-coarse:hit-target, on controls with room around them. Stacked rows
+ * grow instead, since their hit areas would overlap.
+ */
+@utility hit-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 48px);
+    height: max(100%, 48px);
+    translate: -50% -50%;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring;

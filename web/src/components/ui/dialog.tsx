@@ -91,8 +91,8 @@ function DialogContent({
     // the same reason the app shell carries it: a dialog is chrome, not a
     // document. It has to be repeated here because the portal renders this
     // outside the shell's subtree.
-    "fixed inset-x-0 bottom-0 z-50 grid max-h-[85dvh] w-full gap-6 overflow-y-auto rounded-t-2xl bg-dialog p-6 text-sm text-popover-foreground shadow-level-3 outline-none select-none max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
-    "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[calc(100dvh-2rem)] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:ring-1 sm:ring-foreground/5 dark:sm:ring-foreground/10",
+    "fixed inset-x-0 bottom-0 z-50 grid max-h-[85dvh] w-full gap-6 overflow-y-auto rounded-t-m3-xl bg-dialog p-6 text-sm text-popover-foreground shadow-level-3 outline-none select-none max-sm:pt-12 max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
+    "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[calc(100dvh-2rem)] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:ring-1 sm:ring-foreground/5 dark:sm:ring-foreground/10",
     className
   )
   const close = showCloseButton && (
@@ -101,7 +101,7 @@ function DialogContent({
       render={
         <Button
           variant="ghost"
-          className="absolute top-4 right-4 rounded-full bg-secondary"
+          className="absolute top-4 right-4 rounded-full bg-secondary max-sm:top-11"
           size="icon-sm"
         />
       }
@@ -133,7 +133,7 @@ function DialogContent({
             {/* The sheet really does follow a finger now, so it says so. */}
             <span
               aria-hidden="true"
-              className="absolute top-2 left-1/2 h-1 w-9 -translate-x-1/2 rounded-full bg-foreground/20"
+              className="absolute top-[22px] left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-foreground/20"
             />
             {children}
             {close}

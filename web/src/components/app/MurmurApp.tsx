@@ -314,7 +314,9 @@ function RenameDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <DialogContent className="sm:max-w-sm">
+      {/* Full height on a phone, M3's compact form dialog: the keyboard then
+          has nothing to squeeze. */}
+      <DialogContent className="content-start max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-lg">{title}</DialogTitle>
         </DialogHeader>
@@ -363,7 +365,7 @@ function MixChip({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "flex h-10 shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors",
+        "flex h-10 shrink-0 items-center gap-[7px] rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors pointer-coarse:hit-target",
         active
           ? "border-brand bg-secondary text-foreground"
           : "state-layer bg-muted text-foreground/85 [--state-base:var(--muted)]"
@@ -484,7 +486,7 @@ function NowPlayingRow({
         <Button
           variant="ghost"
           size="icon"
-          className="size-11 shrink-0 rounded-full text-muted-foreground"
+          className="size-11 shrink-0 rounded-full text-muted-foreground pointer-coarse:hit-target"
           aria-label={`Turn off ${name}`}
           onClick={onTurnOff}
         >
@@ -2101,9 +2103,9 @@ export function MurmurApp() {
     // While its menu is open the card holds M3's 10% pressed layer, so the
     // menu reads as belonging to it.
     const tileState = cn(
-      "[transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] pointer-coarse:motion-safe:active:scale-[0.98] data-popup-open:bg-[color-mix(in_srgb,var(--state-base),currentColor_10%)]",
+      "[transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] data-popup-open:bg-[color-mix(in_srgb,var(--state-base),currentColor_10%)] pointer-coarse:motion-safe:active:scale-[0.98]",
       active
-        ? "bg-secondary [--state-base:var(--secondary)]"
+        ? "bg-secondary ring-ring [--state-base:var(--secondary)] dark:ring-ring"
         : "[--state-base:var(--card)] hover:ring-brand/40 dark:hover:ring-brand/40"
     )
     // With the card, not after it: an icon that snaps while its card fades
@@ -2201,7 +2203,12 @@ export function MurmurApp() {
             }
           >
             <SoundIcon path={sound.iconPath} size={17} className={iconState} />
-            <span className="w-28 shrink-0 truncate text-xs font-medium">
+            <span
+              className={cn(
+                "w-28 shrink-0 truncate text-xs",
+                active ? "font-semibold" : "font-medium"
+              )}
+            >
               {sound.name}
             </span>
             <div className="min-w-0 flex-1" {...sliderGuard}>
@@ -2254,7 +2261,12 @@ export function MurmurApp() {
             unpredictable. Kept inside the existing line box so the card still
             measures the 83px the "Add sound" tile hard-codes. */}
           <div className="mt-2 mb-3 flex items-baseline gap-2">
-            <span className="min-w-0 flex-1 truncate text-xs font-medium">
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate text-xs",
+                active ? "font-semibold" : "font-medium"
+              )}
+            >
               {sound.name}
             </span>
             {!coarse && readout}
@@ -2466,7 +2478,7 @@ export function MurmurApp() {
             <Button
               variant="ghost"
               size="icon"
-              className="size-11 rounded-full"
+              className="size-11 rounded-full pointer-coarse:hit-target"
               aria-label="Share"
               onClick={share}
             >
@@ -2479,7 +2491,7 @@ export function MurmurApp() {
             <Button
               variant="ghost"
               size="icon"
-              className="size-11 rounded-full"
+              className="size-11 rounded-full pointer-coarse:hit-target"
               aria-label="Preferences"
               onClick={() => setSettingsOpen(true)}
             >
@@ -2662,7 +2674,7 @@ export function MurmurApp() {
                     tap away, and the tap says where it goes. */}
                 <Button
                   variant="ghost"
-                  className="-mr-2 h-11 px-2 text-xs font-semibold text-brand hover:text-brand"
+                  className="-mr-2 h-11 px-2 text-xs font-semibold text-brand hover:text-brand pointer-coarse:hit-target"
                   onClick={() => setAllMixesOpen(true)}
                 >
                   All mixes
@@ -2784,10 +2796,10 @@ export function MurmurApp() {
               playing, where the levels and the master volume are set, and the
               sleep timer sits beside it, counting down while it runs. Only the
               top is rounded: the bottom meets the screen's own corners. */}
-          <div className="flex shrink-0 items-center gap-2.5 rounded-t-[24px] border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+          <div className="flex shrink-0 items-center gap-2.5 rounded-t-m3-xl border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
             <Button
               size="icon"
-              className="size-11 shrink-0 rounded-full bg-primary shadow-md hover:bg-primary/80"
+              className="size-12 shrink-0 rounded-full bg-primary shadow-md hover:bg-primary/80"
               aria-label={playing ? "Pause" : "Play"}
               onClick={togglePlay}
             >
@@ -2802,7 +2814,7 @@ export function MurmurApp() {
               type="button"
               aria-haspopup="dialog"
               onClick={() => setNowPlayingOpen(true)}
-              className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg text-left"
+              className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg text-left pointer-coarse:hit-target"
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold">
@@ -2823,7 +2835,7 @@ export function MurmurApp() {
             <Button
               variant="outline"
               className={cn(
-                "h-11 shrink-0 gap-1.5 rounded-full bg-transparent",
+                "h-11 shrink-0 gap-1.5 rounded-full bg-transparent pointer-coarse:hit-target",
                 timerOn ? "px-3.5" : "w-11 px-0"
               )}
               aria-label={
@@ -2971,7 +2983,7 @@ export function MurmurApp() {
                         mix={mix.mix}
                         loaded={mix.name === mixName}
                         dirty={mix.name === mixName && dirty}
-                        className="h-11"
+                        className="h-12"
                         onApply={() => {
                           applyMix(mix.name, mix.mix)
                           setAllMixesOpen(false)
@@ -2981,7 +2993,7 @@ export function MurmurApp() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-11 shrink-0 rounded-full text-muted-foreground"
+                      className="size-12 shrink-0 rounded-full text-muted-foreground"
                       aria-label={`More for ${mix.name}`}
                       aria-expanded={open}
                       onClick={() => setMixActionsFor(open ? null : mix.name)}
@@ -3010,7 +3022,7 @@ export function MurmurApp() {
                       <div className="flex gap-1 pb-1 pl-8">
                         <Button
                           variant="ghost"
-                          className="h-11 px-3"
+                          className="h-12 px-3"
                           onClick={() => {
                             afterClose.current = () => {
                               setRenameValue(mix.name)
@@ -3024,7 +3036,7 @@ export function MurmurApp() {
                         </Button>
                         <Button
                           variant="ghost"
-                          className="h-11 px-3"
+                          className="h-12 px-3"
                           onClick={() => {
                             duplicateMix(mix)
                             setMixActionsFor(null)
@@ -3034,7 +3046,7 @@ export function MurmurApp() {
                         </Button>
                         <Button
                           variant="ghost"
-                          className="h-11 px-3 text-destructive hover:text-destructive"
+                          className="h-12 px-3 text-destructive hover:text-destructive"
                           onClick={() => {
                             removeSaved(mix.name)
                             setMixActionsFor(null)
@@ -3053,7 +3065,7 @@ export function MurmurApp() {
       </Dialog>
 
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
-        <DialogContent>
+        <DialogContent className="content-start max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none">
           <DialogHeader>
             <DialogTitle className="text-lg">Save this mix</DialogTitle>
             <DialogDescription>
@@ -3086,7 +3098,10 @@ export function MurmurApp() {
       </Dialog>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent instant={keyDriven}>
+        <DialogContent
+          className="content-start max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none"
+          instant={keyDriven}
+        >
           <DialogHeader>
             <DialogTitle className="text-lg">Add your own sound</DialogTitle>
           </DialogHeader>
@@ -3182,7 +3197,7 @@ export function MurmurApp() {
             put a second scrollbar on this dialog and let the header and footer
             scroll away with the content. Only the body below scrolls now. */}
         <DialogContent
-          className="flex flex-col gap-0 overflow-hidden p-0 max-sm:pb-0 sm:max-w-md"
+          className="flex flex-col gap-0 overflow-hidden p-0 max-sm:pt-8 max-sm:pb-0 sm:max-w-md"
           instant={keyDriven}
         >
           <DialogHeader className="shrink-0 px-5 py-4">
@@ -3553,7 +3568,7 @@ export function MurmurApp() {
         theme={themeMode}
         offset={{ bottom: "var(--toast-bottom)" }}
         mobileOffset={{ bottom: "var(--toast-bottom)" }}
-        className="toaster group [--toast-bottom:calc(63px_+_max(12px,env(safe-area-inset-bottom)))] md:[--toast-bottom:24px]"
+        className="toaster group [--toast-bottom:calc(67px_+_max(12px,env(safe-area-inset-bottom)))] md:[--toast-bottom:24px]"
       />
     </SidebarProvider>
   )
