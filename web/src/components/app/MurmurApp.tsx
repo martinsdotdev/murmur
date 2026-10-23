@@ -614,6 +614,14 @@ function formatClock(totalSeconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
 }
 
+/** A timer length as people say it: "45 min", "1 h", "1 h 15 min". */
+function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (!h) return `${m} min`
+  return m ? `${h} h ${m} min` : `${h} h`
+}
+
 /**
  * A start offset from the sound's id, 0 to 0.9s, so meters on different cards
  * don't rise and fall in lockstep. Stable per sound, so a card keeps its
@@ -938,6 +946,10 @@ export function MurmurApp() {
     next?.()
   }
   const [timerOpen, setTimerOpen] = React.useState(false)
+  /** The length the running timer was started with, to mark its preset. */
+  const [timerMinutes, setTimerMinutes] = React.useState(0)
+  /** The Custom slider's length, kept between openings of the dialog. */
+  const [customMinutes, setCustomMinutes] = React.useState(60)
   const [addOpen, setAddOpen] = React.useState(false)
   const [saveName, setSaveName] = React.useState("")
   const [addName, setAddName] = React.useState("")
@@ -1663,6 +1675,7 @@ export function MurmurApp() {
   const startTimer = (minutes: number) => {
     fadeMult.current = 1
     setTimerOpen(false)
+    setTimerMinutes(minutes)
     if (!minutes) {
       setTimerEnd(0)
       setTimerLeft(0)
@@ -1671,6 +1684,17 @@ export function MurmurApp() {
     }
     setTimerEnd(Date.now() + minutes * 60_000)
     setTimerLeft(minutes * 60)
+  }
+
+  /**
+   * More time on a running timer. During the fade-out this brings the level
+   * back: the interval below works the fade from the time left.
+   */
+  const extendTimer = (minutes: number) => {
+    setTimerEnd((end) => end + minutes * 60_000)
+    setTimerLeft((left) => left + minutes * 60)
+    // No longer one of the presets, so none of them reads as chosen.
+    setTimerMinutes(-1)
   }
 
   React.useEffect(() => {
@@ -3413,25 +3437,63 @@ export function MurmurApp() {
             <DialogDescription>Fades out, then pauses.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-1">
-            {TIMER_OPTIONS.map((minutes) => (
-              <Button
-                key={minutes}
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start",
-                  !timerOn &&
-                    minutes === 0 &&
-                    "bg-secondary text-brand hover:text-brand"
-                )}
-                onClick={() => startTimer(minutes)}
-              >
-                {minutes === 0
-                  ? timerOn
-                    ? `Turn off (${formatClock(timerLeft)} left)`
-                    : "Off"
-                  : `${minutes} minutes`}
-              </Button>
-            ))}
+            {/* Running, the first row stops it and the button beside it adds
+                time, which also lifts a fade already under way. */}
+            {timerOn && (
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  className="flex-1 justify-start"
+                  onClick={() => startTimer(0)}
+                >
+                  Turn off ({formatClock(timerLeft)} left)
+                </Button>
+                <Button variant="outline" onClick={() => extendTimer(15)}>
+                  +15 min
+                </Button>
+              </div>
+            )}
+            {TIMER_OPTIONS.filter((minutes) => minutes > 0 || !timerOn).map(
+              (minutes) => {
+                const chosen = timerOn ? timerMinutes === minutes : !minutes
+                return (
+                  <Button
+                    key={minutes}
+                    variant="ghost"
+                    aria-pressed={chosen}
+                    className={cn(
+                      "w-full justify-start",
+                      chosen && "bg-secondary text-brand hover:text-brand"
+                    )}
+                    onClick={() => startTimer(minutes)}
+                  >
+                    {minutes === 0 ? "Off" : formatDuration(minutes)}
+                  </Button>
+                )
+              }
+            )}
+          </div>
+          <div className="flex flex-col gap-3 border-t border-border pt-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm font-medium">Custom</span>
+              <span className="font-mono text-xs text-brand tabular-nums">
+                {formatDuration(customMinutes)}
+              </span>
+            </div>
+            <Slider
+              value={customMinutes}
+              min={5}
+              max={240}
+              step={5}
+              wheelStep={5}
+              resetValue={60}
+              aria-label="Custom length"
+              aria-valuetext={formatDuration(customMinutes)}
+              onValueChange={(value) => setCustomMinutes(value as number)}
+            />
+            <Button onClick={() => startTimer(customMinutes)}>
+              Start {formatDuration(customMinutes)}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
