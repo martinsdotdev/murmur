@@ -1187,6 +1187,9 @@ export function MurmurApp() {
 
   /** A missing sound takes its file back under the same id. */
   const relinkFile = (id: string, file: File) => {
+    // A node the mixer made while the file was gone holds its empty source;
+    // dropping it lets the next play build one from the new file.
+    mixer.unregister(id)
     blobUrls.current.set(id, URL.createObjectURL(file))
     setMissing((prev) => {
       const next = new Set(prev)
@@ -1250,6 +1253,8 @@ export function MurmurApp() {
   }
 
   const toggleSound = (id: string) => {
+    // Its file is gone; the tile asks for it instead (see renderSound).
+    if (missing.has(id)) return
     const current = vols[id] ?? 0
     if (current > 0) {
       lastNonZero.current[id] = current
@@ -1670,16 +1675,21 @@ export function MurmurApp() {
     previous: LinkArrival["previous"],
     skip: string[] = []
   ) => {
+    // A link's "previous" is read at boot, before missing files are known,
+    // so a sound whose file is gone must not come back lit.
+    const restored = Object.fromEntries(
+      Object.entries(previous.vols).filter(([id]) => !missing.has(id))
+    )
     if (audioStarted.current) {
       for (const id of new Set([
         ...Object.keys(vols),
-        ...Object.keys(previous.vols),
+        ...Object.keys(restored),
       ])) {
         if (skip.includes(id)) continue
-        void applyVolume(id, previous.vols[id] ?? 0, "fade")
+        void applyVolume(id, restored[id] ?? 0, "fade")
       }
     }
-    setVols({ ...previous.vols })
+    setVols(restored)
     setMixName(previous.mixName)
     setDirty(previous.dirty)
   }
@@ -2272,14 +2282,18 @@ export function MurmurApp() {
     )
     // Base UI's long press doesn't swallow the click that can follow it, so
     // the card ignores one that lands just after its menu opened.
-    const toggle = () => {
-      if (performance.now() - menuOpenedAt.current < 600) return
+    // Click and Enter both come here: a missing sound asks for its file.
+    const activate = () => {
       if (lost) {
         relinkTarget.current = sound.id
         relinkInput.current?.click()
         return
       }
       toggleSound(sound.id)
+    }
+    const toggle = () => {
+      if (performance.now() - menuOpenedAt.current < 600) return
+      activate()
     }
     const noteMenuOpen = (open: boolean) => {
       if (open) menuOpenedAt.current = performance.now()
@@ -2296,7 +2310,7 @@ export function MurmurApp() {
                 aria-pressed={active}
                 onClick={toggle}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") toggleSound(sound.id)
+                  if (e.key === "Enter") activate()
                 }}
                 className={cn(
                   "group flex cursor-pointer flex-row items-center gap-3 px-4 py-3",
@@ -2347,7 +2361,7 @@ export function MurmurApp() {
               aria-pressed={active}
               onClick={toggle}
               onKeyDown={(e) => {
-                if (e.key === "Enter") toggleSound(sound.id)
+                if (e.key === "Enter") activate()
               }}
               className={cn("group cursor-pointer gap-0 p-3", tileState)}
             />
