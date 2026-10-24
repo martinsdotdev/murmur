@@ -5,14 +5,14 @@ import Features from "../components/Features.astro"
 import DownloadSection from "../components/DownloadSection.astro"
 import Involved from "../components/Involved.astro"
 import { locales } from "@/paraglide/runtime.js"
-import { localePath } from "@/lib/i18n"
+import { localeSegment } from "@/lib/i18n"
 
-// One landing page per language: English at /, the rest at /pt-br, /es and
-// /ja. The middleware reads the locale back off the path, so nothing here has
+// One landing page per language: English at /, the rest at /pt-br/, /es/ and
+// /ja/. The middleware reads the locale back off the path, so nothing here has
 // to pass it down.
 export function getStaticPaths() {
   return locales.map((locale) => ({
-    params: { locale: localePath(locale).slice(1) || undefined },
+    params: { locale: localeSegment(locale) },
   }))
 }
 ---

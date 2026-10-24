@@ -35,11 +35,7 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
     <meta name="twitter:card" content="summary" />
 
     <link rel="icon" type="image/x-icon" href={`${baseUrl}/favicon.ico`} />
-    {
-      /* /app/, not /app: Pages 301s the bare path to the directory, and a
-        canonical should name the address that answers. */
-    }
-    <link rel="canonical" href={new URL("/app/", Astro.site).href} />
+    <link rel="canonical" href={Astro.url.href} />
 
     {
       /* Linked from this layout only. The installed app is scoped to /app/, and

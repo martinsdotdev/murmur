@@ -24,7 +24,11 @@ export default defineConfig({
   // so `base` defaults to '/'. The public/CNAME file tells Pages to bind this
   // domain to the deployment.
   site: "https://murmur.umaru.dev",
-  trailingSlash: "never",
+  // What Pages serves: every page but the root is a directory, at /app/ and
+  // /pt-br/, and Pages 301s the bare path there. Matching it means links,
+  // canonical and hreflang links and the sitemap all name the address that
+  // answers, and the dev server and preview behave as production does.
+  trailingSlash: "always",
 
   // Astro 7 defaults this to 'jsx', which deletes a newline between a text run
   // and an adjacent inline element instead of collapsing it to a space, gluing
@@ -41,20 +45,6 @@ export default defineConfig({
       i18n: {
         defaultLocale: "en",
         locales: { en: "en", "pt-br": "pt-BR", es: "es", ja: "ja" },
-      },
-      // trailingSlash: "never" writes /app and /pt-br, which Pages 301s to
-      // their directories. A sitemap should list the addresses that answer.
-      serialize(item) {
-        const slashed = (url) =>
-          url.replace(/^(https:\/\/[^/]+\/[^?#]+?)\/?$/, "$1/")
-        return {
-          ...item,
-          url: slashed(item.url),
-          links: item.links?.map((link) => ({
-            ...link,
-            url: slashed(link.url),
-          })),
-        }
       },
     }),
     react(),

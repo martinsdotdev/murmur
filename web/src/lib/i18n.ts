@@ -25,9 +25,16 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   ja: "日本語",
 }
 
-/** "/" for English, "/pt-br" for the rest: lowercase, as paths are. */
+/** A locale's path segment: none for English, "pt-br" for the rest,
+ * lowercase as paths are. */
+export function localeSegment(locale: Locale): string | undefined {
+  return locale === baseLocale ? undefined : locale.toLowerCase()
+}
+
+/** "/" for English, "/pt-br/" for the rest. */
 export function localePath(locale: Locale): string {
-  return locale === baseLocale ? "/" : `/${locale.toLowerCase()}`
+  const segment = localeSegment(locale)
+  return segment ? `/${segment}/` : "/"
 }
 
 /** The locale a built page is for, from the first segment of its path. */

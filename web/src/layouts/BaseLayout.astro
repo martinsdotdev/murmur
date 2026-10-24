@@ -28,11 +28,7 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
 const locale = getLocale()
 // Every language's copy of this page, for search engines to offer the right
 // one. x-default is where someone whose language isn't here should land.
-// Pages serves /pt-br from a directory and 301s the bare path to /pt-br/, so
-// search engines get the address that answers. Links in the page keep the
-// bare path, which the dev server and preview serve.
-const alternate = (l: Locale) =>
-  new URL(l === baseLocale ? "/" : `${localePath(l)}/`, Astro.site).href
+const alternate = (l: Locale) => new URL(localePath(l), Astro.site).href
 ---
 
 <!doctype html>
@@ -92,7 +88,7 @@ const alternate = (l: Locale) =>
           <span class="wordmark-text">Murmur</span>
         </a>
         <nav class="nav-links" aria-label={m.nav_primary()}>
-          <a href={`${baseUrl}/app`}>{m.nav_try()}</a>
+          <a href={`${baseUrl}/app/`}>{m.nav_try()}</a>
           <a href="#features">{m.nav_features()}</a>
           <a href="#download">{m.nav_download()}</a>
         </nav>
