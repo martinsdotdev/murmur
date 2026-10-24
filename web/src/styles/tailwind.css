@@ -658,6 +658,7 @@
 .value-pill,
 .value-ring {
   --t: 1rem; /* the thumb box */
+  --k: 0.75rem; /* the knob, centred in it */
   --h: 1.25rem;
   --w: 2.375rem; /* fits "100" */
   --gap: calc(var(--w) - var(--t));
@@ -674,6 +675,7 @@
   .value-pill,
   .value-ring {
     --t: 1.5rem;
+    --k: 1rem;
     --h: 1.75rem;
     --w: 2.875rem;
   }
@@ -695,16 +697,19 @@
   /* Closed: clipped to the knob's own circle, which also keeps a closed pill
      from catching clicks meant for the track. */
   clip-path: inset(
-    calc((var(--h) - var(--t)) / 2) calc((1 - var(--r)) * var(--gap))
-      calc((var(--h) - var(--t)) / 2) calc(var(--r) * var(--gap)) round 9999px
+    calc((var(--h) - var(--k)) / 2)
+      calc((1 - var(--r)) * var(--gap) + (var(--t) - var(--k)) / 2)
+      calc((var(--h) - var(--k)) / 2)
+      calc(var(--r) * var(--gap) + (var(--t) - var(--k)) / 2) round 9999px
   );
 }
 
 [dir="rtl"] .value-pill {
   clip-path: inset(
-    calc((var(--h) - var(--t)) / 2) calc(var(--r) * var(--gap))
-      calc((var(--h) - var(--t)) / 2) calc((1 - var(--r)) * var(--gap)) round
-      9999px
+    calc((var(--h) - var(--k)) / 2)
+      calc(var(--r) * var(--gap) + (var(--t) - var(--k)) / 2)
+      calc((var(--h) - var(--k)) / 2)
+      calc((1 - var(--r)) * var(--gap) + (var(--t) - var(--k)) / 2) round 9999px
   );
 }
 
@@ -767,6 +772,7 @@
 
 .value-head .value-pill {
   --t: 0px;
+  --k: 0px;
 }
 
 .value-head[data-open] .value-pill {

@@ -440,16 +440,17 @@ function Slider({
             }}
             onBlur={() => setDismissedAt(null)}
           >
-            {/* Murmur's knob: a brand-filled circle cut out of the surface it
-                sits on by a 3px border, growing slightly on hover and while
-                held. With the value pill, the pill is its hovered and held
-                look instead: a ring or growth would show around the pill. */}
+            {/* Murmur's knob: a flat dot in the value pill's colour, 12px in
+                the 16px box (16 in 24 for a finger), so the pill grows out of
+                it with no change of colour. Without the pill it grows to fill
+                the box on hover and while held, as YouTube's does. With it,
+                the pill is its hovered and held look instead. */}
             <span
               aria-hidden="true"
               className={cn(
-                "absolute inset-0 rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform pointer-coarse:border-4",
+                "absolute inset-0.5 rounded-full bg-brand transition-transform pointer-coarse:inset-1",
                 !showValue &&
-                  "group-data-dragging/thumb:ring-4 group-data-dragging/thumb:ring-ring/25 motion-safe:group-hover/thumb:scale-[1.15] motion-safe:group-data-dragging/thumb:scale-[1.15]"
+                  "group-data-dragging/thumb:ring-4 group-data-dragging/thumb:ring-ring/25 motion-safe:group-hover/thumb:scale-[1.33] motion-safe:group-data-dragging/thumb:scale-[1.33]"
               )}
             />
             {showValue && isScalar(value) && (
