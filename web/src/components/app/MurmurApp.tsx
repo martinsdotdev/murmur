@@ -3182,7 +3182,7 @@ export function MurmurApp() {
       {/* From md up the header sits on the frame beside the sidebar, the two
           reading as one title bar over the inset panel. On a phone there is
           no panel, so it keeps its own surface and rule. */}
-      <header className="@container flex shrink-0 items-center border-b bg-background grain py-3 wide:border-b-0 wide:bg-transparent wide:bg-none">
+      <header className="@container flex shrink-0 items-center border-b bg-background py-3 wide:border-b-0 wide:bg-transparent">
         {/* Exactly the sidebar's width, so the controls start where the
             panel does; pl-5 is the sidebar's own inset. */}
         <div className="flex shrink-0 items-center gap-2 pl-4 @max-5xl:w-auto! wide:w-(--sidebar-width) wide:pl-5">
@@ -3746,7 +3746,7 @@ export function MurmurApp() {
               playing, where the levels and the master volume are set, and the
               sleep timer sits beside it, counting down while it runs. Only the
               top is rounded: the bottom meets the screen's own corners. */}
-          <div className="flex shrink-0 items-center gap-2.5 rounded-t-m3-xl border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] wide:hidden">
+          <div className="flex shrink-0 items-center gap-2.5 rounded-t-m3-xl border-x border-t bg-sidebar grain px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] wide:hidden">
             <Button
               size="icon"
               className="size-12 shrink-0 bg-primary sheen shadow-level-2 sheen-round hover:bg-primary/80"
