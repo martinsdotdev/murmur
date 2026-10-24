@@ -1260,6 +1260,8 @@ export function MurmurApp() {
   // is already audible.
   const lastNonZero = React.useRef<MixerState>({ ...initial.vols })
   const lastMaster = React.useRef(initial.master || DEFAULT_MASTER)
+  /** Bumped by the arrow-key shortcut, so the header master shows its level. */
+  const [masterFlash, setMasterFlash] = React.useState(0)
   const { queue: queueFrame, drop: dropFrame } = useFrameQueue()
 
   const activeIds = Object.keys(vols).filter((id) => (vols[id] ?? 0) > 0)
@@ -2592,9 +2594,11 @@ export function MurmurApp() {
       } else if (e.key === "ArrowUp") {
         e.preventDefault()
         changeMaster(master + 0.05)
+        setMasterFlash((n) => n + 1)
       } else if (e.key === "ArrowDown") {
         e.preventDefault()
         changeMaster(master - 0.05)
+        setMasterFlash((n) => n + 1)
       } else if (e.key === "s" || e.key === "S") {
         share()
       } else if (e.key === "t" || e.key === "T") {
@@ -3267,6 +3271,7 @@ export function MurmurApp() {
               aria-label={m.master_volume()}
               aria-valuetext={formatPercent(Math.round(master * 100))}
               showValue
+              flash={masterFlash}
               onValueChange={(value) => dragMaster((value as number) / 100)}
               onValueCommitted={(value) =>
                 commitMaster((value as number) / 100)

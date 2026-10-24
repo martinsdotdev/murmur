@@ -109,6 +109,11 @@ type SliderProps = Omit<
     resetValue?: number
     /** The value rides the thumb while it is being set (see 7 above). */
     showValue?: boolean
+    /**
+     * Each change opens the value pill as a wheel notch does: for a value set
+     * from elsewhere, like the master's arrow-key shortcut.
+     */
+    flash?: number
   }
 
 /** Both affordances need to know the current value, so both are controlled-scalar only. */
@@ -136,6 +141,7 @@ function Slider({
   wheelStep,
   resetValue,
   showValue = false,
+  flash,
   onValueChange,
   onValueCommitted,
   getAriaLabel,
@@ -169,12 +175,19 @@ function Slider({
   const [dismissedAt, setDismissedAt] = React.useState<number | null>(null)
   const flashTimer = React.useRef<number | undefined>(undefined)
   const pillRef = React.useRef<HTMLSpanElement>(null)
-  const flash = React.useCallback(() => {
+  const openPill = React.useCallback(() => {
     setFlashing(true)
     window.clearTimeout(flashTimer.current)
     flashTimer.current = window.setTimeout(() => setFlashing(false), FLASH_MS)
   }, [])
   React.useEffect(() => () => window.clearTimeout(flashTimer.current), [])
+  // Skips the first render: only a change is a flash.
+  const flashSeen = React.useRef(flash)
+  React.useEffect(() => {
+    if (flash === flashSeen.current) return
+    flashSeen.current = flash
+    if (showValue) openPill()
+  }, [flash, showValue, openPill])
 
   // The wheel listener is attached once, so it reads props from here rather
   // than closing over them.
@@ -211,9 +224,9 @@ function Slider({
     (next: number) => {
       live.current.onValueChange?.(next)
       live.current.onValueCommitted?.(next)
-      if (live.current.showValue) flash()
+      if (live.current.showValue) openPill()
     },
-    [flash]
+    [openPill]
   )
 
   React.useEffect(() => {
