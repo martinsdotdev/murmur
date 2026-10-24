@@ -767,9 +767,6 @@
 
 .value-head .value-pill {
   --t: 0px;
-  /* Always lifted: the finger is on the card. Its bottom edge clears the
-     bar by 4px. */
-  translate: 0 calc(-50% - var(--h) / 2 - 0.375rem);
 }
 
 .value-head[data-open] .value-pill {
@@ -789,12 +786,6 @@
 
 .value-head:not([data-open]) .value-pill > span {
   transition: opacity 0s 700ms;
-}
-
-/* Pressed, it lifts clear of the cursor or fingertip on the thumb: its
-   bottom edge 4px above the thumb's top. */
-[data-slot="slider-thumb"]:is([data-dragging], [data-held]) .value-pill {
-  translate: 0 calc(-50% - (var(--t) + var(--h)) / 2 - 0.25rem);
 }
 
 /* The focus ring in the pill's shape. The pill's clip would cut a ring

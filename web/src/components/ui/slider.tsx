@@ -37,8 +37,8 @@ import { cn } from "@/lib/utils"
  * 7. `showValue` puts the value on the thumb, as YouTube's seek handle does:
  *    the knob grows into a pill that carries the number while the value is
  *    being set (hovered, focused from the keyboard, wheeled, reset, or held).
- *    A press lifts the pill above the thumb, clear of the cursor or finger.
- *    Styles: .value-pill in tailwind.css.
+ *    Held too, it stays the thumb, on the track. Styles: .value-pill in
+ *    tailwind.css.
  */
 
 /**
@@ -442,10 +442,15 @@ function Slider({
           >
             {/* Murmur's knob: a brand-filled circle cut out of the surface it
                 sits on by a 3px border, growing slightly on hover and while
-                held. */}
+                held. With the value pill, the pill is its hovered and held
+                look instead: a ring or growth would show around the pill. */}
             <span
               aria-hidden="true"
-              className="absolute inset-0 rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform group-data-dragging/thumb:ring-4 group-data-dragging/thumb:ring-ring/25 motion-safe:group-hover/thumb:scale-[1.15] motion-safe:group-data-dragging/thumb:scale-[1.15] pointer-coarse:border-4"
+              className={cn(
+                "absolute inset-0 rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform pointer-coarse:border-4",
+                !showValue &&
+                  "group-data-dragging/thumb:ring-4 group-data-dragging/thumb:ring-ring/25 motion-safe:group-hover/thumb:scale-[1.15] motion-safe:group-data-dragging/thumb:scale-[1.15]"
+              )}
             />
             {showValue && isScalar(value) && (
               <>
