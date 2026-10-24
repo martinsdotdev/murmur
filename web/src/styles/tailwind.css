@@ -754,6 +754,43 @@
   }
 }
 
+/* On a touch card the number rides the level bar's end (LevelBar), which has
+   no thumb: a zero-width head the pill slides across like a thumb, open while
+   a finger drags the card and lingering a moment after, to be read. */
+.value-head {
+  position: absolute;
+  top: 50%;
+  inset-inline-start: calc(var(--r) * 100%);
+  width: 0;
+  height: 0;
+}
+
+.value-head .value-pill {
+  --t: 0px;
+  /* Always lifted: the finger is on the card. Its bottom edge clears the
+     bar by 4px. */
+  translate: 0 calc(-50% - var(--h) / 2 - 0.375rem);
+}
+
+.value-head[data-open] .value-pill {
+  opacity: 1;
+  clip-path: inset(0 round 9999px);
+}
+
+.value-head[data-open] .value-pill > span {
+  opacity: 1;
+}
+
+.value-head:not([data-open]) .value-pill {
+  transition:
+    clip-path 0s 700ms,
+    opacity 0s 700ms;
+}
+
+.value-head:not([data-open]) .value-pill > span {
+  transition: opacity 0s 700ms;
+}
+
 /* Pressed, it lifts clear of the cursor or fingertip on the thumb: its
    bottom edge 4px above the thumb's top. */
 [data-slot="slider-thumb"]:is([data-dragging], [data-held]) .value-pill {
@@ -814,5 +851,25 @@
     .value-pill
     > span {
     transition: opacity 100ms var(--ease-out) 50ms;
+  }
+
+  .value-head[data-open] .value-pill {
+    transition:
+      clip-path 150ms var(--ease-out),
+      opacity 0s;
+  }
+
+  .value-head[data-open] .value-pill > span {
+    transition: opacity 100ms var(--ease-out) 50ms;
+  }
+
+  .value-head:not([data-open]) .value-pill {
+    transition:
+      clip-path 200ms var(--ease-out) 700ms,
+      opacity 0s 900ms;
+  }
+
+  .value-head:not([data-open]) .value-pill > span {
+    transition: opacity 100ms var(--ease-out) 700ms;
   }
 }

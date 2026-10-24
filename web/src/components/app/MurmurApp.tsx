@@ -577,16 +577,42 @@ function MixChip({
  * scrolling grid would take the swipe meant to scroll it. The card itself is
  * the control there (see useLevelDrag), and this follows it, mirrored right to
  * left as the slider is. h-1 is the slider's own box (its thumb overhangs it),
- * so the card still measures the 83px the "Add sound" tile copies.
+ * so the card still measures the 83px the "Add sound" tile copies. With
+ * showValue the number rides the fill's end while a finger drags the card,
+ * as it rides a slider's thumb (.value-head in tailwind.css).
  */
 function LevelBar({
   level,
   live = false,
+  showValue = false,
 }: {
   level: number
   /** Under a finger: the fill keeps up with it rather than easing after. */
   live?: boolean
+  showValue?: boolean
 }) {
+  return (
+    <div className="relative">
+      <LevelTrack level={level} live={live} />
+      {/* Beside the track, not in it: the track clips. aria-hidden, as Now
+          playing's slider says the level. */}
+      {showValue && (
+        <span
+          aria-hidden="true"
+          className="value-head"
+          data-open={live ? "" : undefined}
+          style={{ "--r": level } as React.CSSProperties}
+        >
+          <span className="value-pill">
+            <span>{Math.round(level * 100)}</span>
+          </span>
+        </span>
+      )}
+    </div>
+  )
+}
+
+function LevelTrack({ level, live }: { level: number; live: boolean }) {
   return (
     <div
       aria-hidden="true"
@@ -2947,23 +2973,6 @@ export function MurmurApp() {
       />
     )
 
-    // On touch, where a card has no thumb for the number to ride, it shows on
-    // the name row while a finger drags the card, and lingers a moment after
-    // it lifts, to be read. The width stays reserved so nothing shifts as it
-    // appears. aria-hidden because Now playing's slider says it.
-    const readout = (
-      <span
-        aria-hidden="true"
-        className={cn(
-          "w-7 shrink-0 text-right font-mono text-[0.6875rem] tabular-nums opacity-0 transition-opacity",
-          dragged ? "opacity-100" : "delay-700",
-          active ? "text-brand" : "text-muted-foreground"
-        )}
-      >
-        {pct}
-      </span>
-    )
-
     // Card draws its edge as a ring, not a border, so hover goes on the ring.
     // The press is touch only, where nothing else answers a tap until the
     // sound arrives; a mouse already has hover.
@@ -3086,12 +3095,9 @@ export function MurmurApp() {
               />
             )}
           </div>
-          {/* The readout sits on the name row rather than the icon row above:
-            it right-aligns in the same column as list view, and the icon row is
-            a variable-occupancy status corner (EqBars only while playing, the
-            remove button only for customs) that a third element would make
-            unpredictable. Kept inside the existing line box so the card still
-            measures the 83px the "Add sound" tile hard-codes. */}
+          {/* The name, and a missing file's badge beside it, inside one line
+            box so the card still measures the 83px the "Add sound" tile
+            hard-codes. The level's number rides the thumb or the level bar. */}
           <div className="mt-2 mb-3 flex items-baseline gap-2">
             <span
               className={cn(
@@ -3103,12 +3109,10 @@ export function MurmurApp() {
             >
               {sound.name}
             </span>
-            {lost ? (
+            {lost && (
               <span className="shrink-0 text-[0.6875rem] text-destructive">
                 {m.sound_missing_badge()}
               </span>
-            ) : (
-              coarse && !fixedLevel && readout
             )}
           </div>
           {lost ? (
@@ -3122,7 +3126,7 @@ export function MurmurApp() {
             // Full while on: it plays at whatever the phone's volume is.
             <LevelBar level={active ? 1 : 0} />
           ) : coarse ? (
-            <LevelBar level={volume} live={dragged} />
+            <LevelBar level={volume} live={dragged} showValue />
           ) : (
             <div {...sliderGuard}>{slider}</div>
           )}
