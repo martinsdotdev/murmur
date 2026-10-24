@@ -1,6 +1,6 @@
 /**
  * Preferences' building blocks, and the sheet that holds them: a main page of
- * rows, and a language page it pushes. MurmurApp writes the main page, since
+ * rows, and the language and keyboard shortcut pages it pushes. MurmurApp writes the main page, since
  * its rows are the app's state; the sheet owns which page is up.
  */
 import * as React from "react"
@@ -9,6 +9,7 @@ import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
+  KeyboardIcon,
   LanguageSquareIcon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons"
@@ -320,6 +321,78 @@ function LanguagePage() {
   )
 }
 
+export function ShortcutsRow({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      data-opens="shortcuts"
+      className={aboutRow}
+      onClick={onOpen}
+    >
+      <HugeiconsIcon
+        icon={KeyboardIcon}
+        strokeWidth={2}
+        className="size-5 shrink-0"
+      />
+      <span className="flex-1">{m.pref_shortcuts_title()}</span>
+      <HugeiconsIcon
+        icon={ArrowRight01Icon}
+        strokeWidth={2}
+        className="size-4 shrink-0 text-muted-foreground"
+      />
+    </button>
+  )
+}
+
+/** The modifier key as this platform's keyboard prints it. */
+const MOD =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform)
+    ? "⌘"
+    : "Ctrl"
+
+/**
+ * Preferences' keyboard shortcuts page: every shortcut the app answers, each
+ * key a <kbd>, and both ways in for the one that has two.
+ */
+function ShortcutsPage() {
+  const shortcuts: [string, string[][]][] = [
+    [m.shortcut_play_pause(), [[m.key_space()]]],
+    [m.master_volume(), [["↑"], ["↓"]]],
+    [m.action_share(), [["S"]]],
+    [m.timer_title(), [["T"]]],
+    [m.preferences(), [[","], [MOD, "P"]]],
+    [m.action_turn_all_off(), [[MOD, "R"]]],
+    [m.add_own_sound(), [[MOD, "I"]]],
+    [m.shortcut_view(), [[MOD, "G"]]],
+  ]
+  return (
+    <dl className={prefGroup}>
+      {shortcuts.map(([action, ways]) => (
+        <div
+          key={action}
+          className="flex min-h-12 items-center gap-4 px-4 py-2.5"
+        >
+          <dt className="min-w-0 flex-1 text-body-large">{action}</dt>
+          <dd className="flex shrink-0 items-center gap-3">
+            {ways.map((keys) => (
+              <span key={keys.join("+")} className="flex gap-1">
+                {keys.map((key) => (
+                  <kbd
+                    key={key}
+                    className="min-w-6 rounded-m3-xs border border-border bg-background px-1.5 py-0.5 text-center font-mono text-xs text-foreground"
+                  >
+                    {key}
+                  </kbd>
+                ))}
+              </span>
+            ))}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 export function PrefRow({
   icon,
   title,
@@ -460,7 +533,8 @@ export function PrefSection({
 }
 
 /** Which page is up, and how it got there, which says where it slides in from. */
-type View = { page: "main" | "language"; arrived: "open" | "forward" | "back" }
+type Subpage = "language" | "shortcuts"
+type View = { page: "main" | Subpage; arrived: "open" | "forward" | "back" }
 
 /**
  * A page or its title coming in: from the side its row points to, back the
@@ -496,21 +570,22 @@ export function PreferencesSheet({
   onOpenChange: (open: boolean) => void
   /** The main page's command bar. */
   footer: React.ReactNode
-  /** The main page, given the way into the language page. */
-  children: (openLanguage: () => void) => React.ReactNode
+  /** The main page, given the way into a subpage. */
+  children: (open: (page: Subpage) => void) => React.ReactNode
 }) {
   const [view, setView] = React.useState<View>({
     page: "main",
     arrived: "open",
   })
   const main = React.useRef<HTMLDivElement>(null)
-  const onLanguage = view.page === "language"
-  const openLanguage = () => setView({ page: "language", arrived: "forward" })
+  const subpage = view.page === "main" ? null : view.page
+  const openPage = (page: Subpage) => setView({ page, arrived: "forward" })
   // Focus goes back to the row that opened the page, which the main page,
   // drawn again, has just put back.
   const back = () => {
+    const from = view.page
     flushSync(() => setView({ page: "main", arrived: "back" }))
-    main.current?.querySelector<HTMLElement>("[data-opens=language]")?.focus()
+    main.current?.querySelector<HTMLElement>(`[data-opens=${from}]`)?.focus()
   }
 
   return (
@@ -530,7 +605,7 @@ export function PreferencesSheet({
           short, and a sheet that shrank under it and grew back would jump. */}
       <DialogContent className="flex h-[85dvh] flex-col gap-0 overflow-hidden p-0 max-sm:pt-8 max-sm:pb-0 sm:h-[min(calc(100dvh-4rem),47.5rem)] sm:max-w-lg">
         <DialogHeader className="shrink-0 px-5 py-4">
-          {onLanguage ? (
+          {subpage ? (
             <div className={cn("flex items-center gap-3", ENTER[view.arrived])}>
               {/* The close button's look, on the other side: -my-1 keeps the
                   header the title's height. */}
@@ -539,6 +614,9 @@ export function PreferencesSheet({
                 size="icon-sm"
                 className="-my-1 rounded-full bg-secondary"
                 aria-label={m.action_back()}
+                // The shortcuts page has nothing to focus, so focus waits
+                // here, where the way back is.
+                autoFocus={subpage === "shortcuts"}
                 onClick={back}
               >
                 <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
@@ -566,7 +644,9 @@ export function PreferencesSheet({
                       aria-current="page"
                       className="text-lg text-foreground"
                     >
-                      {m.pref_language_title()}
+                      {subpage === "language"
+                        ? m.pref_language_title()
+                        : m.pref_shortcuts_title()}
                     </DialogTitle>
                   </BreadcrumbItem>
                 </BreadcrumbList>
@@ -582,9 +662,9 @@ export function PreferencesSheet({
         {/* Keyed, so each page is a new element: the transition starts
             from @starting-style only when its element is inserted, and React
             would otherwise reuse one div for both. */}
-        {onLanguage ? (
-          <div key="language" className={cn(PAGE, ENTER[view.arrived])}>
-            <LanguagePage />
+        {subpage ? (
+          <div key={subpage} className={cn(PAGE, ENTER[view.arrived])}>
+            {subpage === "language" ? <LanguagePage /> : <ShortcutsPage />}
           </div>
         ) : (
           <div
@@ -592,7 +672,7 @@ export function PreferencesSheet({
             ref={main}
             className={cn(PAGE, "gap-5", ENTER[view.arrived])}
           >
-            {children(openLanguage)}
+            {children(openPage)}
           </div>
         )}
 
@@ -605,10 +685,10 @@ export function PreferencesSheet({
             out of the sheet and goes inert, keeping its place so the page
             above doesn't jump. */}
         <div
-          inert={onLanguage}
+          inert={subpage !== null}
           className={cn(
             "flex shrink-0 items-center gap-3 border-t border-border bg-popover px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted-foreground transition-[opacity,translate] duration-200 ease-(--ease-out) sm:pb-3",
-            onLanguage && "opacity-0 motion-safe:translate-y-full"
+            subpage && "opacity-0 motion-safe:translate-y-full"
           )}
         >
           {footer}

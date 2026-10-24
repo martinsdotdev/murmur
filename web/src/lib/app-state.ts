@@ -83,7 +83,6 @@ export interface CustomSound {
 
 export interface Prefs {
   eq: boolean
-  hints: boolean
   fadeMs: number
   sleepFade: number
   pauseHidden: boolean
@@ -96,7 +95,6 @@ export interface Prefs {
  *  a minute's fade-out at the end of a sleep timer, for someone drifting off. */
 export const DEFAULT_PREFS: Prefs = {
   eq: true,
-  hints: false,
   fadeMs: 1000,
   sleepFade: 30,
   pauseHidden: false,
@@ -267,7 +265,6 @@ function cleanPrefs(v: unknown): Prefs {
     typeof x === "boolean" ? x : fallback
   return {
     eq: bool(v.eq, DEFAULT_PREFS.eq),
-    hints: bool(v.hints, DEFAULT_PREFS.hints),
     fadeMs: clamp(v.fadeMs, 0, 3000, DEFAULT_PREFS.fadeMs),
     sleepFade: clamp(v.sleepFade, 2, 60, DEFAULT_PREFS.sleepFade),
     pauseHidden: bool(v.pauseHidden, DEFAULT_PREFS.pauseHidden),

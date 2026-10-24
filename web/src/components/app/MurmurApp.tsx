@@ -24,7 +24,6 @@ import {
   GridViewIcon,
   HeadphonesIcon,
   InstallingUpdates01Icon,
-  KeyboardIcon,
   LeftToRightListBulletIcon,
   MinusSignCircleIcon,
   Moon02Icon,
@@ -152,6 +151,7 @@ import { useCoarsePointer } from "./use-coarse-pointer"
 import { useLevelDrag } from "./use-level-drag"
 import {
   LanguageRow,
+  ShortcutsRow,
   PrefInfo,
   PrefRow,
   PrefSection,
@@ -3695,25 +3695,6 @@ export function MurmurApp() {
             )}
           </div>
 
-          {prefs.hints && !coarse && (
-            <footer className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-t border-border px-4 py-2 text-[0.6875rem] text-muted-foreground medium:px-6">
-              {[
-                [m.key_space(), m.hint_play()],
-                ["↑↓", m.hint_volume()],
-                ["S", m.hint_share()],
-                ["T", m.hint_timer()],
-                [",", m.hint_preferences()],
-              ].map(([key, action]) => (
-                <span key={key}>
-                  <b className="font-mono font-semibold text-foreground">
-                    {key}
-                  </b>{" "}
-                  {action}
-                </span>
-              ))}
-            </footer>
-          )}
-
           {/* Phone bar. Play and what is playing live in the header on desktop;
               pinned here they survive the grid scrolling. The name opens Now
               playing, where the levels and the master volume are set, and the
@@ -4207,13 +4188,13 @@ export function MurmurApp() {
           </>
         }
       >
-        {(openLanguage) => (
+        {(open) => (
           <>
             <PrefSection title={m.section_appearance()}>
               <ThemePicker mode={themeMode} onSelect={selectTheme} />
               <SchemePicker scheme={scheme} onSelect={selectScheme} />
               <div className={prefGroup}>
-                <LanguageRow onOpen={openLanguage} />
+                <LanguageRow onOpen={() => open("language")} />
                 <PrefRow
                   icon={DarkModeIcon}
                   title={m.pref_black_title()}
@@ -4228,15 +4209,7 @@ export function MurmurApp() {
                   checked={prefs.eq}
                   onChange={(v) => setPref("eq", v)}
                 />
-                {!coarse && (
-                  <PrefRow
-                    icon={KeyboardIcon}
-                    title={m.pref_hints_title()}
-                    description={m.pref_hints_description()}
-                    checked={prefs.hints}
-                    onChange={(v) => setPref("hints", v)}
-                  />
-                )}
+                {!coarse && <ShortcutsRow onOpen={() => open("shortcuts")} />}
               </div>
             </PrefSection>
 
