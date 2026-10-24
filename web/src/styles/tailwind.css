@@ -898,7 +898,8 @@
 
 /* On a touch card the number rides the level bar's end (LevelBar), which has
    no thumb: a zero-width head the pill slides across like a thumb, open while
-   a finger drags the card and lingering 1.5 s after, as a slider's does. */
+   a finger drags the card and for 1.5 s after (useLevelDrag holds it), as a
+   slider's does. */
 .value-head {
   position: absolute;
   top: 50%;
@@ -919,16 +920,6 @@
 
 .value-head[data-open] .value-pill > span {
   opacity: 1;
-}
-
-.value-head:not([data-open]) .value-pill {
-  transition:
-    clip-path 0s 1500ms,
-    opacity 0s 1500ms;
-}
-
-.value-head:not([data-open]) .value-pill > span {
-  transition: opacity 0s 1500ms;
 }
 
 /* The focus ring in the pill's shape. The pill's clip would cut a ring
@@ -1006,15 +997,5 @@
 
   .value-head[data-open] .value-pill > span {
     transition: opacity 100ms var(--ease-out) 50ms;
-  }
-
-  .value-head:not([data-open]) .value-pill {
-    transition:
-      clip-path 200ms var(--ease-out) 1500ms,
-      opacity 0s 1700ms;
-  }
-
-  .value-head:not([data-open]) .value-pill > span {
-    transition: opacity 100ms var(--ease-out) 1500ms;
   }
 }

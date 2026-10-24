@@ -16,6 +16,9 @@ const SLOP = 12
  */
 const CLICK_AFTER_DRAG = 400
 
+/** How long a card's level stays up after its drag, as a slider's pill does. */
+const LINGER_MS = 1500
+
 /**
  * Touch only: a drag across a sound card sets its level, as a slider would.
  * Relative to where the drag starts, with the card's width as the whole
@@ -32,6 +35,13 @@ export function useLevelDrag(handlers: {
   onCommit: (id: string, level: number) => void
 }) {
   const [draggingId, setDraggingId] = React.useState<string | null>(null)
+  // The card whose level stays up after its drag, to be read. Held open in
+  // state rather than by a delayed CSS close: a delay starts a transition
+  // that holds wherever the opening had got to, so a quick swipe left the
+  // pill frozen half open for the whole wait.
+  const [lingeringId, setLingeringId] = React.useState<string | null>(null)
+  const linger = React.useRef<number | undefined>(undefined)
+  React.useEffect(() => () => window.clearTimeout(linger.current), [])
   // A drag's listeners outlive the render that attached them.
   const live = React.useRef(handlers)
   React.useEffect(() => {
@@ -83,6 +93,12 @@ export function useLevelDrag(handlers: {
         onEnd(e) {
           ended.current = { id, at: e.timeStamp }
           setDraggingId(null)
+          setLingeringId(id)
+          window.clearTimeout(linger.current)
+          linger.current = window.setTimeout(
+            () => setLingeringId(null),
+            LINGER_MS
+          )
           // In pointerup itself, the gesture a browser lets start audio.
           if (moved) live.current.onCommit(id, last)
         },
@@ -98,5 +114,8 @@ export function useLevelDrag(handlers: {
     },
   })
 
-  return { draggingId, bind }
+  /** The card whose level shows: the one being dragged, or just let go. */
+  const showingId = draggingId ?? lingeringId
+
+  return { draggingId, showingId, bind }
 }

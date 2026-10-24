@@ -586,11 +586,14 @@ function LevelBar({
   level,
   live = false,
   showValue = false,
+  valueShown = false,
 }: {
   level: number
   /** Under a finger: the fill keeps up with it rather than easing after. */
   live?: boolean
   showValue?: boolean
+  /** The number is up: while dragged, and a moment after. */
+  valueShown?: boolean
 }) {
   return (
     <div className="relative">
@@ -601,7 +604,7 @@ function LevelBar({
         <span
           aria-hidden="true"
           className="value-head"
-          data-open={live ? "" : undefined}
+          data-open={valueShown ? "" : undefined}
           style={{ "--r": level } as React.CSSProperties}
         >
           <span className="value-pill sheen [--sheen-color:var(--brand)]">
@@ -3155,7 +3158,12 @@ export function MurmurApp() {
             // Full while on: it plays at whatever the phone's volume is.
             <LevelBar level={active ? 1 : 0} />
           ) : coarse ? (
-            <LevelBar level={volume} live={dragged} showValue />
+            <LevelBar
+              level={volume}
+              live={dragged}
+              showValue
+              valueShown={levelDrag.showingId === sound.id}
+            />
           ) : (
             <div {...sliderGuard}>{slider}</div>
           )}
