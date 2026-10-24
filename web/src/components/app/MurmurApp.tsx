@@ -3495,14 +3495,6 @@ export function MurmurApp() {
               >
                 {m.about()}
               </a>
-              <a
-                className="text-xs text-muted-foreground hover:text-foreground"
-                href={repoUrl}
-                target="_blank"
-                rel="noopener"
-              >
-                GitHub
-              </a>
               <div className="flex-1" />
               <Button
                 variant="ghost"
