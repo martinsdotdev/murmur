@@ -984,6 +984,10 @@ function SleepTimerPanel({
           resetValue={30}
           aria-label={m.timer_length()}
           aria-valuetext={formatDuration(choice)}
+          // The same length rides the thumb, as on every slider; the large
+          // readout above stays for reading it across the room.
+          showValue
+          valueLabel={formatDuration(choice)}
           onValueChange={(value) => onChoose(value as number)}
         />
       </div>
