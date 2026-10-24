@@ -3475,11 +3475,11 @@ export function MurmurApp() {
                 })}
               </SidebarMenu>
               <Button
+                shape="fluent"
                 variant="ghost"
                 size="sm"
-                // A placeholder takes the shape of what it adds, as "Add
-                // sound" does a card's: here a mix's row.
-                className="mt-1 w-full justify-start rounded-xl border-dashed border-border text-muted-foreground hover:border-muted-foreground"
+                // Dashed, as "Add sound" is: a place for the next one.
+                className="mt-1 w-full justify-start border-dashed border-border text-muted-foreground hover:border-muted-foreground"
                 onClick={openSaveDialog}
               >
                 <HugeiconsIcon
