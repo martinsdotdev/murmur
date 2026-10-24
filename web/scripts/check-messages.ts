@@ -1,7 +1,8 @@
 /**
  * Fails the build when a translation drifts from messages/en.json: a key
- * missing or left over, or a placeholder dropped or misspelt. Paraglide would
- * quietly fall back to English for the first and print "{count}" for the last.
+ * missing or left over, or a placeholder or markup tag dropped or misspelt.
+ * Paraglide would quietly fall back to English for the first, print "{count}"
+ * for a placeholder, and render nothing where a tag's link should be.
  *
  * Run: pnpm exec tsx scripts/check-messages.ts (also the first step of build).
  */
@@ -27,8 +28,9 @@ function load(locale: string): Record<string, Message> {
   return messages
 }
 
-/** The inputs a message reads: its placeholders and `input` declarations,
- * less the locals it declares itself, such as a plural selector. */
+/** The inputs a message reads, its placeholders and `input` declarations less
+ * the locals it declares itself (such as a plural selector), and its markup
+ * tags, as "#link". */
 function inputs(message: Message): string[] {
   const texts = typeof message === "string" ? [message] : []
   const names = new Set<string>()
@@ -45,6 +47,7 @@ function inputs(message: Message): string[] {
   }
   for (const text of texts) {
     for (const [, name] of text.matchAll(/\{(\w+)\}/g)) names.add(name)
+    for (const [, tag] of text.matchAll(/\{#(\w+)/g)) names.add(`#${tag}`)
   }
   return [...names].filter((name) => !locals.has(name)).sort()
 }

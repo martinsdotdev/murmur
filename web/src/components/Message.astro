@@ -1,0 +1,33 @@
+---
+/**
+ * A message with markup, each tag becoming the element named for it here:
+ * `tags={{ link: { as: "a", href } }}`. A tag's own text is the message's,
+ * or, for a self-closing one, the `text` given here, such as a file name.
+ *
+ * Rendered in one expression, so no line break in this template can put a
+ * space between a word and its link, which Japanese would show.
+ */
+import { runs } from "@/lib/markup"
+import type { MessagePart } from "@/paraglide/runtime.js"
+
+interface Tag {
+  as: string
+  text?: string
+  [attribute: string]: string | undefined
+}
+
+interface Props {
+  parts: MessagePart[]
+  tags: Record<string, Tag>
+}
+
+const { parts, tags } = Astro.props
+---
+
+{
+  runs(parts).map(({ text, tag }) => {
+    if (!tag) return text
+    const { as: Element, text: own, ...attributes } = tags[tag]
+    return <Element {...attributes}>{own ?? text}</Element>
+  })
+}

@@ -137,7 +137,8 @@ import {
   formatSeconds,
   formatTime,
 } from "@/lib/format"
-import { around, fromAnyLocale, startAppLocale } from "@/lib/i18n"
+import { fromAnyLocale, startAppLocale } from "@/lib/i18n"
+import { runs } from "@/lib/markup"
 import { m } from "@/paraglide/messages.js"
 
 import { DevDataToggle } from "./DevDataToggle"
@@ -3123,10 +3124,6 @@ export function MurmurApp() {
     )
   }
 
-  // Preferences' footer: the key sits inside the sentence, wherever the
-  // language puts it.
-  const [pressBefore, pressAfter] = around(m.prefs_shortcut_hint, "key")
-
   return (
     // SidebarProvider is the app root rather than a wrapper around it: Sidebar
     // reads its context even under collapsible="none", and with the inset
@@ -4148,11 +4145,19 @@ export function MurmurApp() {
           <>
             {!coarse && (
               <span>
-                {pressBefore}
-                <b className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
-                  ,
-                </b>
-                {pressAfter}
+                {/* The key sits wherever the language puts it. */}
+                {runs(m.prefs_shortcut_hint.parts({})).map(({ text, tag }) =>
+                  tag ? (
+                    <b
+                      key={tag}
+                      className="rounded bg-muted px-1 py-0.5 font-mono text-foreground"
+                    >
+                      ,
+                    </b>
+                  ) : (
+                    text
+                  )
+                )}
               </span>
             )}
             <span className="flex-1" />

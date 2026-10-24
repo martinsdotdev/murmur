@@ -100,17 +100,3 @@ type Message = (inputs: object, options: { locale: Locale }) => string
 export function fromAnyLocale(message: Message, text: string) {
   return locales.some((locale) => message({}, { locale }) === text)
 }
-
-/** Splits a message around one placeholder, so markup can go between the two
- * halves without passing HTML through a translation. */
-export function around<K extends string>(
-  message: (inputs: Record<K, string>) => string,
-  key: K
-): [before: string, after: string] {
-  const mark = "\u0000"
-  const [before, after = ""] = message({ [key]: mark } as Record<
-    K,
-    string
-  >).split(mark)
-  return [before, after]
-}

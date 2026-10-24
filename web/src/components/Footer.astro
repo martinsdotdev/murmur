@@ -4,10 +4,10 @@ import BrandLogo from "./BrandLogo.astro"
 import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
 import { m } from "@/paraglide/messages.js"
 import { getLocale, locales } from "@/paraglide/runtime.js"
-import { around, LOCALE_NAMES, localePath } from "@/lib/i18n"
+import { LOCALE_NAMES, localePath } from "@/lib/i18n"
+import Message from "./Message.astro"
 
 const current = getLocale()
-const [assembledBefore, assembledAfter] = around(m.footer_assembled, "link")
 ---
 
 <footer class="site-footer">
@@ -63,9 +63,17 @@ const [assembledBefore, assembledAfter] = around(m.footer_assembled, "link")
             that gathered them into one set. */
         }
         <p class="attr-note">
-          {assembledBefore}<a href={blanketUrl} target="_blank" rel="noopener"
-            >Blanket</a
-          >{assembledAfter}
+          <Message
+            parts={m.footer_assembled.parts({})}
+            tags={{
+              link: {
+                as: "a",
+                href: blanketUrl,
+                target: "_blank",
+                rel: "noopener",
+              },
+            }}
+          />
         </p>
       </div>
     </div>
