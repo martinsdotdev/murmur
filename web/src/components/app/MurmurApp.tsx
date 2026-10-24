@@ -147,6 +147,7 @@ import { DevDataToggle } from "./DevDataToggle"
 import { MiddleTruncate } from "./MiddleTruncate"
 import { SoundIcon } from "./SoundIcon"
 import { useCoarsePointer } from "./use-coarse-pointer"
+import { useLevelDrag } from "./use-level-drag"
 import {
   LanguageRow,
   PrefInfo,
@@ -569,18 +570,25 @@ function MixChip({
 }
 
 /**
- * A card's level where it has no slider: on touch, where a slider in the
- * scrolling grid takes the swipe meant to scroll it and sets a volume instead.
- * Read-only; levels are set in Now playing. h-1 is the slider's own box (its
- * thumb overhangs it), so the card still measures the 83px the "Add sound"
- * tile copies.
+ * A card's level where it has no slider: on touch, where a thumb in the
+ * scrolling grid would take the swipe meant to scroll it. The card itself is
+ * the control there (see useLevelDrag), and this follows it, mirrored right to
+ * left as the slider is. h-1 is the slider's own box (its thumb overhangs it),
+ * so the card still measures the 83px the "Add sound" tile copies.
  */
-function LevelBar({ level }: { level: number }) {
+function LevelBar({
+  level,
+  live = false,
+}: {
+  level: number
+  /** Under a finger: the fill keeps up with it rather than easing after. */
+  live?: boolean
+}) {
   return (
     <div
       aria-hidden="true"
       className={cn(
-        "relative h-1 overflow-hidden rounded-full transition-colors",
+        "relative h-1 overflow-hidden rounded-full transition-colors rtl:-scale-x-100",
         level > 0 ? "bg-track" : "bg-transparent",
         // M3's stop indicator: the track alone is 1.4:1, so its end gets a
         // 3:1 dot until the fill reaches it.
@@ -593,7 +601,10 @@ function LevelBar({ level }: { level: number }) {
           animates without layout, and the clipped track keeps the fill's
           rounded end whatever the level. */}
       <div
-        className="h-full rounded-full bg-primary transition-transform duration-150 ease-out motion-reduce:transition-none"
+        className={cn(
+          "h-full rounded-full bg-primary transition-transform duration-150 ease-out motion-reduce:transition-none",
+          live && "transition-none"
+        )}
         style={{ transform: `translateX(${Math.round(level * 100) - 100}%)` }}
       />
     </div>
@@ -1335,6 +1346,9 @@ export function MurmurApp() {
     dropFrame(`vol:${id}`)
     changeVolume(id, v, { ramp: "adjust" })
   }
+
+  /** On touch, where a card has no slider, a drag across it sets the level. */
+  const levelDrag = useLevelDrag({ onDrag: dragVolume, onCommit: commitVolume })
 
   /** Ref first so the mixer can resolve a brand-new import immediately. */
   const commitCustoms = (next: CustomSound[]) => {
@@ -2908,6 +2922,8 @@ export function MurmurApp() {
     // A file the browser deleted: the tile stays, says so, and takes it back.
     const lost = missing.has(sound.id)
     const fixedLevel = deviceSetsLevel(sound.id)
+    const dragsLevel = coarse && !lost && !fixedLevel
+    const dragged = levelDrag.draggingId === sound.id
 
     // Stop pointer events from the slider bubbling into the card's toggle.
     const sliderGuard = {
@@ -2934,22 +2950,29 @@ export function MurmurApp() {
     )
 
     // Hidden at rest and revealed while the card is being worked: hovered or
-    // focused. The slider position is the level; the number is only wanted
-    // when you are setting one. The width stays reserved so nothing shifts as
-    // it appears. Touch is covered because mobile browsers apply :hover for
-    // the duration of a touch.
+    // focused, or on touch while a finger drags it. The slider position is the
+    // level; the number is only wanted when you are setting one. The width
+    // stays reserved so nothing shifts as it appears. Touch goes by the drag
+    // alone, since a tap leaves hover and focus stuck on the card it landed
+    // on; the number lingers a moment after the finger lifts, to be read.
     //
     // A group-has-[[data-dragging]] trigger was tried for the case where the
     // pointer leaves the card mid-drag. It compiles, and the element matches
     // the generated selector, but it never wins the cascade against opacity-0.
     // Not worth more than the two triggers that do work.
     //
-    // aria-hidden because the thumb's aria-valuetext already says this.
+    // aria-hidden because the thumb's aria-valuetext already says this, and
+    // on touch Now playing's does.
     const readout = (
       <span
         aria-hidden="true"
         className={cn(
-          "w-7 shrink-0 text-right font-mono text-[0.6875rem] tabular-nums opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+          "w-7 shrink-0 text-right font-mono text-[0.6875rem] tabular-nums opacity-0 transition-opacity",
+          coarse
+            ? dragged
+              ? "opacity-100"
+              : "delay-700"
+            : "group-focus-within:opacity-100 group-hover:opacity-100",
           active ? "text-brand" : "text-muted-foreground"
         )}
       >
@@ -3055,7 +3078,14 @@ export function MurmurApp() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") activate()
               }}
-              className={cn("group cursor-pointer gap-0 p-3", tileState)}
+              {...(dragsLevel && levelDrag.bind(sound.id, volume))}
+              // Across is the level, down is the grid's scroll, and a pinch
+              // still zooms.
+              className={cn(
+                "group cursor-pointer gap-0 p-3",
+                dragsLevel && "touch-pan-y touch-pinch-zoom",
+                tileState
+              )}
             />
           }
         >
@@ -3095,7 +3125,7 @@ export function MurmurApp() {
                 {m.sound_missing_badge()}
               </span>
             ) : (
-              !coarse && readout
+              !fixedLevel && readout
             )}
           </div>
           {lost ? (
@@ -3109,7 +3139,7 @@ export function MurmurApp() {
             // Full while on: it plays at whatever the phone's volume is.
             <LevelBar level={active ? 1 : 0} />
           ) : coarse ? (
-            <LevelBar level={volume} />
+            <LevelBar level={volume} live={dragged} />
           ) : (
             <div {...sliderGuard}>{slider}</div>
           )}
@@ -3167,7 +3197,7 @@ export function MurmurApp() {
           </Button>
 
           {/* On touch the name is the way into Now playing, as it is in the
-              phone bar: the grid has no sliders there to set levels with. */}
+              phone bar. */}
           {coarse ? (
             <ContextMenu onOpenChange={noteMenuOpen}>
               <ContextMenuTrigger
