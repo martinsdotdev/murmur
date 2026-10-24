@@ -603,7 +603,7 @@ function LevelBar({
           data-open={live ? "" : undefined}
           style={{ "--r": level } as React.CSSProperties}
         >
-          <span className="value-pill">
+          <span className="value-pill sheen [--sheen-color:var(--brand)]">
             <span>{Math.round(level * 100)}</span>
           </span>
         </span>
@@ -631,10 +631,14 @@ function LevelTrack({ level, live }: { level: number; live: boolean }) {
           rounded end whatever the level. */}
       <div
         className={cn(
-          "h-full rounded-full bg-primary transition-transform duration-150 ease-out motion-reduce:transition-none",
+          "h-full rounded-full bg-primary sheen bg-right bg-no-repeat transition-transform duration-150 ease-out motion-reduce:transition-none",
           live && "transition-none"
         )}
-        style={{ transform: `translateX(${Math.round(level * 100) - 100}%)` }}
+        // The sheen spans the visible part only, as it spans a slider's fill.
+        style={{
+          transform: `translateX(${Math.round(level * 100) - 100}%)`,
+          backgroundSize: `${Math.round(level * 100)}% 100%`,
+        }}
       />
     </div>
   )
@@ -3175,7 +3179,7 @@ export function MurmurApp() {
               where the labelled buttons' darker fill is for text. */}
           <Button
             size="icon-lg"
-            className="hidden size-12 rounded-full bg-primary hover:bg-primary/80 wide:inline-flex"
+            className="hidden size-12 rounded-full bg-primary sheen sheen-round hover:bg-primary/80 wide:inline-flex"
             disabled={!playing && activeIds.length === 0}
             aria-label={playing ? m.action_pause() : m.action_play()}
             onClick={togglePlay}
@@ -3716,7 +3720,7 @@ export function MurmurApp() {
           <div className="flex shrink-0 items-center gap-2.5 rounded-t-m3-xl border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] wide:hidden">
             <Button
               size="icon"
-              className="size-12 shrink-0 rounded-full bg-primary shadow-level-2 hover:bg-primary/80"
+              className="size-12 shrink-0 rounded-full bg-primary sheen shadow-level-2 sheen-round hover:bg-primary/80"
               disabled={!playing && activeIds.length === 0}
               aria-label={playing ? m.action_pause() : m.action_play()}
               onClick={togglePlay}

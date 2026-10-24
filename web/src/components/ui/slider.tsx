@@ -396,7 +396,7 @@ function Slider({
         >
           <SliderPrimitive.Indicator
             data-slot="slider-range"
-            className="bg-primary select-none data-horizontal:h-full data-vertical:w-full"
+            className="bg-primary sheen select-none data-horizontal:h-full data-vertical:w-full"
           />
         </SliderPrimitive.Track>
         {Array.from({ length: controlMounted ? thumbCount : 0 }, (_, index) => (
@@ -448,7 +448,7 @@ function Slider({
             <span
               aria-hidden="true"
               className={cn(
-                "absolute inset-0.5 rounded-full bg-brand transition-transform pointer-coarse:inset-1",
+                "absolute inset-0.5 rounded-full bg-brand sheen transition-transform [--sheen-color:var(--brand)] sheen-round pointer-coarse:inset-1",
                 !showValue &&
                   "group-data-dragging/thumb:ring-4 group-data-dragging/thumb:ring-ring/25 motion-safe:group-hover/thumb:scale-[1.33] motion-safe:group-data-dragging/thumb:scale-[1.33]"
               )}
@@ -464,7 +464,7 @@ function Slider({
                 <span
                   ref={pillRef}
                   aria-hidden="true"
-                  className="value-pill"
+                  className="value-pill sheen [--sheen-color:var(--brand)]"
                   style={{ "--r": ratio } as React.CSSProperties}
                 >
                   <span>{Math.round(value)}</span>

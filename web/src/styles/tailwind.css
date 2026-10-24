@@ -293,6 +293,9 @@
   /* Dark text on the amber is already 6.6:1, so labelled fills stay amber. */
   --filled: var(--primary);
   --filled-hover: color-mix(in srgb, var(--primary) 80%, transparent);
+  /* The sheen's end lightens only here, where fills carry dark text and
+     lighter is more contrast; in light themes it would take it away. */
+  --sheen-lift: 0.05;
   --track: rgba(250, 246, 238, 0.14);
   --elevated: #3a3527; /* neutral-background-4 */
   --dialog: #2c281e; /* neutral-background-3 */
@@ -513,6 +516,30 @@
   }
 }
 
+/*
+ * A subtle sheen on every accent-filled control, after YouTube's played bar
+ * warming toward its end: a translucent layer over the solid fill, clear at
+ * the start and a little warmer by the end. Over the fill rather
+ * than replacing it, so a hover that changes the fill still shows, and where
+ * relative colour isn't supported it drops out and leaves the fill as it was.
+ * --sheen-color names the fill it warms (primary unless set); sheen-round
+ * runs it corner to corner, for buttons and dots.
+ */
+@utility sheen {
+  background-image: linear-gradient(
+    var(--sheen-angle, to right),
+    oklch(from var(--sheen-color, var(--primary)) l c h / 0) 20%,
+    oklch(
+      from var(--sheen-color, var(--primary)) calc(l + var(--sheen-lift, 0))
+        calc(c + 0.03) calc(h - 25) / 0.9
+    )
+  );
+}
+
+@utility sheen-round {
+  --sheen-angle: 135deg;
+}
+
 /* Windows contrast themes repaint fills as Canvas, which would erase the
    selected states and the slider's level. Selection takes a Highlight
    outline, and the slider keeps its own Highlight fill. */
@@ -687,7 +714,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--brand);
+  /* Colour only: its sheen is the element's sheen utility. */
+  background-color: var(--brand);
   color: var(--background);
   font-size: 0.75rem;
   font-weight: 600;

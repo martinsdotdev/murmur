@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-filled text-primary-foreground hover:bg-filled-hover disabled:bg-foreground/12 disabled:text-foreground/38 disabled:opacity-100",
+          "bg-filled sheen text-primary-foreground [--sheen-color:var(--filled)] sheen-round hover:bg-filled-hover disabled:bg-foreground/12 disabled:bg-none disabled:text-foreground/38 disabled:opacity-100",
         outline:
           "border-border bg-background state-layer hover:text-foreground aria-expanded:text-foreground dark:bg-transparent",
         secondary: "bg-secondary state-layer text-secondary-foreground",
