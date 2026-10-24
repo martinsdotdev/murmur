@@ -28,7 +28,11 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
 const locale = getLocale()
 // Every language's copy of this page, for search engines to offer the right
 // one. x-default is where someone whose language isn't here should land.
-const alternate = (l: Locale) => new URL(localePath(l), Astro.site).href
+// Pages serves /pt-br from a directory and 301s the bare path to /pt-br/, so
+// search engines get the address that answers. Links in the page keep the
+// bare path, which the dev server and preview serve.
+const alternate = (l: Locale) =>
+  new URL(l === baseLocale ? "/" : `${localePath(l)}/`, Astro.site).href
 ---
 
 <!doctype html>
@@ -46,7 +50,7 @@ const alternate = (l: Locale) => new URL(localePath(l), Astro.site).href
     <meta name="twitter:card" content="summary" />
 
     <link rel="icon" type="image/x-icon" href={`${baseUrl}/favicon.ico`} />
-    <link rel="canonical" href={Astro.url.href} />
+    <link rel="canonical" href={alternate(locale)} />
     {
       locales.map((l) => (
         <link rel="alternate" hreflang={l} href={alternate(l)} />

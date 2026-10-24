@@ -42,6 +42,20 @@ export default defineConfig({
         defaultLocale: "en",
         locales: { en: "en", "pt-br": "pt-BR", es: "es", ja: "ja" },
       },
+      // trailingSlash: "never" writes /app and /pt-br, which Pages 301s to
+      // their directories. A sitemap should list the addresses that answer.
+      serialize(item) {
+        const slashed = (url) =>
+          url.replace(/^(https:\/\/[^/]+\/[^?#]+?)\/?$/, "$1/")
+        return {
+          ...item,
+          url: slashed(item.url),
+          links: item.links?.map((link) => ({
+            ...link,
+            url: slashed(link.url),
+          })),
+        }
+      },
     }),
     react(),
     // Last, so its astro:build:done runs after every other integration has
