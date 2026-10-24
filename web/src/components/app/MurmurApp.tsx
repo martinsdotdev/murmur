@@ -3244,7 +3244,7 @@ export function MurmurApp() {
                       <span className="shrink-0 whitespace-pre"> *</span>
                     )}
                   </span>
-                  <span className="block truncate text-xs text-muted-foreground">
+                  <span className="block truncate text-xs text-muted-foreground tabular-nums">
                     {status}
                   </span>
                 </span>
@@ -3265,7 +3265,7 @@ export function MurmurApp() {
                   <MiddleTruncate text={mixTitle} />
                   {dirty && <span className="shrink-0 whitespace-pre"> *</span>}
                 </p>
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="truncate text-xs text-muted-foreground tabular-nums">
                   {status}
                 </p>
               </ContextMenuTrigger>
@@ -3317,80 +3317,95 @@ export function MurmurApp() {
             className="mx-1 hidden data-vertical:h-5 data-vertical:self-center wide:block"
           />
 
-          <ToggleGroup
-            value={[view]}
-            onValueChange={(value) => {
-              const next = (value as string[])[0]
-              if (next === "grid" || next === "list") setView(next)
-            }}
-            spacing={0}
-            variant="outline"
-            size="sm"
-            className={coarse ? "hidden" : "hidden sm:flex"}
-          >
-            <ToggleGroupItem value="grid" aria-label={m.view_grid()}>
+          {/* This view: tight together, as is this mix's pair after it. */}
+          <div className="flex items-center gap-1">
+            {/* A segmented row, as the sleep timer's lengths and the theme
+                swatches are: each tile its own shape, so each takes its own
+                focus ring. Cut from the panel's surface rather than the
+                grouped one, which in dark would sit above the chosen tile. */}
+            <ToggleGroup
+              value={[view]}
+              onValueChange={(value) => {
+                const next = (value as string[])[0]
+                if (next === "grid" || next === "list") setView(next)
+              }}
+              spacing={0.5}
+              size="sm"
+              className={cn(
+                "[--segment-radius:var(--radius-lg)]",
+                coarse ? "hidden" : "hidden sm:flex"
+              )}
+            >
+              {(
+                [
+                  ["grid", GridViewIcon, m.view_grid()],
+                  ["list", LeftToRightListBulletIcon, m.view_list()],
+                ] as const
+              ).map(([value, icon, label]) => (
+                <ToggleGroupItem
+                  key={value}
+                  value={value}
+                  aria-label={label}
+                  className="rounded-m3-xs bg-background text-muted-foreground first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius)"
+                >
+                  <HugeiconsIcon
+                    icon={icon}
+                    strokeWidth={2}
+                    className="size-4"
+                  />
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+
+            {/* Shows or hides the Now playing pane; only where it fits. */}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="hidden text-muted-foreground wide:expanded:inline-flex"
+              ref={paneToggle}
+              aria-label={m.now_playing()}
+              aria-pressed={pane}
+              title={pane ? m.now_playing_hide() : m.now_playing_show()}
+              onClick={() => showPane(!pane)}
+            >
+              <HugeiconsIcon icon={PanelRightIcon} strokeWidth={2} />
+            </Button>
+          </div>
+
+          <div className="hidden items-center gap-1 wide:flex">
+            {/* The same action as Now playing's "Turn all off" on a phone, and
+                the same Undo instead of a confirmation. */}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-muted-foreground"
+              aria-label={m.action_turn_all_off()}
+              title={m.turn_all_off_shortcut()}
+              disabled={activeIds.length === 0}
+              onClick={turnAllOff}
+            >
               <HugeiconsIcon
-                icon={GridViewIcon}
+                icon={RefreshIcon}
                 strokeWidth={2}
                 className="size-4"
               />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label={m.view_list()}>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              // The label goes below lg, so it needs a name of its own there.
+              aria-label={m.action_share()}
+              onClick={share}
+            >
               <HugeiconsIcon
-                icon={LeftToRightListBulletIcon}
+                icon={Share01Icon}
                 strokeWidth={2}
-                className="size-4"
+                className="size-3.5"
               />
-            </ToggleGroupItem>
-          </ToggleGroup>
-
-          {/* Shows or hides the Now playing pane; only where it fits. */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="hidden wide:expanded:inline-flex"
-            ref={paneToggle}
-            aria-label={m.now_playing()}
-            aria-pressed={pane}
-            title={pane ? m.now_playing_hide() : m.now_playing_show()}
-            onClick={() => showPane(!pane)}
-          >
-            <HugeiconsIcon icon={PanelRightIcon} strokeWidth={2} />
-          </Button>
-
-          {/* The same action as Now playing's "Turn all off" on a phone, and
-              the same Undo instead of a confirmation. */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="hidden wide:inline-flex"
-            aria-label={m.action_turn_all_off()}
-            title={m.turn_all_off_shortcut()}
-            disabled={activeIds.length === 0}
-            onClick={turnAllOff}
-          >
-            <HugeiconsIcon
-              icon={RefreshIcon}
-              strokeWidth={2}
-              className="size-4"
-            />
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden wide:inline-flex"
-            // The label goes below lg, so it needs a name of its own there.
-            aria-label={m.action_share()}
-            onClick={share}
-          >
-            <HugeiconsIcon
-              icon={Share01Icon}
-              strokeWidth={2}
-              className="size-3.5"
-            />
-            <span className="hidden @5xl:inline">{m.action_share()}</span>
-          </Button>
+              <span className="hidden @5xl:inline">{m.action_share()}</span>
+            </Button>
+          </div>
 
           {/* The phone header keeps two actions, at a finger's 44px. Preferences
               lives in the sidebar footer, which wide:hidden takes away; the sleep
@@ -4306,12 +4321,10 @@ export function MurmurApp() {
               </div>
             </PrefSection>
 
-            {
-              /* No persistent chrome anywhere for this. A standing "offline"
+            {/* No persistent chrome anywhere for this. A standing "offline"
                 badge is redundant with the OS and the browser, and the two
                 honest messages (a sound that isn't saved yet, a YouTube sound
-                that needs a connection) already appear where they matter. */
-            }
+                that needs a connection) already appear where they matter. */}
             {(pwa.audio || installRow) && (
               <PrefSection title={m.section_offline()}>
                 <div className={prefGroup}>
