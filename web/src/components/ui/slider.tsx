@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slider as SliderPrimitive } from "@base-ui/react/slider"
 
+import { followTouch } from "@/lib/touch-drag"
 import { cn } from "@/lib/utils"
 
 /**
@@ -76,9 +77,6 @@ function watchPageWheel() {
     { passive: true }
   )
 }
-
-/** How far a finger on the track moves before it counts as a drag or a scroll. */
-const TOUCH_SLOP = 8
 
 const THUMB = '[data-slot="slider-thumb"]'
 
@@ -241,15 +239,14 @@ function Slider({
   }, [emit])
 
   /**
-   * A finger on the track: once it has moved TOUCH_SLOP across, it drags the
-   * value from where it is; moved down first, it is a scroll, which pan-y has
-   * already handed to the browser, and it lets go.
+   * A finger on the track: moved across, it drags the value from where it is;
+   * moved down first, it is a scroll and lets go (see followTouch). A drag the
+   * browser takes over commits where it got to, so a change is always followed
+   * by a commit.
    */
   const trackTouch = (event: React.PointerEvent) => {
     const control = controlRef.current
     if (!control) return
-    const { pointerId, clientX: x0, clientY: y0 } = event
-    let dragging = false
     let last: number | null = null
 
     const valueAt = (x: number) => {
@@ -264,35 +261,18 @@ function Slider({
       return snap(s.min + ratio * (s.max - s.min), s)
     }
 
-    const doc = control.ownerDocument
-    const stop = () => {
-      doc.removeEventListener("pointermove", onMove)
-      doc.removeEventListener("pointerup", onUp)
-      doc.removeEventListener("pointercancel", stop)
-    }
-    const onMove = (e: PointerEvent) => {
-      if (e.pointerId !== pointerId) return
-      if (!dragging) {
-        const dx = Math.abs(e.clientX - x0)
-        const dy = Math.abs(e.clientY - y0)
-        if (dy > TOUCH_SLOP && dy >= dx) return stop()
-        if (dx <= TOUCH_SLOP) return
-        dragging = true
-      }
-      const next = valueAt(e.clientX)
-      if (next !== (last ?? live.current.value)) {
-        last = next
-        live.current.onValueChange?.(next)
-      }
-    }
-    const onUp = (e: PointerEvent) => {
-      if (e.pointerId !== pointerId) return
-      stop()
-      if (dragging && last !== null) live.current.onValueCommitted?.(last)
-    }
-    doc.addEventListener("pointermove", onMove)
-    doc.addEventListener("pointerup", onUp)
-    doc.addEventListener("pointercancel", stop)
+    followTouch(event.nativeEvent, {
+      onMove: (e) => {
+        const next = valueAt(e.clientX)
+        if (next !== (last ?? live.current.value)) {
+          last = next
+          live.current.onValueChange?.(next)
+        }
+      },
+      onEnd: () => {
+        if (last !== null) live.current.onValueCommitted?.(last)
+      },
+    })
   }
 
   return (
