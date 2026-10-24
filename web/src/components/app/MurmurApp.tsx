@@ -104,6 +104,7 @@ import {
 } from "@/lib/app-state"
 import { BackupError, buildBackup, readBackup } from "@/lib/backup"
 import { deleteBlob, getAllBlobs, putBlob } from "@/lib/blob-store"
+import { levelsFromGains } from "@/lib/levels"
 import {
   Mixer,
   canPlayOgg,
@@ -175,7 +176,9 @@ const CATEGORIES: SoundCategory[] = ["nature", "urban", "generated"]
 const CATALOG_ORDER = CATEGORIES.flatMap((category) =>
   sounds.filter((s) => s.category === category).map((s) => s.id)
 )
-const DEFAULT_TOGGLE_VOLUME = 0.7
+/** A level, about 6 dB under full: room above it, and close to as loud as
+ *  the 0.7 gain it replaced. */
+const DEFAULT_TOGGLE_VOLUME = 0.8
 const CATALOG_IDS = new Set(sounds.map((s) => s.id))
 
 /** YouTube's player ignores setVolume on iPhone; iPadOS lets it through. */
@@ -771,8 +774,12 @@ function readInitialState(): {
   // Catalog sounds travel, and so do YouTube ones since the id is the whole
   // reference. A file import is a blob in the sender's browser and a link
   // import may not be public, so neither resolves to anything here.
+  // A link with no v= is from before levels and carries gains, which play
+  // as they did once converted.
+  const decoded = decodeMix(shared)
+  const levels = params.has("v") ? decoded : levelsFromGains(decoded)
   const mix = Object.fromEntries(
-    Object.entries(decodeMix(shared)).filter(
+    Object.entries(levels).filter(
       ([id]) => CATALOG_IDS.has(id) || ytVideoId(id)
     )
   )
@@ -1809,7 +1816,7 @@ export function MurmurApp() {
       )
       return
     }
-    const incoming = parseBackupData(read.contents)
+    const incoming = parseBackupData(read.contents, read.version)
 
     const current = customsRef.current
     const seen = new Set(current.map((c) => c.id))
@@ -2051,7 +2058,8 @@ export function MurmurApp() {
       )
       return
     }
-    const url = `${window.location.origin}${window.location.pathname}#mix=${fragment}${name ? `&n=${encodeURIComponent(name)}` : ""}`
+    // v=2: the numbers are levels. An older link has none and carries gains.
+    const url = `${window.location.origin}${window.location.pathname}#mix=${fragment}&v=2${name ? `&n=${encodeURIComponent(name)}` : ""}`
     const done = () =>
       droppedCustoms
         ? toast.success(m.toast_link_copied_partial())

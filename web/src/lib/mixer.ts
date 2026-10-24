@@ -17,6 +17,10 @@
  * rather than throwing. Callers that care must probe getVolume afterwards;
  * MurmurApp's applyVolume is the only one, and the reason getVolume exists.
  *
+ * Every volume here is a level, a slider's position (see lib/levels.ts). It
+ * becomes gain only where it reaches a GainNode or a player, so a level of 0
+ * stays exactly "off".
+ *
  * Two kinds of sound live here, mirroring the desktop's SoundKind: buffers,
  * which are decoded OGGs on the audio graph, and streams, which are hidden
  * YouTube players (see lib/youtube.ts). Streams are in the mixer rather than
@@ -26,6 +30,7 @@
 
 import { m } from "@/paraglide/messages.js"
 
+import { levelGain, soundGain } from "./levels"
 import { createYouTubeSound, type YouTubeSound } from "./youtube"
 
 const DEFAULT_FADE_IN_MS = 200
@@ -135,7 +140,7 @@ export class Mixer {
     if (!Ctor) throw new Error("Web Audio API not available")
     this.ctx = new Ctor()
     this.master = this.ctx.createGain()
-    this.master.gain.value = this.playing ? this.masterVolume : 0
+    this.master.gain.value = this.playing ? levelGain(this.masterVolume) : 0
     this.master.connect(this.ctx.destination)
     return this.ctx
   }
@@ -247,10 +252,11 @@ export class Mixer {
    * What a stream should actually be playing at. The master gain node does
    * this arithmetic for buffer sounds; a YouTube player has only one volume,
    * so the same three factors have to be multiplied by hand. The sleep timer
-   * rides along for free, since it drives masterVolume.
+   * rides along for free, since it drives masterVolume. Your own sounds carry
+   * no trim, so a stream's gain is the two levels' alone.
    */
   private streamTarget(n: StreamNode): number {
-    return this.playing ? n.volume * this.masterVolume : 0
+    return this.playing ? levelGain(n.volume) * levelGain(this.masterVolume) : 0
   }
 
   private rampStream(n: StreamNode, to: number, ms: number) {
@@ -381,7 +387,7 @@ export class Mixer {
   }
 
   /**
-   * Set per-sound volume in [0, 1]. Loads the buffer lazily on first non-zero
+   * Set a sound's level in [0, 1]. Loads the buffer lazily on first non-zero
    * value; stops the source when set back to zero.
    */
   async setVolume(
@@ -439,7 +445,7 @@ export class Mixer {
     n.gain.gain.cancelScheduledValues(nowAfter)
     n.gain.gain.setValueAtTime(n.gain.gain.value, nowAfter)
     n.gain.gain.linearRampToValueAtTime(
-      n.volume,
+      soundGain(n.id, n.volume),
       nowAfter + this.gainRampMs(ramp) / 1000
     )
   }
@@ -458,7 +464,7 @@ export class Mixer {
     this.master.gain.cancelScheduledValues(now)
     this.master.gain.setValueAtTime(this.master.gain.value, now)
     this.master.gain.linearRampToValueAtTime(
-      this.masterVolume,
+      levelGain(this.masterVolume),
       now + this.gainRampMs(ramp) / 1000
     )
   }
@@ -477,7 +483,7 @@ export class Mixer {
     // the context, so it has to be able to wake it, not only a volume change.
     if (playing) this.ensureContext()
     const now = this.ctx.currentTime
-    const target = playing ? this.masterVolume : 0
+    const target = playing ? levelGain(this.masterVolume) : 0
     this.master.gain.cancelScheduledValues(now)
     this.master.gain.setValueAtTime(this.master.gain.value, now)
     this.master.gain.linearRampToValueAtTime(target, now + FADE_OUT_MS / 1000)

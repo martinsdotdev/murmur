@@ -11,7 +11,8 @@
 import { m } from "@/paraglide/messages.js"
 
 const MAGIC = "MURMURBK"
-const VERSION = 1
+/** 2: mixes hold levels, not gains (see lib/levels.ts). A 1 still reads. */
+const VERSION = 2
 const PREFIX = MAGIC.length + 1 + 4
 
 export interface BackupContents {
@@ -57,16 +58,20 @@ export function buildBackup(
   })
 }
 
-export async function readBackup(
-  file: Blob
-): Promise<{ contents: BackupContents; blobs: Map<string, Blob> }> {
+export async function readBackup(file: Blob): Promise<{
+  contents: BackupContents
+  blobs: Map<string, Blob>
+  /** What the levels in it mean: parseBackupData converts an older one. */
+  version: number
+}> {
   const damaged = new BackupError(m.backup_damaged())
   const prefix = new Uint8Array(await file.slice(0, PREFIX).arrayBuffer())
   const magic = new TextDecoder().decode(prefix.subarray(0, MAGIC.length))
   if (prefix.length < PREFIX || magic !== MAGIC) {
     throw new BackupError(m.backup_not_murmur())
   }
-  if (prefix[MAGIC.length] > VERSION) {
+  const version = prefix[MAGIC.length]
+  if (version > VERSION) {
     throw new BackupError(m.backup_too_new())
   }
   const headerLength = new DataView(prefix.buffer).getUint32(
@@ -110,5 +115,6 @@ export async function readBackup(
       prefs: header.prefs,
     },
     blobs,
+    version,
   }
 }

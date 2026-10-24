@@ -233,7 +233,11 @@ export async function createYouTubeSound(
 
   const applyVolume = () => {
     if (!player || destroyed) return
-    const pct = Math.round(Math.max(0, Math.min(1, desired)) * 100)
+    // YouTube takes whole percents. Rounded down to 0, a quiet sound under a
+    // low master would mute while its level said it was on, so anything above
+    // silence plays at 1 at least.
+    const pct =
+      desired > 0 ? Math.max(1, Math.round(Math.min(1, desired) * 100)) : 0
     if (pct === 0 || !started) {
       player.mute()
       return

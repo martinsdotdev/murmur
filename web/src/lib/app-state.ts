@@ -1,8 +1,9 @@
 /**
  * The /app mixer's persisted state: shape, defaults, validation, migration.
  *
- * v1 (the vanilla app) spread this across three localStorage keys. v2 is a
- * single blob, and loadPersisted() folds v1 into it on first read.
+ * v1 (the vanilla app) spread this across three localStorage keys. v2 made it
+ * a single blob. v3 stores levels, slider positions, where v2 and v1 stored
+ * gains (see lib/levels.ts). loadPersisted() converts either on first read.
  *
  * The ordering here is a safety property, not a preference. MurmurApp's mount
  * effect deletes every IndexedDB blob whose id is absent from `customs`, so a
@@ -16,10 +17,11 @@ import { devFixtures } from "@/data/dev-fixtures"
 import { presets } from "@/data/presets"
 import { m } from "@/paraglide/messages.js"
 
+import { levelFromGain, levelsFromGains } from "./levels"
 import type { MixerState } from "./mixer"
 import { isVideoId } from "./youtube"
 
-export const STORAGE_KEY = "murmur-app-v2"
+export const STORAGE_KEY = "murmur-app-v3"
 
 /**
  * Dev only: `?data=worst|empty|one|huge` boots from a fixture in
@@ -31,6 +33,7 @@ export const DEV_FIXTURE: string | null =
     ? new URLSearchParams(location.search).get("data")
     : null
 
+const V2_KEY = "murmur-app-v2"
 const V1_STATE = "murmur-app-state"
 const V1_SAVED = "murmur-app-saved"
 const V1_CUSTOM = "murmur-app-custom"
@@ -45,10 +48,16 @@ const V1_CUSTOM = "murmur-app-custom"
 export const MIX_NAME_MAX = 60
 export const SOUND_NAME_MAX = 80
 
-/** Exported so the master slider's double-click reset cannot drift from it. */
-export const DEFAULT_MASTER = 0.7
+/**
+ * A level. Exported so the master slider's double-click reset cannot drift
+ * from it. About as loud as the 0.7 gain it replaced, which a level of 0.89
+ * would match exactly; 0.9 sits on the slider's grid.
+ */
+export const DEFAULT_MASTER = 0.9
 
-/** What a v1 user has actually been hearing, so migration must not "correct" it. */
+/** What a v2 or v1 user has actually been hearing, so migration must not
+ *  "correct" it. Gains, as those versions stored. */
+const V2_DEFAULT_MASTER = 0.7
 const V1_DEFAULT_MASTER = 0.75
 
 export type View = "grid" | "list"
@@ -311,19 +320,13 @@ function coerce(raw: unknown, defaultMaster: number): PersistedState {
   }
 }
 
-/**
- * Writes v2, reads it back to confirm it is durable, and only then drops v1.
- * A quota failure or a private-mode throw therefore leaves v1 intact and the
- * migration simply retries on the next load. Never delete the source before
- * the destination is proven.
- */
-function migrateV1(): PersistedState | null {
+/** v1's three keys as one state, still in gains, or null if there are none. */
+function readV1(): PersistedState | null {
   const rawState = readJson(V1_STATE)
   const rawSaved = readJson(V1_SAVED)
   const rawCustom = readJson(V1_CUSTOM)
   if (rawState === null && rawSaved === null && rawCustom === null) return null
-
-  const state = coerce(
+  return coerce(
     {
       ...(isRecord(rawState) ? rawState : {}),
       saved: rawSaved,
@@ -331,26 +334,55 @@ function migrateV1(): PersistedState | null {
     },
     V1_DEFAULT_MASTER
   )
+}
+
+/**
+ * A state from before levels, in levels, sounding as it did: each sound by its
+ * own trim, the master by none. A muted master stays muted.
+ */
+function toLevels(state: PersistedState): PersistedState {
+  return {
+    ...state,
+    vols: levelsFromGains(state.vols),
+    master: state.master > 0 ? levelFromGain(state.master) : 0,
+    saved: state.saved.map((s) => ({ ...s, mix: levelsFromGains(s.mix) })),
+  }
+}
+
+/**
+ * Converts v2, or v1 before it, writes v3, reads it back to confirm it is
+ * durable, and only then drops the old keys. A quota failure or a private-mode
+ * throw therefore leaves the old keys intact and the migration simply retries
+ * on the next load. Never delete the source before the destination is proven.
+ */
+function migrate(): PersistedState | null {
+  const v2 = readJson(V2_KEY)
+  const gains = isRecord(v2) ? coerce(v2, V2_DEFAULT_MASTER) : readV1()
+  if (!gains) return null
+  const state = toLevels(gains)
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...state, prefsRev: PREFS_REV })
+    )
     if (localStorage.getItem(STORAGE_KEY)) {
-      localStorage.removeItem(V1_STATE)
-      localStorage.removeItem(V1_SAVED)
-      localStorage.removeItem(V1_CUSTOM)
+      for (const key of [V2_KEY, V1_STATE, V1_SAVED, V1_CUSTOM]) {
+        localStorage.removeItem(key)
+      }
     }
   } catch {
-    /* Session still works; v1 is untouched and the migration retries. */
+    /* Session still works; the old keys are untouched and this retries. */
   }
 
   return state
 }
 
 /**
- * Presence of the v2 key short-circuits the migration on every later load.
+ * Presence of the v3 key short-circuits the migration on every later load.
  *
- * The last branch is the only genuine first run: no v2 key, and no v1 keys for
- * migrateV1() to have found. Seeding the built-in mixes there rather than behind
+ * The last branch is the only genuine first run: no v3 key, and no v2 or v1
+ * keys for migrate() to have found. Seeding the built-in mixes there rather than behind
  * `saved.length === 0` is what makes them the user's own. The persist effect
  * writes the key 250ms after mount, so emptying the list never brings them back.
  * A migrating user is deliberately not seeded; they are not new, and three mixes
@@ -358,14 +390,25 @@ function migrateV1(): PersistedState | null {
  */
 /**
  * A backup file's contents, validated exactly as storage is, so nothing a file
- * says reaches state unchecked.
+ * says reaches state unchecked. A version 1 file's mixes are gains, converted
+ * as storage's are.
  */
-export function parseBackupData(raw: unknown): {
+export function parseBackupData(
+  raw: unknown,
+  version: number
+): {
   saved: SavedMix[]
   customs: CustomSound[]
 } {
   const r = isRecord(raw) ? raw : {}
-  return { saved: cleanSaved(r.saved), customs: cleanCustoms(r.customs) }
+  const saved = cleanSaved(r.saved)
+  return {
+    saved:
+      version < 2
+        ? saved.map((s) => ({ ...s, mix: levelsFromGains(s.mix) }))
+        : saved,
+    customs: cleanCustoms(r.customs),
+  }
 }
 
 export function loadPersisted(): PersistedState {
@@ -376,7 +419,7 @@ export function loadPersisted(): PersistedState {
   }
   const current = readJson(STORAGE_KEY)
   if (isRecord(current)) return coerce(current, DEFAULT_MASTER)
-  return migrateV1() ?? coerce({ saved: presets }, DEFAULT_MASTER)
+  return migrate() ?? coerce({ saved: presets }, DEFAULT_MASTER)
 }
 
 export function savePersisted(state: PersistedState): void {
