@@ -274,6 +274,13 @@ function BrandMark({ size = 18 }: { size?: number }) {
 const shelfCell =
   "flex min-h-16 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-m3-xs bg-grouped px-0.5 py-1 text-center text-label-small hyphens-auto wrap-anywhere state-layer transition-[background-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px"
 
+/**
+ * List view's category: one list, ruled between its rows, with the edge and
+ * shadow a card has, in place of a card for every row.
+ */
+const soundList =
+  "flex flex-col divide-y rounded-lg bg-card shadow-level-1 ring-1 ring-foreground/5 dark:ring-foreground/10"
+
 /** A mix's loudest sound stands in for it, so "Rainy café" reads as a café. */
 function mixIconPath(mix: MixerState) {
   let top = ""
@@ -3030,11 +3037,16 @@ export function MurmurApp() {
     const toggle = guardAfterMenu(activate)
 
     if (shownView === "list") {
+      // A row of its category's list, which draws the edge: the row has only
+      // its fill, on as a card is, and the state layer for hover, press and
+      // an open menu. No press scale, which would pull one row out of the
+      // list. Rounded where it meets the list's corners, so neither its fill
+      // nor its focus ring squares them off.
       return (
         <ContextMenu key={sound.id} onOpenChange={noteMenuOpen}>
           <ContextMenuTrigger
             render={
-              <Card
+              <div
                 role="button"
                 tabIndex={0}
                 aria-pressed={active}
@@ -3043,33 +3055,40 @@ export function MurmurApp() {
                   if (e.key === "Enter") activate()
                 }}
                 className={cn(
-                  "group flex cursor-pointer flex-row items-center gap-3 px-4 py-3",
-                  tileState
+                  "group relative flex cursor-pointer items-center gap-3 state-layer px-4 py-3 [transition:background-color_150ms_ease] first:rounded-t-lg last:rounded-b-lg focus-visible:z-10",
+                  active && "bg-secondary"
                 )}
               />
             }
           >
             <SoundIcon path={sound.iconPath} size={17} className={iconState} />
-            <span
-              className={cn(
-                "w-28 shrink-0 truncate text-xs sm:w-40 lg:w-56",
-                active ? "font-semibold" : "font-medium"
+            {/* One width for every row, so the faders line up down the page
+                as on a desk, with the meter at the end of the name's room. */}
+            <span className="flex w-32 shrink-0 items-center gap-2 sm:w-44">
+              <span
+                className={cn(
+                  "min-w-0 truncate text-sm",
+                  active ? "font-semibold" : "font-medium"
+                )}
+                dir="auto"
+                title={sound.name}
+              >
+                {sound.name}
+              </span>
+              {active && audible && prefs.eq && (
+                <span className="ml-auto shrink-0 pr-1">
+                  <EqBars phase={meterPhase(sound.id)} paused={metersPaused} />
+                </span>
               )}
-              dir="auto"
-              title={sound.name}
-            >
-              {sound.name}
             </span>
             {lost ? (
               <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                 {m.sound_missing_note()}
               </span>
             ) : (
-              <>
-                <div className="min-w-0 flex-1" {...sliderGuard}>
-                  {slider}
-                </div>
-              </>
+              <div className="min-w-0 flex-1" {...sliderGuard}>
+                {slider}
+              </div>
             )}
             {removable && (
               <RemoveSoundButton name={sound.name} onRemove={askRemove} />
@@ -3162,6 +3181,17 @@ export function MurmurApp() {
       </ContextMenu>
     )
   }
+
+  const customTiles = customs.map((c) =>
+    renderSound(
+      {
+        id: c.id,
+        name: customName(c),
+        iconPath: c.videoId ? VIDEO_ICON : MUSIC_ICON,
+      },
+      true
+    )
+  )
 
   return (
     // SidebarProvider is the app root rather than a wrapper around it: Sidebar
@@ -3608,11 +3638,39 @@ export function MurmurApp() {
               className="min-h-0 min-w-0 flex-1"
               viewportClassName="scroll-fade scroll-fade-6"
             >
-              <div className="space-y-6 p-4 medium:p-6">
-                {CATEGORIES.map((category) => (
-                  <section key={category}>
+              {/* In the list, the categories flow into two columns once there
+                  is room for both, each kept whole, so a fader isn't the
+                  panel's full width to drag across. */}
+              <div className="@container p-4 medium:p-6">
+                <div
+                  className={
+                    shownView === "grid"
+                      ? "space-y-6"
+                      : "gap-x-6 @4xl:columns-2 [&>section]:mb-6 [&>section]:break-inside-avoid [&>section:last-child]:mb-0"
+                  }
+                >
+                  {CATEGORIES.map((category) => (
+                    <section key={category}>
+                      <h2 className="mb-3 text-label-small text-muted-foreground">
+                        {categoryLabel[category]}
+                      </h2>
+                      <div
+                        className={cn(
+                          shownView === "grid"
+                            ? "grid grid-cols-[repeat(auto-fill,minmax(9.375rem,1fr))] gap-2.5"
+                            : soundList
+                        )}
+                      >
+                        {sounds
+                          .filter((s) => s.category === category)
+                          .map((s) => renderSound(s))}
+                      </div>
+                    </section>
+                  ))}
+
+                  <section>
                     <h2 className="mb-3 text-label-small text-muted-foreground">
-                      {categoryLabel[category]}
+                      {m.yours()}
                     </h2>
                     <div
                       className={cn(
@@ -3621,62 +3679,42 @@ export function MurmurApp() {
                           : "flex flex-col gap-1.5"
                       )}
                     >
-                      {sounds
-                        .filter((s) => s.category === category)
-                        .map((s) => renderSound(s))}
+                      {shownView === "grid"
+                        ? customTiles
+                        : customs.length > 0 && (
+                            <div className={soundList}>{customTiles}</div>
+                          )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddName("")
+                          setAddUrl("")
+                          setAddOpen(true)
+                        }}
+                        className={cn(
+                          "flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground",
+                          // 83px is what a sound card measures. It only matters when
+                          // this tile is alone, since the grid stretches it to the
+                          // cards beside it otherwise, but it has to be the card's
+                          // height, not a round number: the 92px that was here made
+                          // the whole Yours row 9px taller than every other section.
+                          shownView === "grid"
+                            ? "min-h-[5.1875rem] flex-col p-3"
+                            : "px-4 py-3"
+                        )}
+                      >
+                        <HugeiconsIcon
+                          icon={PlusSignIcon}
+                          strokeWidth={2}
+                          className="size-4"
+                        />
+                        {shownView === "grid"
+                          ? m.add_sound()
+                          : m.add_own_sound()}
+                      </button>
                     </div>
                   </section>
-                ))}
-
-                <section>
-                  <h2 className="mb-3 text-label-small text-muted-foreground">
-                    {m.yours()}
-                  </h2>
-                  <div
-                    className={cn(
-                      shownView === "grid"
-                        ? "grid grid-cols-[repeat(auto-fill,minmax(9.375rem,1fr))] gap-2.5"
-                        : "flex flex-col gap-1.5"
-                    )}
-                  >
-                    {customs.map((c) =>
-                      renderSound(
-                        {
-                          id: c.id,
-                          name: customName(c),
-                          iconPath: c.videoId ? VIDEO_ICON : MUSIC_ICON,
-                        },
-                        true
-                      )
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddName("")
-                        setAddUrl("")
-                        setAddOpen(true)
-                      }}
-                      className={cn(
-                        "flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground",
-                        // 83px is what a sound card measures. It only matters when
-                        // this tile is alone, since the grid stretches it to the
-                        // cards beside it otherwise, but it has to be the card's
-                        // height, not a round number: the 92px that was here made
-                        // the whole Yours row 9px taller than every other section.
-                        shownView === "grid"
-                          ? "min-h-[5.1875rem] flex-col p-3"
-                          : "px-4 py-3"
-                      )}
-                    >
-                      <HugeiconsIcon
-                        icon={PlusSignIcon}
-                        strokeWidth={2}
-                        className="size-4"
-                      />
-                      {shownView === "grid" ? m.add_sound() : m.add_own_sound()}
-                    </button>
-                  </div>
-                </section>
+                </div>
               </div>
             </ScrollArea>
             {(pane || paneMotion === "leaving") && (
