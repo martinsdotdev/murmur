@@ -116,7 +116,7 @@ function loadIframeApi(): Promise<void> {
     }
 
     const timer = window.setTimeout(
-      () => reject(new Error("YouTube took too long to answer")),
+      () => reject(new Error(m.yt_timeout())),
       15_000
     )
 
@@ -215,9 +215,7 @@ export async function createYouTubeSound(
   // silence, so the failure is taken up front. The rejection lands in the
   // existing catch in mixer.setStreamVolume, which zeroes the sound and toasts.
   if (!navigator.onLine) {
-    throw new Error(
-      "YouTube sounds need a connection. Tap again when you’re back online"
-    )
+    throw new Error(m.yt_offline())
   }
 
   await loadIframeApi()

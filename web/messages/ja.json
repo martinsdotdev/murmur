@@ -385,6 +385,8 @@
   "toast_prefs_restored": "設定を初期状態に戻しました",
   "yt_placeholder": "YouTube のサウンド",
   "yt_unreachable": "YouTube に接続できませんでした",
+  "yt_timeout": "YouTube の応答に時間がかかりすぎました",
+  "yt_offline": "YouTube のサウンドにはインターネット接続が必要です。オンラインに戻ったらもう一度タップしてください",
   "yt_invalid_link": "その動画のリンクは無効です",
   "yt_no_browser": "この動画はブラウザーでは再生できません",
   "yt_private": "その動画は非公開か、すでに削除されています",

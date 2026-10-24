@@ -398,6 +398,8 @@
   "toast_prefs_restored": "Preferences restored to defaults",
   "yt_placeholder": "YouTube sound",
   "yt_unreachable": "Couldn’t reach YouTube",
+  "yt_timeout": "YouTube took too long to answer",
+  "yt_offline": "YouTube sounds need a connection. Tap again when you’re back online",
   "yt_invalid_link": "That video link isn’t valid",
   "yt_no_browser": "This video can’t play in a browser",
   "yt_private": "That video is private or no longer exists",

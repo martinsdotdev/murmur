@@ -398,6 +398,8 @@
   "toast_prefs_restored": "Preferencias restablecidas",
   "yt_placeholder": "Sonido de YouTube",
   "yt_unreachable": "No se pudo conectar con YouTube",
+  "yt_timeout": "YouTube tardó demasiado en responder",
+  "yt_offline": "Los sonidos de YouTube necesitan conexión. Toca de nuevo cuando vuelvas a estar en línea",
   "yt_invalid_link": "Ese enlace de video no es válido",
   "yt_no_browser": "Este video no se puede reproducir en un navegador",
   "yt_private": "Ese video es privado o ya no existe",
