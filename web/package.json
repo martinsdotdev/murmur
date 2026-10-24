@@ -17,7 +17,8 @@
     "typecheck": "astro check",
     "tokens": "tsx scripts/m3-colors.ts",
     "schemes": "tsx scripts/schemes.ts && prettier --write src/styles/schemes.css",
-    "messages": "tsx scripts/check-messages.ts"
+    "messages": "tsx scripts/check-messages.ts",
+    "loudness": "node scripts/measure-loudness.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^5",
