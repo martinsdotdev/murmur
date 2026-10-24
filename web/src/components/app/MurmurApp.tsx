@@ -1134,11 +1134,22 @@ export function MurmurApp() {
   const [dirty, setDirty] = React.useState(initial.dirty)
   const [view, setView] = React.useState<View>(initial.view)
   const [pane, setPane] = React.useState(initial.pane)
+  /**
+   * The pane's motion, as Spotify's Now Playing view moves: opened from its
+   * button it slides in from the right edge, and closed it slides back out
+   * the same way, kept mounted until it has. A pane that was open at launch
+   * is simply there.
+   */
+  const [paneMotion, setPaneMotion] = React.useState<
+    "still" | "entering" | "leaving"
+  >("still")
   const paneToggle = React.useRef<HTMLButtonElement>(null)
   /** Hiding the pane lets go of its held rows, as closing the sheet does. */
   const showPane = (open: boolean) => {
     setPane(open)
     releaseRows()
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    setPaneMotion(still ? "still" : open ? "entering" : "leaving")
   }
   const paneFits = usePaneFits()
   const [saved, setSaved] = React.useState<SavedMix[]>(initial.saved)
@@ -3650,48 +3661,65 @@ export function MurmurApp() {
                 </section>
               </div>
             </ScrollArea>
-            {pane && (
-              <aside
-                aria-label={m.now_playing()}
-                className="hidden w-[22.5rem] shrink-0 flex-col border-l border-border large:w-[25.75rem] wide:expanded:flex"
-              >
-                <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-2">
-                  <div className="min-w-0">
-                    <h2 className="text-title-medium">{m.now_playing()}</h2>
-                    <p className="flex min-w-0 text-xs text-muted-foreground">
-                      <MiddleTruncate text={mixTitle} />
-                      {dirty && (
-                        <span className="shrink-0 whitespace-pre">
-                          {m.mix_edited()}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  {/* The dialogs' close button, so every close looks alike. */}
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-full bg-secondary"
-                    aria-label={m.now_playing_close()}
-                    title={m.action_close()}
-                    onClick={() => {
-                      showPane(false)
-                      paneToggle.current?.focus()
-                    }}
-                  >
-                    <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
-                  </Button>
-                </div>
-                <ScrollArea
-                  className="min-h-0 flex-1"
-                  viewportClassName="scroll-fade px-5 scroll-fade-5"
+            {(pane || paneMotion === "leaving") && (
+              // The column takes its width at once, so the grid gives way in
+              // one step; animating the width reflowed every card on every
+              // frame. Only the pane moves, by transform: it slides in from
+              // the column's right edge, and out the same way before the
+              // column goes. 250ms, ease-out both ways.
+              <div className="hidden w-[22.5rem] shrink-0 overflow-hidden large:w-[25.75rem] wide:expanded:flex">
+                <aside
+                  aria-label={m.now_playing()}
+                  inert={!pane}
+                  className={cn(
+                    "flex w-full flex-col border-l border-border transition-[translate] duration-250 ease-(--ease-out) motion-reduce:transition-none",
+                    !pane && "translate-x-full",
+                    pane &&
+                      paneMotion === "entering" &&
+                      "starting:translate-x-full"
+                  )}
+                  onTransitionEnd={(e) => {
+                    if (e.target === e.currentTarget) setPaneMotion("still")
+                  }}
                 >
-                  {nowPlayingRows}
-                </ScrollArea>
-                <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border px-5 py-3">
-                  {nowPlayingActions(openSaveDialog)}
-                </div>
-              </aside>
+                  <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-2">
+                    <div className="min-w-0">
+                      <h2 className="text-title-medium">{m.now_playing()}</h2>
+                      <p className="flex min-w-0 text-xs text-muted-foreground">
+                        <MiddleTruncate text={mixTitle} />
+                        {dirty && (
+                          <span className="shrink-0 whitespace-pre">
+                            {m.mix_edited()}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    {/* The dialogs' close button, so every close looks alike. */}
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="rounded-full bg-secondary"
+                      aria-label={m.now_playing_close()}
+                      title={m.action_close()}
+                      onClick={() => {
+                        showPane(false)
+                        paneToggle.current?.focus()
+                      }}
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+                    </Button>
+                  </div>
+                  <ScrollArea
+                    className="min-h-0 flex-1"
+                    viewportClassName="scroll-fade px-5 scroll-fade-5"
+                  >
+                    {nowPlayingRows}
+                  </ScrollArea>
+                  <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border px-5 py-3">
+                    {nowPlayingActions(openSaveDialog)}
+                  </div>
+                </aside>
+              </div>
             )}
           </div>
 
