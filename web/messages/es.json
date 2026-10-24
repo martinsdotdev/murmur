@@ -373,7 +373,6 @@
   "toast_turned_off": "Se apagó todo",
   "toast_ogg_unsupported": "Los sonidos incluidos de Murmur necesitan Safari 18.4 o posterior. Los sonidos de YouTube y tus propios archivos MP3 o M4A siguen sonando",
   "toast_update_ready": "Hay una nueva versión de Murmur lista",
-  "toast_offline_ready": "Los {count} sonidos incluidos están guardados para usar sin conexión",
   "toast_back_online": "Vuelves a tener conexión",
   "toast_prefs_restored": "Preferencias restablecidas",
   "yt_placeholder": "Sonido de YouTube",

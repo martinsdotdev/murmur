@@ -373,7 +373,6 @@
   "toast_turned_off": "Turned everything off",
   "toast_ogg_unsupported": "Murmur’s built-in sounds need Safari 18.4 or later. YouTube sounds and your own MP3 or M4A files still play",
   "toast_update_ready": "A new version of Murmur is ready",
-  "toast_offline_ready": "All {count} built-in sounds are saved for offline use",
   "toast_back_online": "You’re back online",
   "toast_prefs_restored": "Preferences restored to defaults",
   "yt_placeholder": "YouTube sound",

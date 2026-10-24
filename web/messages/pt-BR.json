@@ -373,7 +373,6 @@
   "toast_turned_off": "Tudo desligado",
   "toast_ogg_unsupported": "Os sons incluídos no Murmur precisam do Safari 18.4 ou posterior. Sons do YouTube e seus próprios arquivos MP3 ou M4A continuam tocando",
   "toast_update_ready": "Uma nova versão do Murmur está pronta",
-  "toast_offline_ready": "Todos os {count} sons incluídos estão salvos para uso offline",
   "toast_back_online": "Você está online de novo",
   "toast_prefs_restored": "Preferências restauradas para os padrões",
   "yt_placeholder": "Som do YouTube",

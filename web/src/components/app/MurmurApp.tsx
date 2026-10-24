@@ -2429,25 +2429,6 @@ export function MurmurApp() {
     })
   }, [needRefresh, updateNow])
 
-  // The honest version of the plugin's onOfflineReady, which fires when the
-  // shell lands and would announce readiness while every sound was still
-  // missing. Only on the incomplete-to-complete edge, so a launch that is
-  // already fully cached says nothing.
-  const sawIncompleteAudio = React.useRef(false)
-  React.useEffect(() => {
-    const status = pwa.audio
-    if (!status?.total) return
-    if (status.cached < status.total) {
-      sawIncompleteAudio.current = true
-      return
-    }
-    if (!sawIncompleteAudio.current) return
-    sawIncompleteAudio.current = false
-    toast(m.toast_offline_ready({ count: status.total }), {
-      id: "offline-ready",
-    })
-  }, [pwa.audio])
-
   // Latest-ref so the listener below can stay mounted across renders. It would
   // otherwise be added and removed once per frame during a slider drag.
   const changeVolumeRef = React.useRef(changeVolume)

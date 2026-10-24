@@ -362,7 +362,6 @@
   "toast_turned_off": "すべてオフにしました",
   "toast_ogg_unsupported": "Murmur の内蔵サウンドには Safari 18.4 以降が必要です。YouTube のサウンドや自分の MP3、M4A ファイルは再生できます",
   "toast_update_ready": "Murmur の新しいバージョンを利用できます",
-  "toast_offline_ready": "内蔵サウンド {count} 個すべてをオフライン用に保存しました",
   "toast_back_online": "オンラインに戻りました",
   "toast_prefs_restored": "設定を初期状態に戻しました",
   "yt_placeholder": "YouTube のサウンド",
