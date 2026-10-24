@@ -31,10 +31,11 @@ export function localeSegment(locale: Locale): string | undefined {
   return locale === baseLocale ? undefined : locale.toLowerCase()
 }
 
-/** "/" for English, "/pt-br/" for the rest. */
-export function localePath(locale: Locale): string {
+/** The About page in a language: "/about/" for English, "/pt-br/about/" for
+ * the rest. The app itself is at "/", in whichever language it settles on. */
+export function aboutPath(locale: Locale): string {
   const segment = localeSegment(locale)
-  return segment ? `/${segment}/` : "/"
+  return segment ? `/${segment}/about/` : "/about/"
 }
 
 /** The locale a built page is for, from the first segment of its path. */

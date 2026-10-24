@@ -12,20 +12,19 @@ const { version } = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8")
 )
 
-// build.format is 'directory', so Astro emits dist/app/index.html, which Pages
-// serves at /app/ and 301s /app to. @vite-pwa/astro's own transform would
-// rewrite this entry to the bare string 'app'; Workbox would then precache a
-// URL that redirects, and createHandlerBoundToURL('/app/') would throw at
-// worker evaluation because /app/ is not a manifest URL. See manifestTransforms.
-const APP_SHELL = /^\/?app\/index\.html$/
+// The app is the root page, dist/index.html, reached at /. @vite-pwa/astro's
+// own transform would name this entry something other than /, and
+// createHandlerBoundToURL('/') would throw at worker evaluation because / is
+// not a manifest URL. See manifestTransforms.
+const APP_SHELL = /^\/?index\.html$/
 
 export default defineConfig({
   // Custom domain (murmur.umaru.dev). Pages serves at the apex of the subdomain
   // so `base` defaults to '/'. The public/CNAME file tells Pages to bind this
   // domain to the deployment.
   site: "https://murmur.umaru.dev",
-  // What Pages serves: every page but the root is a directory, at /app/ and
-  // /pt-br/, and Pages 301s the bare path there. Matching it means links,
+  // What Pages serves: every page but the root is a directory, at /about/ and
+  // /pt-br/about/, and Pages 301s the bare path there. Matching it means links,
   // canonical and hreflang links and the sitemap all name the address that
   // answers, and the dev server and preview behave as production does.
   trailingSlash: "always",
@@ -38,10 +37,22 @@ export default defineConfig({
   // build, and grep dist for /[A-Za-z]<a[ >]/. It should find nothing.
   compressHTML: true,
 
+  // The About pages had the root and the language roots until the app took /.
+  // Old links to /pt-br/, /es/ and /ja/ land on their About page. /app/, where
+  // the app was, is a page of its own (src/pages/app.astro): a shared mix's
+  // #mix= has to survive the move, and a static redirect drops it.
+  redirects: {
+    "/pt-br": "/pt-br/about/",
+    "/es": "/es/about/",
+    "/ja": "/ja/about/",
+  },
+
   integrations: [
     // Keys are path segments, values hreflang tags. Pages outside a locale
-    // segment, the app among them, count as English.
+    // segment, the app among them, count as English. Redirects stay out.
     sitemap({
+      filter: (page) =>
+        !/^https:\/\/murmur\.umaru\.dev\/(app|pt-br|es|ja)\/$/.test(page),
       i18n: {
         defaultLocale: "en",
         locales: { en: "en", "pt-br": "pt-BR", es: "es", ja: "ja" },
@@ -60,14 +71,13 @@ export default defineConfig({
       // A waiting worker is surfaced as a toast rather than swapped in under a
       // playing mix. See src/components/app/use-pwa.ts.
       registerType: "prompt",
-      // The installed app is the mixer, not the marketing page. sw.js still
-      // sits at the origin root, so its maximum scope is '/' and narrowing to
-      // /app/ needs no Service-Worker-Allowed header, which GitHub Pages could
-      // not send anyway.
-      scope: "/app/",
+      // The installed app is the mixer at /. The scope covers the About pages
+      // too, but the worker only answers navigations to the app (see sw.ts),
+      // so those still come from the network.
+      scope: "/",
       manifest: {
         // Frozen independently of start_url so the installed identity survives
-        // a future route change.
+        // a route change, as it did the app's move from /app/ to /.
         id: "/app/",
         name: "Murmur",
         short_name: "Murmur",
@@ -75,10 +85,8 @@ export default defineConfig({
           "Blend rain, a fireplace, a train and more. Save mixes, set a sleep timer, share links.",
         lang: "en",
         dir: "ltr",
-        scope: "/app/",
-        // The trailing slash matters: Pages 301s /app to /app/, and a
-        // start_url that costs a redirect costs it on every cold launch.
-        start_url: "/app/",
+        scope: "/",
+        start_url: "/",
         display: "standalone",
         // window-controls-overlay is deliberately absent: the header is not
         // built against env(titlebar-area-*) and would sit under the caption
@@ -125,9 +133,9 @@ export default defineConfig({
       },
       injectManifest: {
         // The shell only. The 17.6 MB of audio is staged by the worker after
-        // activation, and the landing page is not part of the installed app.
+        // activation, and the About pages are not part of the installed app.
         globPatterns: [
-          "app/index.html",
+          "index.html",
           "_astro/*.{js,css,woff2}",
           "icon.svg",
           // Only the two "any" icons, which Media Session fetches at runtime
@@ -140,16 +148,15 @@ export default defineConfig({
           // itself, and naming it here produced a duplicate entry.
         ],
         // Astro names a page's CSS and scripts after the page or component.
-        // The landing page is [...locale].astro, whose CSS comes out as
-        // _..<hash>.css, and its footer's language links have a script of
-        // their own. /app loads neither.
-        globIgnores: ["_astro/_..*.css", "_astro/Footer.*.js"],
+        // The About page's CSS comes out as about.<hash>.css, and its footer's
+        // language links have a script of their own. The app loads neither.
+        globIgnores: ["_astro/about.*.css", "_astro/Footer.*.js"],
         // Supplying this suppresses the integration's own transform. See
         // APP_SHELL above for what that one would do.
         manifestTransforms: [
           async (entries) => ({
             manifest: entries.map((entry) =>
-              APP_SHELL.test(entry.url) ? { ...entry, url: "/app/" } : entry
+              APP_SHELL.test(entry.url) ? { ...entry, url: "/" } : entry
             ),
             warnings: [],
           }),

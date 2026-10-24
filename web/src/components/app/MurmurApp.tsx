@@ -140,7 +140,8 @@ import {
   formatSeconds,
   formatTime,
 } from "@/lib/format"
-import { startAppLocale } from "@/lib/i18n"
+import { aboutPath, startAppLocale } from "@/lib/i18n"
+import { getLocale } from "@/paraglide/runtime.js"
 import { runs } from "@/lib/markup"
 import { m } from "@/paraglide/messages.js"
 
@@ -3488,10 +3489,10 @@ export function MurmurApp() {
             </Button>
 
             <div className="mt-3 flex items-center gap-2 px-1">
-              {/* Without this /app is a dead end. The old sidebar had it too. */}
+              {/* The way out to the About page, in the app's own language. */}
               <a
                 className="text-xs text-muted-foreground hover:text-foreground"
-                href={`${BASE}/`}
+                href={aboutPath(getLocale())}
               >
                 {m.about()}
               </a>

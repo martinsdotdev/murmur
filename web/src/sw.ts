@@ -5,7 +5,7 @@
  *
  * Two staging rules the code cannot state on its own:
  *
- *  - The shell installs atomically. dist/app/index.html is an astro-island
+ *  - The shell installs atomically. dist/index.html is an astro-island
  *    placeholder and nothing else, so a precache holding the document without
  *    MurmurApp.js paints a blank dark page with no error and no spinner. A
  *    partial shell is worse than none, which is what Workbox's all-or-nothing
@@ -46,29 +46,46 @@ declare const self: ServiceWorkerGlobalScope & {
  */
 const AUDIO_CACHE = "murmur-audio-v1"
 
-/** Every /app navigation resolves to this one precached document. */
-const SHELL_URL = "/app/"
+/** Every navigation to the app resolves to this one precached document. */
+const SHELL_URL = "/"
+
+/**
+ * Where the app lived until it moved to the root. A registration scoped here
+ * still updates to this worker, and retires itself (see activate).
+ */
+const LEGACY_SCOPE = "/app/"
 
 const AUDIO_IDS = sounds.map((sound) => sound.id)
 const audioUrl = (id: string) => `/sounds/${id}.ogg`
 
 // Throws here, at worker evaluation, if the manifest transform in
-// astro.config.mjs ever stops producing /app/. A worker that fails to install
+// astro.config.mjs ever stops producing /. A worker that fails to install
 // is a better failure than one that installs and then serves nothing.
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
 // The precache route's own matcher only tries the entry URL, its directory
-// index and its clean form, so /app/index.html and /app/?x= miss it. This is
-// what lands them on the same document. /app without the slash is outside
-// scope and never reaches this worker; online, Pages 301s it in.
+// index and its clean form, so /?x= misses it. This lands every navigation to
+// the app on the same document. Only those: the scope is the whole origin,
+// and the About pages, in every language, still come from the network.
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL(SHELL_URL), {
-    allowlist: [/^\/app(?:\/|$)/],
+    allowlist: [/^\/(?:index\.html)?(?:\?.*)?$/],
   })
 )
 
-// Scope is /app/, but scope only decides which documents this worker controls.
+// The app's old address, from an old link or an installed copy whose manifest
+// hasn't caught up yet, answered here so it works offline too. A redirect with
+// no hash of its own keeps the request's, which is what carries a shared mix.
+registerRoute(
+  ({ request, url }) =>
+    request.mode === "navigate" &&
+    /^\/app(?:\/(?:index\.html)?)?$/.test(url.pathname),
+  async ({ url }) =>
+    Response.redirect(new URL(SHELL_URL + url.search, url).href, 302)
+)
+
+// Scope only decides which documents this worker controls.
 // Every fetch a controlled document makes passes through here, which is the
 // only reason a /sounds/ route works at all. CacheFirst both serves what
 // stageAudio stored and fills a gap the user reached first.
@@ -88,6 +105,19 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const names = await caches.keys()
+      // The registration from when the app lived at /app/: its precache goes
+      // (Workbox names it after the scope), and so does it, which hands /app/
+      // to the root registration's redirect. Audio is shared by name, so the
+      // 17.6 MB stays.
+      if (new URL(self.registration.scope).pathname === LEGACY_SCOPE) {
+        await Promise.all(
+          names
+            .filter((name) => name.endsWith(self.registration.scope))
+            .map((name) => caches.delete(name))
+        )
+        await self.registration.unregister()
+        return
+      }
       await Promise.all(
         names
           .filter((name) => name.startsWith("murmur-audio-"))

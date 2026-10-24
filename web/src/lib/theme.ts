@@ -1,5 +1,5 @@
 /**
- * The landing page and the /app mixer share one theme contract:
+ * The About pages and the mixer app share one theme contract:
  * localStorage['theme'] holds the *preference* ('light' | 'dark' | 'system')
  * and <html data-theme> holds the *resolution* ('light' | 'dark').
  *

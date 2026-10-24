@@ -30,7 +30,7 @@ of overwriting.
 ## Testing offline
 
 `pnpm preview` is not a faithful stand-in for GitHub Pages: it can normalise
-`/app/` the opposite way. Serve the build the way Pages does, then stop the
+trailing slashes the opposite way. Serve the build the way Pages does, then stop the
 server and reload to test offline for real.
 
 ```powershell

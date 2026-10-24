@@ -16,7 +16,7 @@ You are writing every user-facing string on the landing page of Murmur, a free a
 - Runs on Windows 10 (build 19041 or later) and Windows 11, x64 and ARM64.
 - Install friction, and how to talk about it: releases are MSIX bundles signed with a self-signed certificate. A first install means downloading a small `.cer` file, trusting it once (Local Machine → Trusted People), then double-clicking the bundle. Explain this plainly. The honest framing: self-signing keeps the project free and independent, and a future Store release may remove the step. Never call the process "easy".
 - Every bundled sound is Creative Commons or public domain, from named artists (freesound.org, SoundBible, Wikimedia). The footer shows a full attribution table, and a single line under it credits the Blanket project for assembling the sound set. That credit belongs to the attribution area only; it is not a fact about what Murmur is.
-- The whole mixer runs in the browser at `/app`, playing the app's actual sound files. A visitor can mix before downloading anything, save mixes, and share one as a link. The landing page points there from the nav and from the hero; it does not try to be a second mixer, and it does not list the sounds outside the footer's attribution table.
+- The whole mixer runs in the browser at the site's root, with this page at `/about/`, playing the app's actual sound files. A visitor can mix before downloading anything, save mixes, and share one as a link. The landing page points there from the nav and from the hero; it does not try to be a second mixer, and it does not list the sounds outside the footer's attribution table.
 
 ## The voice
 

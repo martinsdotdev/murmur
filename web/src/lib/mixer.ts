@@ -1,5 +1,5 @@
 /**
- * The web-audio mixer behind /app.
+ * The web-audio mixer behind the app.
  *
  * Design mirrors Murmur/Services/AudioGraphMixerService.cs:
  *  - Volume > 0  ⇒ active (no epsilon, no hysteresis, strict zero is "off")

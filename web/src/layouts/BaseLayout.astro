@@ -14,7 +14,7 @@ import {
   locales,
   type Locale,
 } from "@/paraglide/runtime.js"
-import { localePath } from "@/lib/i18n"
+import { aboutPath } from "@/lib/i18n"
 
 interface Props {
   title?: string
@@ -28,7 +28,7 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
 const locale = getLocale()
 // Every language's copy of this page, for search engines to offer the right
 // one. x-default is where someone whose language isn't here should land.
-const alternate = (l: Locale) => new URL(localePath(l), Astro.site).href
+const alternate = (l: Locale) => new URL(aboutPath(l), Astro.site).href
 ---
 
 <!doctype html>
@@ -80,7 +80,7 @@ const alternate = (l: Locale) => new URL(localePath(l), Astro.site).href
     <header class="commandbar">
       <div class="commandbar-grid container">
         <a
-          href={`${baseUrl}${localePath(locale)}`}
+          href={`${baseUrl}${aboutPath(locale)}`}
           class="wordmark"
           aria-label={m.nav_home()}
         >
@@ -88,7 +88,7 @@ const alternate = (l: Locale) => new URL(localePath(l), Astro.site).href
           <span class="wordmark-text">Murmur</span>
         </a>
         <nav class="nav-links" aria-label={m.nav_primary()}>
-          <a href={`${baseUrl}/app/`}>{m.nav_try()}</a>
+          <a href={`${baseUrl}/`}>{m.nav_try()}</a>
           <a href="#features">{m.nav_features()}</a>
           <a href="#download">{m.nav_download()}</a>
         </nav>

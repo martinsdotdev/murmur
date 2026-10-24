@@ -38,10 +38,10 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
     <link rel="canonical" href={Astro.url.href} />
 
     {
-      /* Linked from this layout only. The installed app is scoped to /app/, and
-        a manifest linked from an out-of-scope page invites "start_url not in
-        scope" confusion. apple-mobile-web-app-capable is obsolete: modern iOS
-        reads display: standalone from the manifest. */
+      /* Linked from this layout only: the About pages sit inside the app's
+        scope but aren't the app, and a manifest there would offer to install
+        it from a page that isn't it. apple-mobile-web-app-capable is obsolete:
+        modern iOS reads display: standalone from the manifest. */
     }
     <link rel="manifest" href={`${baseUrl}/manifest.webmanifest`} />
     <link

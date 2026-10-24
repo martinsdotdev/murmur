@@ -1,0 +1,25 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro"
+import Hero from "../../components/Hero.astro"
+import Features from "../../components/Features.astro"
+import DownloadSection from "../../components/DownloadSection.astro"
+import Involved from "../../components/Involved.astro"
+import { locales } from "@/paraglide/runtime.js"
+import { localeSegment } from "@/lib/i18n"
+
+// One About page per language: English at /about/, the rest at /pt-br/about/,
+// /es/about/ and /ja/about/. The app has the root. The middleware reads the
+// locale back off the path, so nothing here has to pass it down.
+export function getStaticPaths() {
+  return locales.map((locale) => ({
+    params: { locale: localeSegment(locale) },
+  }))
+}
+---
+
+<BaseLayout>
+  <Hero />
+  <Features />
+  <DownloadSection />
+  <Involved />
+</BaseLayout>

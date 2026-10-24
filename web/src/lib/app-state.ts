@@ -1,5 +1,5 @@
 /**
- * The /app mixer's persisted state: shape, defaults, validation, migration.
+ * The mixer app's persisted state: shape, defaults, validation, migration.
  *
  * v1 (the vanilla app) spread this across three localStorage keys. v2 made it
  * a single blob. v3 stores levels, slider positions, where v2 and v1 stored

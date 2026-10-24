@@ -4,7 +4,7 @@ import BrandLogo from "./BrandLogo.astro"
 import { repoUrl, releasesUrl, issuesUrl, blanketUrl } from "../data/site.ts"
 import { m } from "@/paraglide/messages.js"
 import { getLocale, locales } from "@/paraglide/runtime.js"
-import { LOCALE_NAMES, localePath } from "@/lib/i18n"
+import { LOCALE_NAMES, aboutPath } from "@/lib/i18n"
 import Message from "./Message.astro"
 
 const current = getLocale()
@@ -89,7 +89,7 @@ const current = getLocale()
         {
           locales.map((locale) => (
             <a
-              href={localePath(locale)}
+              href={aboutPath(locale)}
               lang={locale}
               hreflang={locale}
               data-locale={locale}

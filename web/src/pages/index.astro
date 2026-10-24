@@ -1,0 +1,20 @@
+---
+import AppLayout from "../layouts/AppLayout.astro"
+import { MurmurApp } from "../components/app/MurmurApp"
+---
+
+<AppLayout>
+  {
+    /* client:only, because readInitialState() reads localStorage during the first
+      render, and the v1 migration runs inside it. Neither can happen on the
+      server, and neither may be deferred past mount: the IndexedDB sweep
+      effect prunes blobs against whatever customs that first render produced. */
+  }
+  <MurmurApp client:only="react" />
+
+  <noscript>
+    <p style="padding: 24px; font: 14px system-ui">
+      The Murmur web app needs JavaScript to play audio.
+    </p>
+  </noscript>
+</AppLayout>
