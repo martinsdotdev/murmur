@@ -129,6 +129,7 @@ import {
 } from "@/lib/theme"
 import { clampName, isolate, nameFromFile } from "@/lib/text"
 import { cn } from "@/lib/utils"
+import { wheelScrollsX } from "@/lib/wheel-x"
 import {
   formatBytes,
   formatCountdown,
@@ -3607,7 +3608,12 @@ export function MurmurApp() {
                   target, which it would otherwise clip. The bottom room is
                   taken back from the padding below; the top is not, since it
                   would lie over the All mixes button. */}
-              <div className="-mx-4 -mb-2 no-scrollbar flex scroll-fade-x gap-2 overflow-x-auto px-4 pt-1.5 pb-2 scroll-fade-5">
+              {/* A window narrow enough for this strip can still have a
+                  mouse, whose wheel scrolls it across. */}
+              <div
+                ref={wheelScrollsX}
+                className="-mx-4 -mb-2 no-scrollbar flex scroll-fade-x gap-2 overflow-x-auto px-4 pt-1.5 pb-2 scroll-fade-5"
+              >
                 {/* Each chip's long press opens the sidebar's mix menu. The
                     trigger is display: contents, so the chip stays the flex
                     item and its own events reach the trigger as they bubble. */}
