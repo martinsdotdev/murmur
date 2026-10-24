@@ -618,12 +618,7 @@ function LevelTrack({ level, live }: { level: number; live: boolean }) {
       aria-hidden="true"
       className={cn(
         "relative h-1 overflow-hidden rounded-full transition-colors rtl:-scale-x-100",
-        level > 0 ? "bg-track" : "bg-transparent",
-        // M3's stop indicator: the track alone is 1.4:1, so its end gets a
-        // 3:1 dot until the fill reaches it.
-        level > 0 &&
-          level < 1 &&
-          "after:absolute after:inset-y-0 after:right-0 after:w-1 after:rounded-full after:bg-outline"
+        level > 0 ? "bg-track" : "bg-transparent"
       )}
     >
       {/* Full width and slid into place rather than sized: a transform
