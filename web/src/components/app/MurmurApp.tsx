@@ -677,16 +677,11 @@ function NowPlayingRow({
               resetValue={Math.round(resetLevel * 100)}
               aria-label={m.sound_volume({ name })}
               aria-valuetext={formatPercent(pct)}
+              showValue
               onValueChange={(value) => onDrag((value as number) / 100)}
               onValueCommitted={(value) => onCommit((value as number) / 100)}
             />
           </div>
-          <span
-            aria-hidden="true"
-            className="w-7 shrink-0 text-right font-mono text-xs text-muted-foreground tabular-nums"
-          >
-            {pct}
-          </span>
         </>
       )}
       {onTurnOff ? (
@@ -1239,12 +1234,6 @@ export function MurmurApp() {
   // is already audible.
   const lastNonZero = React.useRef<MixerState>({ ...initial.vols })
   const lastMaster = React.useRef(initial.master || DEFAULT_MASTER)
-  /**
-   * The header master's slider is being dragged. Its number shows on hover
-   * and focus too, but a finger on the track neither hovers nor focuses the
-   * thumb, so the drag has to say so itself.
-   */
-  const [masterHeld, setMasterHeld] = React.useState(false)
   const { queue: queueFrame, drop: dropFrame } = useFrameQueue()
 
   const activeIds = Object.keys(vols).filter((id) => (vols[id] ?? 0) > 0)
@@ -2950,6 +2939,7 @@ export function MurmurApp() {
         resetValue={Math.round(DEFAULT_TOGGLE_VOLUME * 100)}
         aria-label={m.sound_volume({ name: sound.name })}
         aria-valuetext={formatPercent(pct)}
+        showValue
         onValueChange={(value) => dragVolume(sound.id, (value as number) / 100)}
         onValueCommitted={(value) =>
           commitVolume(sound.id, (value as number) / 100)
@@ -2957,30 +2947,16 @@ export function MurmurApp() {
       />
     )
 
-    // Hidden at rest and revealed while the card is being worked: hovered or
-    // focused, or on touch while a finger drags it. The slider position is the
-    // level; the number is only wanted when you are setting one. The width
-    // stays reserved so nothing shifts as it appears. Touch goes by the drag
-    // alone, since a tap leaves hover and focus stuck on the card it landed
-    // on; the number lingers a moment after the finger lifts, to be read.
-    //
-    // A group-has-[[data-dragging]] trigger was tried for the case where the
-    // pointer leaves the card mid-drag. It compiles, and the element matches
-    // the generated selector, but it never wins the cascade against opacity-0.
-    // Not worth more than the two triggers that do work.
-    //
-    // aria-hidden because the thumb's aria-valuetext already says this, and
-    // on touch Now playing's does.
+    // On touch, where a card has no thumb for the number to ride, it shows on
+    // the name row while a finger drags the card, and lingers a moment after
+    // it lifts, to be read. The width stays reserved so nothing shifts as it
+    // appears. aria-hidden because Now playing's slider says it.
     const readout = (
       <span
         aria-hidden="true"
         className={cn(
           "w-7 shrink-0 text-right font-mono text-[0.6875rem] tabular-nums opacity-0 transition-opacity",
-          coarse
-            ? dragged
-              ? "opacity-100"
-              : "delay-700"
-            : "group-focus-within:opacity-100 group-hover:opacity-100",
+          dragged ? "opacity-100" : "delay-700",
           active ? "text-brand" : "text-muted-foreground"
         )}
       >
@@ -3062,7 +3038,6 @@ export function MurmurApp() {
                 <div className="min-w-0 flex-1" {...sliderGuard}>
                   {slider}
                 </div>
-                {readout}
               </>
             )}
             {removable && (
@@ -3133,7 +3108,7 @@ export function MurmurApp() {
                 {m.sound_missing_badge()}
               </span>
             ) : (
-              !fixedLevel && readout
+              coarse && !fixedLevel && readout
             )}
           </div>
           {lost ? (
@@ -3260,10 +3235,10 @@ export function MurmurApp() {
           <div className="flex-1" />
 
           {/* Playback, then a rule, then this mix and this view. From md, where
-              the phone bar stops. The level's number shows as a card's does,
-              while the slider is hovered, focused or dragged, in a column kept
-              for it. The speaker mutes, as on any player. */}
-          <div className="group/master hidden w-52 min-w-0 items-center gap-1.5 @max-5xl:w-28 @max-5xl:min-w-20 wide:flex">
+              the phone bar stops. The level rides the thumb while it is being
+              set, as on every level slider. The speaker mutes, as on any
+              player. */}
+          <div className="hidden w-52 min-w-0 items-center gap-1.5 @max-5xl:w-28 @max-5xl:min-w-20 wide:flex">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -3287,27 +3262,12 @@ export function MurmurApp() {
               resetValue={Math.round(DEFAULT_MASTER * 100)}
               aria-label={m.master_volume()}
               aria-valuetext={formatPercent(Math.round(master * 100))}
-              onValueChange={(value) => {
-                setMasterHeld(true)
-                dragMaster((value as number) / 100)
-              }}
-              onValueCommitted={(value) => {
-                setMasterHeld(false)
+              showValue
+              onValueChange={(value) => dragMaster((value as number) / 100)}
+              onValueCommitted={(value) =>
                 commitMaster((value as number) / 100)
-              }}
+              }
             />
-            {/* A container query, not lg:, so a larger text size counts too:
-                rem in a container query follows the root font size. Below it
-                the slider and the mix name need the room more. */}
-            <span
-              aria-hidden="true"
-              className={cn(
-                "hidden w-7 shrink-0 text-right font-mono text-[0.6875rem] text-muted-foreground tabular-nums opacity-0 transition-opacity group-focus-within/master:opacity-100 group-hover/master:opacity-100 @5xl:block",
-                masterHeld && "opacity-100"
-              )}
-            >
-              {Math.round(master * 100)}
-            </span>
           </div>
 
           <Separator

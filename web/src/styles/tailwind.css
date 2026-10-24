@@ -647,3 +647,172 @@
     transform: scaleY(0.6);
   }
 }
+
+/* A level slider's value on its thumb (Slider's showValue), after YouTube's
+   seek pill: the knob grows into a pill carrying the number while the level
+   is being set, and shrinks back after. The thumb box never changes size, so
+   the pill is laid out at full size inside it and opened and closed by its
+   clip, which keeps the ends round and the digits sharp. --r is the value,
+   0 to 1: the pill slides that far across the thumb so it never hangs past
+   either end of the track. */
+.value-pill,
+.value-ring {
+  --t: 1rem; /* the thumb box */
+  --h: 1.25rem;
+  --w: 2.375rem; /* fits "100" */
+  --gap: calc(var(--w) - var(--t));
+  position: absolute;
+  top: 50%;
+  inset-inline-start: calc(var(--r) * -1 * var(--gap));
+  width: var(--w);
+  height: var(--h);
+  translate: 0 -50%;
+  border-radius: 9999px;
+}
+
+@media (pointer: coarse) {
+  .value-pill,
+  .value-ring {
+    --t: 1.5rem;
+    --h: 1.75rem;
+    --w: 2.875rem;
+  }
+}
+
+/* Brand on background rather than the fill's primary: white on light
+   primary falls short of 4.5:1 for text this small. */
+.value-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand);
+  color: var(--background);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  opacity: 0;
+  /* Closed: clipped to the knob's own circle, which also keeps a closed pill
+     from catching clicks meant for the track. */
+  clip-path: inset(
+    calc((var(--h) - var(--t)) / 2) calc((1 - var(--r)) * var(--gap))
+      calc((var(--h) - var(--t)) / 2) calc(var(--r) * var(--gap)) round 9999px
+  );
+}
+
+[dir="rtl"] .value-pill {
+  clip-path: inset(
+    calc((var(--h) - var(--t)) / 2) calc(var(--r) * var(--gap))
+      calc((var(--h) - var(--t)) / 2) calc((1 - var(--r)) * var(--gap)) round
+      9999px
+  );
+}
+
+@media (pointer: coarse) {
+  .value-pill {
+    font-size: 0.8125rem;
+  }
+}
+
+.value-pill > span {
+  opacity: 0;
+}
+
+/* Open while the level is being set: wheeled or reset (data-flash), held,
+   or focused from the keyboard, and hovered where hover exists. Escape
+   closes it until the value next changes (data-dismissed). */
+[data-slot="slider-thumb"]:is(
+    [data-flash],
+    [data-held],
+    [data-dragging],
+    :has(:focus-visible)
+  ):not([data-dismissed])
+  .value-pill {
+  opacity: 1;
+  clip-path: inset(0 round 9999px);
+}
+
+[data-slot="slider-thumb"]:is(
+    [data-flash],
+    [data-held],
+    [data-dragging],
+    :has(:focus-visible)
+  ):not([data-dismissed])
+  .value-pill
+  > span {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  [data-slot="slider-thumb"]:hover:not([data-dismissed]) .value-pill {
+    opacity: 1;
+    clip-path: inset(0 round 9999px);
+  }
+
+  [data-slot="slider-thumb"]:hover:not([data-dismissed]) .value-pill > span {
+    opacity: 1;
+  }
+}
+
+/* Pressed, it lifts clear of the cursor or fingertip on the thumb: its
+   bottom edge 4px above the thumb's top. */
+[data-slot="slider-thumb"]:is([data-dragging], [data-held]) .value-pill {
+  translate: 0 calc(-50% - (var(--t) + var(--h)) / 2 - 0.25rem);
+}
+
+/* The focus ring in the pill's shape. The pill's clip would cut a ring
+   drawn on the pill itself. */
+.value-ring {
+  display: none;
+  pointer-events: none;
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+[data-slot="slider-thumb"]:has(:focus-visible):not([data-dismissed])
+  .value-ring {
+  display: block;
+}
+
+/* Closing: the digits go, then the shape shrinks back into the knob and
+   hides once it matches. Opening: shown at once at the knob's size, then
+   grown, the digits following. The pill's place is never animated: it
+   follows the value every frame. Reduced motion: it just appears. */
+@media (prefers-reduced-motion: no-preference) {
+  .value-pill {
+    transition:
+      clip-path 200ms var(--ease-out),
+      translate 150ms var(--ease-out),
+      opacity 0s 200ms;
+  }
+
+  .value-pill > span {
+    transition: opacity 100ms var(--ease-out);
+  }
+
+  [data-slot="slider-thumb"]:is(
+      [data-flash],
+      [data-held],
+      [data-dragging],
+      :has(:focus-visible),
+      :hover
+    ):not([data-dismissed])
+    .value-pill {
+    transition:
+      clip-path 150ms var(--ease-out),
+      translate 150ms var(--ease-out),
+      opacity 0s;
+  }
+
+  [data-slot="slider-thumb"]:is(
+      [data-flash],
+      [data-held],
+      [data-dragging],
+      :has(:focus-visible),
+      :hover
+    ):not([data-dismissed])
+    .value-pill
+    > span {
+    transition: opacity 100ms var(--ease-out) 50ms;
+  }
+}

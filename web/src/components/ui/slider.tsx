@@ -5,7 +5,7 @@ import { followTouch } from "@/lib/touch-drag"
 import { cn } from "@/lib/utils"
 
 /**
- * Diverges from the shadcn registry in five ways, all deliberate:
+ * Diverges from the shadcn registry in seven ways, all deliberate:
  *
  * 1. A scalar `value` renders one thumb. The registry falls back to
  *    `[min, max]`, which renders two. Base UI gives both index 0 when the value
@@ -34,6 +34,11 @@ import { cn } from "@/lib/utils"
  *    waits: a drag across sets the value, a drag down scrolls. The thumb
  *    still answers at once. A wheel is taken only once the pointer has really
  *    moved onto the control since the page last scrolled.
+ * 7. `showValue` puts the value on the thumb, as YouTube's seek handle does:
+ *    the knob grows into a pill that carries the number while the value is
+ *    being set (hovered, focused from the keyboard, wheeled, reset, or held).
+ *    A press lifts the pill above the thumb, clear of the cursor or finger.
+ *    Styles: .value-pill in tailwind.css.
  */
 
 /**
@@ -102,10 +107,15 @@ type SliderProps = Omit<
     wheelStep?: number
     /** Double-click sets this value. */
     resetValue?: number
+    /** The value rides the thumb while it is being set (see 7 above). */
+    showValue?: boolean
   }
 
 /** Both affordances need to know the current value, so both are controlled-scalar only. */
 const isScalar = (value: unknown): value is number => typeof value === "number"
+
+/** How long a wheel notch or a reset keeps the value pill open. */
+const FLASH_MS = 1500
 
 /** Onto the step grid and inside the range, as Base UI rounds its own values. */
 function snap(
@@ -125,6 +135,7 @@ function Slider({
   step = 1,
   wheelStep,
   resetValue,
+  showValue = false,
   onValueChange,
   onValueCommitted,
   getAriaLabel,
@@ -149,6 +160,22 @@ function Slider({
   /** When the pointer last really moved over the control. */
   const aimedAt = React.useRef(0)
 
+  // The value pill's states that Base UI has no attribute for. flashing: a
+  // wheel notch or a reset, which nothing is pressing. held: a finger
+  // dragging the track, which bypasses Base UI's own drag (see trackTouch).
+  // dismissedAt: Escape closed the pill at this value; any change reopens it.
+  const [flashing, setFlashing] = React.useState(false)
+  const [held, setHeld] = React.useState(false)
+  const [dismissedAt, setDismissedAt] = React.useState<number | null>(null)
+  const flashTimer = React.useRef<number | undefined>(undefined)
+  const pillRef = React.useRef<HTMLSpanElement>(null)
+  const flash = React.useCallback(() => {
+    setFlashing(true)
+    window.clearTimeout(flashTimer.current)
+    flashTimer.current = window.setTimeout(() => setFlashing(false), FLASH_MS)
+  }, [])
+  React.useEffect(() => () => window.clearTimeout(flashTimer.current), [])
+
   // The wheel listener is attached once, so it reads props from here rather
   // than closing over them.
   const live = React.useRef({
@@ -157,6 +184,7 @@ function Slider({
     max,
     step,
     wheelStep,
+    showValue,
     disabled: props.disabled,
     onValueChange,
     onValueCommitted,
@@ -168,6 +196,7 @@ function Slider({
       max,
       step,
       wheelStep,
+      showValue,
       disabled: props.disabled,
       onValueChange,
       onValueCommitted,
@@ -175,11 +204,17 @@ function Slider({
   })
 
   // Change then commit: the commit is what lets a consumer treat this as a
-  // finished interaction rather than a frame of a drag.
-  const emit = React.useCallback((next: number) => {
-    live.current.onValueChange?.(next)
-    live.current.onValueCommitted?.(next)
-  }, [])
+  // finished interaction rather than a frame of a drag. Both callers, the
+  // wheel and the reset, move the value with nothing on the thumb, so the
+  // value pill opens for a moment to show where it went.
+  const emit = React.useCallback(
+    (next: number) => {
+      live.current.onValueChange?.(next)
+      live.current.onValueCommitted?.(next)
+      if (live.current.showValue) flash()
+    },
+    [flash]
+  )
 
   React.useEffect(() => {
     const control = controlRef.current
@@ -244,6 +279,9 @@ function Slider({
    * browser takes over commits where it got to, so a change is always followed
    * by a commit.
    */
+  /** Where the value sits, 0 to 1: the pill's place against the thumb. */
+  const ratio = isScalar(value) && max > min ? (value - min) / (max - min) : 0
+
   const trackTouch = (event: React.PointerEvent) => {
     const control = controlRef.current
     if (!control) return
@@ -262,6 +300,9 @@ function Slider({
     }
 
     followTouch(event.nativeEvent, {
+      onStart: () => {
+        if (showValue) setHeld(true)
+      },
       onMove: (e) => {
         const next = valueAt(e.clientX)
         if (next !== (last ?? live.current.value)) {
@@ -270,6 +311,7 @@ function Slider({
         }
       },
       onEnd: () => {
+        setHeld(false)
         if (last !== null) live.current.onValueCommitted?.(last)
       },
     })
@@ -311,7 +353,16 @@ function Slider({
         }}
         onDoubleClick={() => {
           if (resetValue == null || !isScalar(value)) return
-          if (resetValue !== value) emit(resetValue)
+          if (resetValue === value) return
+          emit(resetValue)
+          // A reset is one jump, like a skip on YouTube's bar, so its pill
+          // gives the one beat; the wheel's notches repeat too fast for it.
+          if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            pillRef.current?.animate(
+              [{ scale: "1" }, { scale: "1.15" }, { scale: "1" }],
+              { duration: 100, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
+            )
+          }
         }}
         // The control's own box is only as tall as the 4px track, since the
         // thumb is absolutely positioned. The hit band is a pseudo-element
@@ -351,7 +402,30 @@ function Slider({
             // scale whatever it holds. A finger gets a 24px one, a size it
             // can see past its own tip. touch-none: a finger on the thumb
             // drags at once, never scrolls.
-            className="group/thumb block size-4 shrink-0 cursor-grab touch-none rounded-full select-none disabled:pointer-events-none disabled:opacity-38 has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring pointer-coarse:size-6"
+            //
+            // With the value pill the focus ring moves to .value-ring, the
+            // pill's shape, and comes back here only while Escape has the
+            // pill closed.
+            className={cn(
+              "group/thumb block size-4 shrink-0 cursor-grab touch-none rounded-full select-none disabled:pointer-events-none disabled:opacity-38 pointer-coarse:size-6",
+              showValue
+                ? "data-dismissed:has-focus-visible:outline-3 data-dismissed:has-focus-visible:outline-offset-2 data-dismissed:has-focus-visible:outline-ring"
+                : "has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring"
+            )}
+            data-flash={showValue && flashing ? "" : undefined}
+            data-held={showValue && held ? "" : undefined}
+            data-dismissed={
+              showValue && isScalar(value) && dismissedAt === value
+                ? ""
+                : undefined
+            }
+            onKeyDown={(event) => {
+              // Not stopped: in a sheet the same Escape still closes it.
+              if (showValue && event.key === "Escape" && isScalar(value)) {
+                setDismissedAt(value)
+              }
+            }}
+            onBlur={() => setDismissedAt(null)}
           >
             {/* Murmur's knob: a brand-filled circle cut out of the surface it
                 sits on by a 3px border, growing slightly on hover and while
@@ -360,6 +434,24 @@ function Slider({
               aria-hidden="true"
               className="absolute inset-0 rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform group-data-dragging/thumb:ring-4 group-data-dragging/thumb:ring-ring/25 motion-safe:group-hover/thumb:scale-[1.15] motion-safe:group-data-dragging/thumb:scale-[1.15] pointer-coarse:border-4"
             />
+            {showValue && isScalar(value) && (
+              <>
+                {/* aria-hidden: the thumb's aria-valuetext already says it. */}
+                <span
+                  aria-hidden="true"
+                  className="value-ring"
+                  style={{ "--r": ratio } as React.CSSProperties}
+                />
+                <span
+                  ref={pillRef}
+                  aria-hidden="true"
+                  className="value-pill"
+                  style={{ "--r": ratio } as React.CSSProperties}
+                >
+                  <span>{Math.round(value)}</span>
+                </span>
+              </>
+            )}
           </SliderPrimitive.Thumb>
         ))}
       </SliderPrimitive.Control>
