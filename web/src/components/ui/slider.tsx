@@ -178,6 +178,26 @@ function Slider({
   const [dismissedAt, setDismissedAt] = React.useState<number | null>(null)
   const flashTimer = React.useRef<number | undefined>(undefined)
   const pillRef = React.useRef<HTMLSpanElement>(null)
+  // The label's width, measured, so the pill can morph between widths rather
+  // than snap. offsetWidth: a reset's bounce scales the pill, not its layout.
+  const pillLabel =
+    valueLabel ?? (isScalar(value) ? String(Math.round(value)) : "")
+  const labelRef = React.useRef<HTMLSpanElement>(null)
+  const [labelWidth, setLabelWidth] = React.useState<number | null>(null)
+  React.useLayoutEffect(() => {
+    if (labelRef.current) setLabelWidth(labelRef.current.offsetWidth)
+  }, [pillLabel])
+  React.useEffect(() => {
+    // Measured before the web font arrived, the width would be the fallback's.
+    void document.fonts?.ready.then(() => {
+      if (labelRef.current) setLabelWidth(labelRef.current.offsetWidth)
+    })
+  }, [])
+  const pillStyle = {
+    // Where the value sits, 0 to 1: the pill's place against the thumb.
+    "--r": isScalar(value) && max > min ? (value - min) / (max - min) : 0,
+    "--label-w": labelWidth === null ? undefined : `${labelWidth}px`,
+  } as React.CSSProperties
   const openPill = React.useCallback(() => {
     setFlashing(true)
     window.clearTimeout(flashTimer.current)
@@ -295,9 +315,6 @@ function Slider({
    * browser takes over commits where it got to, so a change is always followed
    * by a commit.
    */
-  /** Where the value sits, 0 to 1: the pill's place against the thumb. */
-  const ratio = isScalar(value) && max > min ? (value - min) / (max - min) : 0
-
   const trackTouch = (event: React.PointerEvent) => {
     const control = controlRef.current
     if (!control) return
@@ -391,7 +408,7 @@ function Slider({
         // card or reach into the gap below it. On touch the band can grow to a
         // full 44px: the control is pan-y and a track touch waits to see which
         // way it goes (see trackTouch), so a scroll can start anywhere on it.
-        className="relative flex w-full touch-pan-y items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] data-dragging:cursor-grabbing pointer-coarse:before:-inset-y-5 data-disabled:opacity-38 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:before:-inset-x-3 data-vertical:before:inset-y-0"
+        className="relative flex w-full cursor-pointer touch-pan-y items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] pointer-coarse:before:-inset-y-5 data-disabled:cursor-default data-disabled:opacity-38 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:before:-inset-x-3 data-vertical:before:inset-y-0"
       >
         <SliderPrimitive.Track
           data-slot="slider-track"
@@ -423,7 +440,7 @@ function Slider({
             // pill's shape, and comes back here only while Escape has the
             // pill closed.
             className={cn(
-              "group/thumb block size-4 shrink-0 cursor-grab touch-none rounded-full select-none disabled:pointer-events-none disabled:opacity-38 pointer-coarse:size-6",
+              "group/thumb block size-4 shrink-0 cursor-pointer touch-none rounded-full select-none disabled:pointer-events-none disabled:opacity-38 pointer-coarse:size-6",
               showValue
                 ? "data-dismissed:has-focus-visible:outline-3 data-dismissed:has-focus-visible:outline-offset-2 data-dismissed:has-focus-visible:outline-ring"
                 : "has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring"
@@ -462,17 +479,17 @@ function Slider({
                 <span
                   aria-hidden="true"
                   className="value-ring"
-                  style={{ "--r": ratio } as React.CSSProperties}
+                  style={pillStyle}
                 >
-                  {valueLabel ?? Math.round(value)}
+                  {pillLabel}
                 </span>
                 <span
                   ref={pillRef}
                   aria-hidden="true"
                   className="value-pill sheen [--sheen-color:var(--brand)]"
-                  style={{ "--r": ratio } as React.CSSProperties}
+                  style={pillStyle}
                 >
-                  <span>{valueLabel ?? Math.round(value)}</span>
+                  <span ref={labelRef}>{pillLabel}</span>
                 </span>
               </>
             )}

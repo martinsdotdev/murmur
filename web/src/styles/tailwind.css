@@ -696,7 +696,9 @@
   translate: calc(var(--r) * -100%) -50%;
   box-sizing: border-box;
   min-width: 2.375rem; /* "100" */
-  width: max-content;
+  /* The label's measured width (Slider sets --label-w), so a change of label
+     can transition; shrink-to-fit until it is measured. */
+  width: calc(var(--label-w) + 1rem);
   height: var(--h);
   padding-inline: 0.5rem;
   border-radius: 9999px;
@@ -806,12 +808,17 @@
 }
 
 @media (hover: hover) {
-  [data-slot="slider-thumb"]:hover:not([data-dismissed]) .value-pill {
+  [data-slot="slider"]:hover
+    [data-slot="slider-thumb"]:not([data-dismissed])
+    .value-pill {
     opacity: 1;
     clip-path: inset(0 round 9999px);
   }
 
-  [data-slot="slider-thumb"]:hover:not([data-dismissed]) .value-pill > span {
+  [data-slot="slider"]:hover
+    [data-slot="slider-thumb"]:not([data-dismissed])
+    .value-pill
+    > span {
     opacity: 1;
   }
 }
@@ -867,13 +874,20 @@
 
 /* Closing: the digits go, then the shape shrinks back into the knob and
    hides once it matches. Opening: shown at once at the knob's size, then
-   grown, the digits following. The pill's place is never animated: it
+   grown, the digits following. When a label changes width ("Instant" to
+   "0.1s"), the pill morphs to it, as YouTube's does when its total grows,
+   and the focus ring with it. The pill's place is never animated: it
    follows the value every frame. Reduced motion: it just appears. */
 @media (prefers-reduced-motion: no-preference) {
   .value-pill {
     transition:
       clip-path 200ms var(--ease-out),
+      width 100ms var(--ease-out),
       opacity 0s 200ms;
+  }
+
+  .value-ring {
+    transition: width 100ms var(--ease-out);
   }
 
   .value-pill > span {
@@ -884,12 +898,15 @@
       [data-flash],
       [data-held],
       [data-dragging],
-      :has(:focus-visible),
-      :hover
+      :has(:focus-visible)
     ):not([data-dismissed])
+    .value-pill,
+  [data-slot="slider"]:hover
+    [data-slot="slider-thumb"]:not([data-dismissed])
     .value-pill {
     transition:
       clip-path 150ms var(--ease-out),
+      width 100ms var(--ease-out),
       opacity 0s;
   }
 
@@ -897,9 +914,12 @@
       [data-flash],
       [data-held],
       [data-dragging],
-      :has(:focus-visible),
-      :hover
+      :has(:focus-visible)
     ):not([data-dismissed])
+    .value-pill
+    > span,
+  [data-slot="slider"]:hover
+    [data-slot="slider-thumb"]:not([data-dismissed])
     .value-pill
     > span {
     transition: opacity 100ms var(--ease-out) 50ms;
