@@ -3839,9 +3839,6 @@ export function MurmurApp() {
         <DialogContent className="flex flex-col overflow-hidden sm:max-w-sm">
           <DialogHeader className="shrink-0">
             <DialogTitle>{m.all_mixes()}</DialogTitle>
-            <DialogDescription>
-              {m.all_mixes_description({ count: saved.length })}
-            </DialogDescription>
           </DialogHeader>
           <SidebarMenu className="-mx-6 min-h-0 w-auto flex-1 scroll-fade overflow-y-auto px-6 scroll-fade-5">
             {saved.map((mix) => {
@@ -4131,11 +4128,6 @@ export function MurmurApp() {
         <DialogContent className="sm:max-w-sm" instant={keyDriven}>
           <DialogHeader>
             <DialogTitle className="text-lg">{m.timer_title()}</DialogTitle>
-            <DialogDescription>
-              {prefs.sleepFade === 60
-                ? m.timer_fade_minute()
-                : m.timer_fade_seconds({ count: prefs.sleepFade })}
-            </DialogDescription>
           </DialogHeader>
           <SleepTimerPanel
             running={timerOn}

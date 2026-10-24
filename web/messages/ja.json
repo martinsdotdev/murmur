@@ -216,16 +216,6 @@
   "timer_stops_at": "{time} に停止",
   "timer_extend": "+{duration}",
   "timer_length": "タイマーの長さ",
-  "timer_fade_minute": "最後の 1 分間でフェードアウトし、一時停止します。",
-  "timer_fade_seconds": [
-    {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=other": "最後の {count} 秒間でフェードアウトし、一時停止します。"
-      }
-    }
-  ],
   "now_playing": "再生中",
   "now_playing_show": "再生中を表示",
   "now_playing_hide": "再生中を隠す",
@@ -240,15 +230,6 @@
   "preferences_shortcut": "設定 (Ctrl+P)",
   "your_mixes": "マイミックス",
   "all_mixes": "すべてのミックス",
-  "all_mixes_description": [
-    {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=other": "{count} 個のミックスをこのブラウザーに保存しています。"
-      }
-    }
-  ],
   "yours": "マイサウンド",
   "add_sound": "サウンドを追加",
   "add_own_sound": "自分のサウンドを追加",

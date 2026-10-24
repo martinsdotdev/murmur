@@ -225,17 +225,6 @@
   "timer_stops_at": "Se detiene a las {time}",
   "timer_extend": "+{duration}",
   "timer_length": "Duración del temporizador",
-  "timer_fade_minute": "Baja el volumen durante el último minuto y luego se pausa.",
-  "timer_fade_seconds": [
-    {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "Baja el volumen durante el último segundo y luego se pausa.",
-        "countPlural=other": "Baja el volumen durante los últimos {count} segundos y luego se pausa."
-      }
-    }
-  ],
   "now_playing": "Sonando ahora",
   "now_playing_show": "Mostrar Sonando ahora",
   "now_playing_hide": "Ocultar Sonando ahora",
@@ -250,16 +239,6 @@
   "preferences_shortcut": "Preferencias (Ctrl+P)",
   "your_mixes": "Tus mezclas",
   "all_mixes": "Todas las mezclas",
-  "all_mixes_description": [
-    {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "{count} mezcla, guardada en este navegador.",
-        "countPlural=other": "{count} mezclas, guardadas en este navegador."
-      }
-    }
-  ],
   "yours": "Tuyos",
   "add_sound": "Añadir sonido",
   "add_own_sound": "Añadir un sonido propio",

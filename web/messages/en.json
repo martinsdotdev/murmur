@@ -225,17 +225,6 @@
   "timer_stops_at": "Stops at {time}",
   "timer_extend": "+{duration}",
   "timer_length": "Timer length",
-  "timer_fade_minute": "Fades out over the last minute, then pauses.",
-  "timer_fade_seconds": [
-    {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "Fades out over the last second, then pauses.",
-        "countPlural=other": "Fades out over the last {count} seconds, then pauses."
-      }
-    }
-  ],
   "now_playing": "Now playing",
   "now_playing_show": "Show Now playing",
   "now_playing_hide": "Hide Now playing",
@@ -250,16 +239,6 @@
   "preferences_shortcut": "Preferences (Ctrl+P)",
   "your_mixes": "Your mixes",
   "all_mixes": "All mixes",
-  "all_mixes_description": [
-    {
-      "declarations": ["input count", "local countPlural = count: plural"],
-      "selectors": ["countPlural"],
-      "match": {
-        "countPlural=one": "{count} mix, kept in this browser.",
-        "countPlural=other": "{count} mixes, kept in this browser."
-      }
-    }
-  ],
   "yours": "Yours",
   "add_sound": "Add sound",
   "add_own_sound": "Add your own sound",
