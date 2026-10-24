@@ -617,8 +617,13 @@ function LevelTrack({ level, live }: { level: number; live: boolean }) {
     <div
       aria-hidden="true"
       className={cn(
-        "relative h-1 overflow-hidden rounded-full transition-colors rtl:-scale-x-100",
-        level > 0 ? "bg-track" : "bg-transparent"
+        // As a slider's track: 4px, thickening to 6px under a finger, by a
+        // clip on a 6px box whose margins keep the 4px in the layout.
+        "relative -my-px h-1.5 overflow-hidden rounded-full transition-[background-color,clip-path] duration-150 ease-(--ease-out) motion-reduce:transition-none rtl:-scale-x-100",
+        level > 0 ? "bg-track" : "bg-transparent",
+        live
+          ? "[clip-path:inset(0_round_9999px)]"
+          : "[clip-path:inset(1px_0_round_9999px)]"
       )}
     >
       {/* Full width and slid into place rather than sized: a transform

@@ -675,6 +675,40 @@
   }
 }
 
+/* A slider's track: 4px at rest (6px for a finger), thickening by 2px while
+   the slider is hovered or held, as YouTube's bar does under the pointer.
+   The box is the thick size with a negative margin, so the layout only ever
+   sees the resting one, and a clip opens from it: the ends stay round and
+   nothing around it moves. */
+[data-slot="slider-track"][data-orientation="horizontal"] {
+  height: 6px;
+  margin-block: -1px;
+  clip-path: inset(1px 0 round 9999px);
+}
+
+@media (pointer: coarse) {
+  [data-slot="slider-track"][data-orientation="horizontal"] {
+    height: 8px;
+  }
+}
+
+@media (hover: hover) {
+  [data-slot="slider"]:hover [data-slot="slider-track"] {
+    clip-path: inset(0 round 9999px);
+  }
+}
+
+[data-slot="slider-track"][data-dragging],
+[data-slot="slider"][data-held] [data-slot="slider-track"] {
+  clip-path: inset(0 round 9999px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="slider-track"] {
+    transition: clip-path 150ms var(--ease-out);
+  }
+}
+
 /* A level slider's value on its thumb (Slider's showValue), after YouTube's
    seek pill: the knob grows into a pill carrying the number while the level
    is being set, and shrinks back after. The thumb box never changes size, so

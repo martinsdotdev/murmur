@@ -333,9 +333,7 @@ function Slider({
     }
 
     followTouch(event.nativeEvent, {
-      onStart: () => {
-        if (showValue) setHeld(true)
-      },
+      onStart: () => setHeld(true),
       onMove: (e) => {
         const next = valueAt(e.clientX)
         if (next !== (last ?? live.current.value)) {
@@ -354,6 +352,9 @@ function Slider({
     <SliderPrimitive.Root
       className={cn("data-horizontal:w-full data-vertical:h-full", className)}
       data-slot="slider"
+      // The track thickens while held, a finger's drag included (.slider-track
+      // styles in tailwind.css).
+      data-held={held ? "" : undefined}
       // A slider in a bottom sheet is a control, not a handle: a drag that
       // starts on it, or wanders off its axis, must not swipe the sheet away.
       data-base-ui-swipe-ignore=""
@@ -412,7 +413,8 @@ function Slider({
       >
         <SliderPrimitive.Track
           data-slot="slider-track"
-          className="relative grow overflow-hidden rounded-full bg-track select-none data-horizontal:h-1 data-horizontal:w-full pointer-coarse:data-horizontal:h-1.5 data-vertical:h-full data-vertical:w-1"
+          // Its height and how it thickens: tailwind.css, by data-slot.
+          className="relative grow overflow-hidden rounded-full bg-track select-none data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
         >
           <SliderPrimitive.Indicator
             data-slot="slider-range"
@@ -446,7 +448,7 @@ function Slider({
                 : "has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring"
             )}
             data-flash={showValue && flashing ? "" : undefined}
-            data-held={showValue && held ? "" : undefined}
+            data-held={held ? "" : undefined}
             data-dismissed={
               showValue && isScalar(value) && dismissedAt === value
                 ? ""
