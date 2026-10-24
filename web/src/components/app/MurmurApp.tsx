@@ -2987,15 +2987,16 @@ export function MurmurApp() {
     )
 
     // Card draws its edge as a ring, not a border, so hover goes on the ring.
-    // The press is touch only, where nothing else answers a tap until the
-    // sound arrives; a mouse already has hover.
+    // A press settles the card slightly, under a finger or a mouse: the
+    // answer to a tap before the sound arrives. Not when the press is on the
+    // card's slider or its remove button, which aren't the card.
     // While its menu is open the card holds M3's 10% pressed layer, so the
     // menu reads as belonging to it.
     // On is the raised fill alone, with the amber left to the icon, slider
     // and meters inside: an amber edge as well, on every card that's on,
     // made a playing mix the loudest thing on the page.
     const tileState = cn(
-      "rounded-lg shadow-level-1 [transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] hover:ring-brand/40 data-popup-open:bg-[color-mix(in_srgb,var(--tile-bg),currentColor_10%)] dark:hover:ring-brand/40 pointer-coarse:motion-safe:active:scale-[0.98]",
+      "rounded-lg shadow-level-1 [transition:background-color_150ms_ease,box-shadow_150ms_ease,scale_120ms_var(--ease-out)] hover:ring-brand/40 data-popup-open:bg-[color-mix(in_srgb,var(--tile-bg),currentColor_10%)] dark:hover:ring-brand/40 motion-safe:[&:active:not(:has([data-slot=slider]:active,button:active))]:scale-[0.98]",
       active
         ? "bg-secondary [--tile-bg:var(--secondary)]"
         : "[--tile-bg:var(--card)]"
