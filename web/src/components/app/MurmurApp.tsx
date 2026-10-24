@@ -274,6 +274,15 @@ function BrandMark({ size = 18 }: { size?: number }) {
 const shelfCell =
   "flex min-h-16 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-m3-xs bg-grouped px-0.5 py-1 text-center text-label-small hyphens-auto wrap-anywhere state-layer transition-[background-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px"
 
+/**
+ * A dashed place for the next one: Add sound at the end of the grid, Save mix
+ * at the end of the mixes. No fill on hover; the dash and the label darken.
+ * The corner is the page's rounded-xl set outright, since the sidebar scales
+ * --radius up and Save mix would round further than Add sound.
+ */
+const addTile =
+  "flex cursor-pointer items-center gap-2 rounded-[0.7rem] border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+
 /** A mix's loudest sound stands in for it, so "Rainy café" reads as a café. */
 function mixIconPath(mix: MixerState) {
   let top = ""
@@ -3474,21 +3483,19 @@ export function MurmurApp() {
                   )
                 })}
               </SidebarMenu>
-              <Button
-                shape="fluent"
-                variant="ghost"
-                size="sm"
-                // Dashed, as "Add sound" is: a place for the next one.
-                className="mt-1 w-full justify-start border-dashed border-border text-muted-foreground hover:border-muted-foreground"
+              {/* px-3, a row's, so the plus sits under the mixes' icons. */}
+              <button
+                type="button"
+                className={cn(addTile, "mt-1 h-8 w-full px-3")}
                 onClick={openSaveDialog}
               >
                 <HugeiconsIcon
                   icon={PlusSignIcon}
                   strokeWidth={2}
-                  className="size-3.5"
+                  className="size-4"
                 />
                 {m.action_save_mix()}
-              </Button>
+              </button>
             </SidebarGroup>
           </SidebarContent>
 
@@ -3657,7 +3664,8 @@ export function MurmurApp() {
                         setAddOpen(true)
                       }}
                       className={cn(
-                        "flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground",
+                        addTile,
+                        "justify-center",
                         // 83px is what a sound card measures. It only matters when
                         // this tile is alone, since the grid stretches it to the
                         // cards beside it otherwise, but it has to be the card's
