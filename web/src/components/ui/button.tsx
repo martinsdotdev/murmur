@@ -3,8 +3,11 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+// Round-ended, as M3's buttons are: cards, fields and list rows keep their
+// corners, so a button reads as one at a glance. A pressed one fills and
+// turns amber, as a pressed toggle does.
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,translate] select-none disabled:pointer-events-none disabled:opacity-38 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 motion-safe:active:not-aria-[haspopup]:translate-y-px dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,translate] select-none disabled:pointer-events-none disabled:opacity-38 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 motion-safe:active:not-aria-[haspopup]:translate-y-px dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -14,7 +17,7 @@ const buttonVariants = cva(
           "border-border bg-background state-layer hover:text-foreground aria-expanded:text-foreground dark:bg-transparent",
         secondary: "bg-secondary state-layer text-secondary-foreground",
         ghost:
-          "state-layer hover:text-foreground aria-expanded:text-foreground",
+          "state-layer hover:text-foreground aria-expanded:text-foreground aria-pressed:bg-secondary aria-pressed:text-brand",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30",
         link: "text-primary underline-offset-4 hover:underline",

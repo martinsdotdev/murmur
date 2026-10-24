@@ -726,7 +726,7 @@ function NowPlayingRow({
         <Button
           variant="ghost"
           size="icon"
-          className="size-11 shrink-0 rounded-full text-muted-foreground pointer-coarse:hit-target"
+          className="size-11 shrink-0 text-muted-foreground pointer-coarse:hit-target"
           aria-label={
             level > 0
               ? m.sound_turn_off_named({ name })
@@ -932,18 +932,10 @@ function SleepTimerPanel({
             : m.timer_stops_at({ time: formatTime(end) })
         )}
         <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            className="h-11 rounded-full"
-            onClick={onExtend}
-          >
+          <Button variant="outline" className="h-11" onClick={onExtend}>
             {m.timer_extend({ duration: formatDuration(15) })}
           </Button>
-          <Button
-            variant="ghost"
-            className="h-11 rounded-full"
-            onClick={onStop}
-          >
+          <Button variant="ghost" className="h-11" onClick={onStop}>
             {m.action_turn_off()}
           </Button>
         </div>
@@ -994,7 +986,7 @@ function SleepTimerPanel({
           onValueChange={(value) => onChoose(value as number)}
         />
       </div>
-      <Button className="h-11 w-full rounded-full" onClick={onStart}>
+      <Button className="h-11 w-full" onClick={onStart}>
         {m.action_start()}
       </Button>
     </>
@@ -1092,7 +1084,7 @@ function RemoveSoundButton({
       aria-label={m.sound_remove_named({ name })}
       title={m.action_remove()}
       className={cn(
-        "relative size-[22px] shrink-0 rounded state-layer text-muted-foreground hover:text-foreground pointer-coarse:after:absolute pointer-coarse:after:-inset-[11px]",
+        "relative size-[22px] shrink-0 state-layer text-muted-foreground hover:text-foreground pointer-coarse:after:absolute pointer-coarse:after:-inset-[11px]",
         className
       )}
       onClick={(e) => {
@@ -2948,11 +2940,7 @@ export function MurmurApp() {
   const nowPlayingActions = (onSave: () => void) => (
     <>
       {canSave ? (
-        <Button
-          variant="outline"
-          className="h-11 rounded-full px-5"
-          onClick={onSave}
-        >
+        <Button variant="outline" className="h-11 px-5" onClick={onSave}>
           {m.action_save_mix()}
         </Button>
       ) : (
@@ -2960,7 +2948,7 @@ export function MurmurApp() {
       )}
       <Button
         variant="ghost"
-        className="h-11 rounded-full px-5"
+        className="h-11 px-5"
         disabled={activeIds.length === 0}
         onClick={turnAllOff}
       >
@@ -3208,7 +3196,7 @@ export function MurmurApp() {
               where the labelled buttons' darker fill is for text. */}
           <Button
             size="icon-lg"
-            className="hidden size-12 rounded-full bg-primary sheen sheen-round hover:bg-primary/80 wide:inline-flex"
+            className="hidden size-12 bg-primary sheen sheen-round hover:bg-primary/80 wide:inline-flex"
             disabled={!playing && activeIds.length === 0}
             aria-label={playing ? m.action_pause() : m.action_play()}
             onClick={togglePlay}
@@ -3319,22 +3307,17 @@ export function MurmurApp() {
 
           {/* This view: tight together, as is this mix's pair after it. */}
           <div className="flex items-center gap-1">
-            {/* A segmented row, as the sleep timer's lengths and the theme
-                swatches are: each tile its own shape, so each takes its own
-                focus ring. Cut from the panel's surface rather than the
-                grouped one, which in dark would sit above the chosen tile. */}
+            {/* Icon buttons like the pane's beside them: the chosen view is
+                pressed, as the open pane is. */}
             <ToggleGroup
               value={[view]}
               onValueChange={(value) => {
                 const next = (value as string[])[0]
                 if (next === "grid" || next === "list") setView(next)
               }}
-              spacing={0.5}
+              spacing={1}
               size="sm"
-              className={cn(
-                "[--segment-radius:var(--radius-lg)]",
-                coarse ? "hidden" : "hidden sm:flex"
-              )}
+              className={coarse ? "hidden" : "hidden sm:flex"}
             >
               {(
                 [
@@ -3346,7 +3329,7 @@ export function MurmurApp() {
                   key={value}
                   value={value}
                   aria-label={label}
-                  className="rounded-m3-xs bg-background text-muted-foreground first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius)"
+                  className="w-8 px-0 text-muted-foreground"
                 >
                   <HugeiconsIcon
                     icon={icon}
@@ -3414,7 +3397,7 @@ export function MurmurApp() {
             <Button
               variant="ghost"
               size="icon"
-              className="size-11 rounded-full pointer-coarse:hit-target"
+              className="size-11 pointer-coarse:hit-target"
               aria-label={m.action_share()}
               onClick={share}
             >
@@ -3427,7 +3410,7 @@ export function MurmurApp() {
             <Button
               variant="ghost"
               size="icon"
-              className="size-11 rounded-full pointer-coarse:hit-target"
+              className="size-11 pointer-coarse:hit-target"
               aria-label={m.preferences()}
               onClick={() => setSettingsOpen(true)}
             >
@@ -3486,7 +3469,9 @@ export function MurmurApp() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="mt-1 w-full justify-start border border-dashed text-muted-foreground"
+                // A placeholder takes the shape of what it adds, as "Add
+                // sound" does a card's: here a mix's row.
+                className="mt-1 w-full justify-start rounded-xl border-dashed border-border text-muted-foreground hover:border-muted-foreground"
                 onClick={openSaveDialog}
               >
                 <HugeiconsIcon
@@ -3569,7 +3554,7 @@ export function MurmurApp() {
                     tap away, and the tap says where it goes. */}
                 <Button
                   variant="ghost"
-                  className="-mr-3 h-9 rounded-full px-3 text-sm font-medium text-brand hover:text-brand pointer-coarse:hit-target"
+                  className="-mr-3 h-9 px-3 text-sm font-medium text-brand hover:text-brand pointer-coarse:hit-target"
                   aria-haspopup="dialog"
                   onClick={() => setAllMixesOpen(true)}
                 >
@@ -3721,7 +3706,7 @@ export function MurmurApp() {
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      className="rounded-full bg-secondary"
+                      className="bg-secondary"
                       aria-label={m.now_playing_close()}
                       title={m.action_close()}
                       onClick={() => {
@@ -3754,7 +3739,7 @@ export function MurmurApp() {
           <div className="flex shrink-0 items-center gap-2.5 rounded-t-m3-xl border-x border-t bg-sidebar px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] wide:hidden">
             <Button
               size="icon"
-              className="size-12 shrink-0 rounded-full bg-primary sheen shadow-level-2 sheen-round hover:bg-primary/80"
+              className="size-12 shrink-0 bg-primary sheen shadow-level-2 sheen-round hover:bg-primary/80"
               disabled={!playing && activeIds.length === 0}
               aria-label={playing ? m.action_pause() : m.action_play()}
               onClick={togglePlay}
@@ -3793,7 +3778,7 @@ export function MurmurApp() {
               // The sidebar button's states: plain while idle, the raised fill
               // and amber while running.
               className={cn(
-                "h-11 shrink-0 gap-1.5 rounded-full pointer-coarse:hit-target",
+                "h-11 shrink-0 gap-1.5 pointer-coarse:hit-target",
                 timerOn
                   ? "bg-secondary px-3.5 dark:bg-secondary"
                   : "w-11 bg-transparent px-0"
@@ -3922,7 +3907,7 @@ export function MurmurApp() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-11 shrink-0 rounded-full text-muted-foreground"
+                            className="size-11 shrink-0 text-muted-foreground"
                             aria-label={m.mix_more_for({ name: mix.name })}
                           />
                         }

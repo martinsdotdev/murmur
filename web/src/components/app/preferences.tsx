@@ -612,7 +612,7 @@ export function PreferencesSheet({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="-my-1 rounded-full bg-secondary"
+                className="-my-1 bg-secondary"
                 aria-label={m.action_back()}
                 // The shortcuts page has nothing to focus, so focus waits
                 // here, where the way back is.
