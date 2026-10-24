@@ -52,12 +52,24 @@ export const aboutRow =
 const SCHEMES_SUPPORTED =
   typeof CSS !== "undefined" && CSS.supports("color", "oklch(from red l c h)")
 
-const SCHEME_LABEL: Record<Scheme, () => string> = {
-  amber: m.scheme_amber,
-  rose: m.scheme_rose,
-  sage: m.scheme_sage,
-  sky: m.scheme_sky,
-  violet: m.scheme_violet,
+/** Getters, as the sound and category names are: read in the app's language
+ * when shown, not when this module loads. */
+const SCHEME_LABEL: Readonly<Record<Scheme, string>> = {
+  get amber() {
+    return m.scheme_amber()
+  },
+  get rose() {
+    return m.scheme_rose()
+  },
+  get sage() {
+    return m.scheme_sage()
+  },
+  get sky() {
+    return m.scheme_sky()
+  },
+  get violet() {
+    return m.scheme_violet()
+  },
 }
 
 /**
@@ -95,7 +107,7 @@ function SchemeSwatch({
           background: `oklch(from #d18a2c l c calc(h + ${turn}))`,
         }}
       />
-      <span className="text-xs font-semibold">{SCHEME_LABEL[scheme]()}</span>
+      <span className="text-xs font-semibold">{SCHEME_LABEL[scheme]}</span>
     </button>
   )
 }

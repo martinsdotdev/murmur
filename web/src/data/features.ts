@@ -5,8 +5,9 @@
  * Icons come from @hugeicons/core-free-icons, the same set the app imports, so
  * the two halves of the site draw from one vocabulary.
  *
- * Text is read through the message functions at render, not stored: the build
- * imports this module once and renders it for every locale.
+ * Text is a getter, as the sound names are: the build imports this module
+ * once and renders it for every locale, so each read has to be in the
+ * language of the page being rendered.
  */
 import {
   Bookmark01Icon,
@@ -21,39 +22,63 @@ import { m } from "@/paraglide/messages.js"
 
 export interface Feature {
   icon: IconSvgElement
-  title: () => string
-  sub: () => string
+  readonly title: string
+  readonly sub: string
 }
 
 export const features: Feature[] = [
   {
     icon: SlidersVerticalIcon,
-    title: m.feature_layer_title,
-    sub: m.feature_layer_sub,
+    get title() {
+      return m.feature_layer_title()
+    },
+    get sub() {
+      return m.feature_layer_sub()
+    },
   },
   {
     icon: Bookmark01Icon,
-    title: m.feature_presets_title,
-    sub: m.feature_presets_sub,
+    get title() {
+      return m.feature_presets_title()
+    },
+    get sub() {
+      return m.feature_presets_sub()
+    },
   },
   {
     icon: Upload04Icon,
-    title: m.feature_import_title,
-    sub: m.feature_import_sub,
+    get title() {
+      return m.feature_import_title()
+    },
+    get sub() {
+      return m.feature_import_sub()
+    },
   },
   {
     icon: ComputerIcon,
-    title: m.feature_tray_title,
-    sub: m.feature_tray_sub,
+    get title() {
+      return m.feature_tray_title()
+    },
+    get sub() {
+      return m.feature_tray_sub()
+    },
   },
   {
     icon: ContrastIcon,
-    title: m.feature_theme_title,
-    sub: m.feature_theme_sub,
+    get title() {
+      return m.feature_theme_title()
+    },
+    get sub() {
+      return m.feature_theme_sub()
+    },
   },
   {
     icon: FavouriteIcon,
-    title: m.feature_free_title,
-    sub: m.feature_free_sub,
+    get title() {
+      return m.feature_free_title()
+    },
+    get sub() {
+      return m.feature_free_sub()
+    },
   },
 ]
