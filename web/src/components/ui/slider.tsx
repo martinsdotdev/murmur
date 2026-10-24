@@ -345,12 +345,22 @@ function Slider({
             aria-valuetext={ariaValueText}
             getAriaLabel={getAriaLabel}
             getAriaValueText={getAriaValueText}
-            // Murmur's thumb: a brand-filled circle cut out of the surface it
-            // sits on by a 3px border, growing slightly on hover and while held.
-            // A finger gets a 24px one, a size it can see past its own tip.
-            // touch-none: a finger on the thumb drags at once, never scrolls.
-            className="block size-4 shrink-0 cursor-grab touch-none rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform select-none disabled:pointer-events-none disabled:opacity-38 has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring data-dragging:ring-4 data-dragging:ring-ring/25 motion-safe:hover:scale-[1.15] motion-safe:data-dragging:scale-[1.15] pointer-coarse:size-6 pointer-coarse:border-4"
-          />
+            // A box the knob sits in, which never changes size: Base UI keeps
+            // an edge-aligned thumb on its value with a ResizeObserver on it,
+            // so a thumb that grew would drift, and one that scaled would
+            // scale whatever it holds. A finger gets a 24px one, a size it
+            // can see past its own tip. touch-none: a finger on the thumb
+            // drags at once, never scrolls.
+            className="group/thumb block size-4 shrink-0 cursor-grab touch-none rounded-full select-none disabled:pointer-events-none disabled:opacity-38 has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring pointer-coarse:size-6"
+          >
+            {/* Murmur's knob: a brand-filled circle cut out of the surface it
+                sits on by a 3px border, growing slightly on hover and while
+                held. */}
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 rounded-full border-[3px] border-background bg-primary shadow-sm transition-transform group-data-dragging/thumb:ring-4 group-data-dragging/thumb:ring-ring/25 motion-safe:group-hover/thumb:scale-[1.15] motion-safe:group-data-dragging/thumb:scale-[1.15] pointer-coarse:border-4"
+            />
+          </SliderPrimitive.Thumb>
         ))}
       </SliderPrimitive.Control>
     </SliderPrimitive.Root>
