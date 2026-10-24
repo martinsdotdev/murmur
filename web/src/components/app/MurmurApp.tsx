@@ -1241,6 +1241,12 @@ export function MurmurApp() {
   // is already audible.
   const lastNonZero = React.useRef<MixerState>({ ...initial.vols })
   const lastMaster = React.useRef(initial.master || DEFAULT_MASTER)
+  /**
+   * The header master's slider is being dragged. Its number shows on hover
+   * and focus too, but a finger on the track neither hovers nor focuses the
+   * thumb, so the drag has to say so itself.
+   */
+  const [masterHeld, setMasterHeld] = React.useState(false)
   const { queue: queueFrame, drop: dropFrame } = useFrameQueue()
 
   const activeIds = Object.keys(vols).filter((id) => (vols[id] ?? 0) > 0)
@@ -3259,10 +3265,10 @@ export function MurmurApp() {
           <div className="flex-1" />
 
           {/* Playback, then a rule, then this mix and this view. From md, where
-              the phone bar stops. The level is always shown here: one number,
-              where the cards have fourteen and keep theirs for hover. The
-              speaker mutes, as on any player. */}
-          <div className="hidden w-52 min-w-0 items-center gap-1.5 @max-5xl:w-28 @max-5xl:min-w-20 wide:flex">
+              the phone bar stops. The level's number shows as a card's does,
+              while the slider is hovered, focused or dragged, in a column kept
+              for it. The speaker mutes, as on any player. */}
+          <div className="group/master hidden w-52 min-w-0 items-center gap-1.5 @max-5xl:w-28 @max-5xl:min-w-20 wide:flex">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -3286,17 +3292,24 @@ export function MurmurApp() {
               resetValue={Math.round(DEFAULT_MASTER * 100)}
               aria-label={m.master_volume()}
               aria-valuetext={formatPercent(Math.round(master * 100))}
-              onValueChange={(value) => dragMaster((value as number) / 100)}
-              onValueCommitted={(value) =>
+              onValueChange={(value) => {
+                setMasterHeld(true)
+                dragMaster((value as number) / 100)
+              }}
+              onValueCommitted={(value) => {
+                setMasterHeld(false)
                 commitMaster((value as number) / 100)
-              }
+              }}
             />
             {/* A container query, not lg:, so a larger text size counts too:
                 rem in a container query follows the root font size. Below it
                 the slider and the mix name need the room more. */}
             <span
               aria-hidden="true"
-              className="hidden w-7 shrink-0 text-right font-mono text-[0.6875rem] text-muted-foreground tabular-nums @5xl:block"
+              className={cn(
+                "hidden w-7 shrink-0 text-right font-mono text-[0.6875rem] text-muted-foreground tabular-nums opacity-0 transition-opacity group-focus-within/master:opacity-100 group-hover/master:opacity-100 @5xl:block",
+                masterHeld && "opacity-100"
+              )}
             >
               {Math.round(master * 100)}
             </span>
