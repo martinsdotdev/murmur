@@ -620,6 +620,7 @@ function NowPlayingRow({
   name,
   level,
   note,
+  resetLevel,
   onDrag,
   onCommit,
   onTurnOff,
@@ -632,6 +633,8 @@ function NowPlayingRow({
    * itself: a slider there would move and change nothing.
    */
   note?: string
+  /** What a double-click on the slider goes back to, as on the cards. */
+  resetLevel: number
   onDrag: (level: number) => void
   onCommit: (level: number) => void
   /** Absent for the master row, which has nothing to turn off. */
@@ -667,6 +670,8 @@ function NowPlayingRow({
               min={0}
               max={100}
               step={1}
+              wheelStep={5}
+              resetValue={Math.round(resetLevel * 100)}
               aria-label={m.sound_volume({ name })}
               aria-valuetext={formatPercent(pct)}
               onValueChange={(value) => onDrag((value as number) / 100)}
@@ -2819,6 +2824,7 @@ export function MurmurApp() {
             }
             name={m.master()}
             level={master}
+            resetLevel={DEFAULT_MASTER}
             onDrag={dragMaster}
             onCommit={commitMaster}
           />
@@ -2861,6 +2867,7 @@ export function MurmurApp() {
               name={nameFor(id)}
               level={vols[id] ?? 0}
               note={deviceSetsLevel(id) ? m.sound_device_level() : undefined}
+              resetLevel={DEFAULT_TOGGLE_VOLUME}
               onDrag={(v) => {
                 if (v === 0) holdRow(id)
                 dragVolume(id, v)
