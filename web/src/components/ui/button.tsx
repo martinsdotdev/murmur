@@ -3,11 +3,9 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-// Round-ended, as M3's buttons are: cards, fields and list rows keep their
-// corners, so a button reads as one at a glance. A pressed one fills and
-// turns amber, as a pressed toggle does.
+// A pressed button fills and turns amber, as a pressed toggle does.
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,translate] select-none disabled:pointer-events-none disabled:opacity-38 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 motion-safe:active:not-aria-[haspopup]:translate-y-px dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,translate] select-none disabled:pointer-events-none disabled:opacity-38 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 motion-safe:active:not-aria-[haspopup]:translate-y-px dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -33,10 +31,19 @@ const buttonVariants = cva(
         "icon-sm": "size-8",
         "icon-lg": "size-10",
       },
+      shape: {
+        // M3's round ends, on the app's own surfaces and anything sized for
+        // a finger.
+        round: "rounded-full",
+        // Fluent's 4px, in dialogs, Preferences and the sidebar, as Windows
+        // draws its own.
+        fluent: "rounded",
+      },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
+      shape: "round",
     },
   }
 )
@@ -45,12 +52,13 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  shape = "round",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, shape, className }))}
       {...props}
     />
   )

@@ -513,10 +513,12 @@ function RenameDialog({
           }}
         />
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+          <Button shape="fluent" variant="outline" onClick={onCancel}>
             {m.action_cancel()}
           </Button>
-          <Button onClick={onRename}>{m.action_rename()}</Button>
+          <Button shape="fluent" onClick={onRename}>
+            {m.action_rename()}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -3307,15 +3309,18 @@ export function MurmurApp() {
 
           {/* This view: tight together, as is this mix's pair after it. */}
           <div className="flex items-center gap-1">
-            {/* Icon buttons like the pane's beside them: the chosen view is
-                pressed, as the open pane is. */}
+            {/* M3's connected button group, as the sleep timer's lengths are:
+                one pill in two tiles, 2px apart and squared where they meet.
+                Each tile has its own shape, so each takes its own focus ring.
+                Cut from the panel's surface rather than the grouped one,
+                which in dark would sit above the chosen tile. */}
             <ToggleGroup
               value={[view]}
               onValueChange={(value) => {
                 const next = (value as string[])[0]
                 if (next === "grid" || next === "list") setView(next)
               }}
-              spacing={1}
+              spacing={0.5}
               size="sm"
               className={coarse ? "hidden" : "hidden sm:flex"}
             >
@@ -3329,7 +3334,7 @@ export function MurmurApp() {
                   key={value}
                   value={value}
                   aria-label={label}
-                  className="w-8 px-0 text-muted-foreground"
+                  className="rounded-m3-xs bg-background text-muted-foreground first:rounded-s-full last:rounded-e-full"
                 >
                   <HugeiconsIcon
                     icon={icon}
@@ -3490,6 +3495,7 @@ export function MurmurApp() {
                 app's "on", the raised fill with amber inside as a playing card
                 has, and the countdown in the dialog's tabular figures. */}
             <Button
+              shape="fluent"
               variant="outline"
               size="sm"
               className={cn(
@@ -3522,6 +3528,7 @@ export function MurmurApp() {
               </a>
               <div className="flex-1" />
               <Button
+                shape="fluent"
                 variant="ghost"
                 size="icon-sm"
                 aria-label={m.preferences()}
@@ -4067,10 +4074,16 @@ export function MurmurApp() {
             }}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSaveOpen(false)}>
+            <Button
+              shape="fluent"
+              variant="outline"
+              onClick={() => setSaveOpen(false)}
+            >
               {m.action_cancel()}
             </Button>
-            <Button onClick={saveMix}>{m.action_save()}</Button>
+            <Button shape="fluent" onClick={saveMix}>
+              {m.action_save()}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -4106,7 +4119,9 @@ export function MurmurApp() {
                   if (e.key === "Enter") addFromUrl()
                 }}
               />
-              <Button onClick={addFromUrl}>{m.action_add()}</Button>
+              <Button shape="fluent" onClick={addFromUrl}>
+                {m.action_add()}
+              </Button>
             </div>
           </div>
 
@@ -4185,6 +4200,7 @@ export function MurmurApp() {
                 above, and on a phone a confirmation would be a second sheet
                 over this one. */}
             <Button
+              shape="fluent"
               variant="ghost"
               size="sm"
               disabled={prefsAreDefault && appearanceIsDefault}
@@ -4332,6 +4348,7 @@ export function MurmurApp() {
                     >
                       {pwa.online && pwa.audio.cached < pwa.audio.total && (
                         <Button
+                          shape="fluent"
                           variant="outline"
                           size="sm"
                           disabled={pwa.downloading}
@@ -4365,6 +4382,7 @@ export function MurmurApp() {
                     >
                       {pwa.canInstall && (
                         <Button
+                          shape="fluent"
                           variant="outline"
                           size="sm"
                           onClick={() => void pwa.install()}
@@ -4404,6 +4422,7 @@ export function MurmurApp() {
                     button holds the wider label's size and the text beside it
                     doesn't reflow. */}
                   <Button
+                    shape="fluent"
                     variant={dataArmed ? "destructive" : "outline"}
                     size="sm"
                     disabled={saved.length === 0 && customs.length === 0}
@@ -4435,6 +4454,7 @@ export function MurmurApp() {
                   description={m.backup_description()}
                 >
                   <Button
+                    shape="fluent"
                     variant="outline"
                     size="sm"
                     disabled={saved.length === 0 && customs.length === 0}
@@ -4443,6 +4463,7 @@ export function MurmurApp() {
                     {m.action_export()}
                   </Button>
                   <Button
+                    shape="fluent"
                     variant="outline"
                     size="sm"
                     onClick={() => importInput.current?.click()}
