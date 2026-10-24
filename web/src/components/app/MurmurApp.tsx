@@ -91,7 +91,9 @@ import {
   DEV_FIXTURE,
   MIX_NAME_MAX,
   SOUND_NAME_MAX,
+  customName,
   loadPersisted,
+  mixLabel,
   parseBackupData,
   savePersisted,
   type CustomSound,
@@ -137,7 +139,7 @@ import {
   formatSeconds,
   formatTime,
 } from "@/lib/format"
-import { fromAnyLocale, startAppLocale } from "@/lib/i18n"
+import { startAppLocale } from "@/lib/i18n"
 import { runs } from "@/lib/markup"
 import { m } from "@/paraglide/messages.js"
 
@@ -766,8 +768,9 @@ function readInitialState(): {
     Object.keys(state.vols).length > 0 &&
     (state.dirty || !state.saved.some((s) => s.name === state.mixName))
   state.vols = mix
-  state.mixName =
-    clampName(params.get("n") ?? "", MIX_NAME_MAX) || m.mix_shared()
+  state.mixName = clampName(params.get("n") ?? "", MIX_NAME_MAX) || {
+    untitled: "shared",
+  }
   state.dirty = false
 
   // A link can name a video this browser has never seen, so its custom has
@@ -775,7 +778,7 @@ function readInitialState(): {
   for (const id of Object.keys(mix)) {
     const videoId = ytVideoId(id)
     if (!videoId || state.customs.some((c) => c.id === id)) continue
-    state.customs.push({ id, name: m.yt_placeholder(), videoId })
+    state.customs.push({ id, videoId })
     link.addedVideos.push(id)
   }
 
@@ -1070,6 +1073,7 @@ export function MurmurApp() {
   const [vols, setVols] = React.useState<MixerState>(initial.vols)
   const [master, setMaster] = React.useState(initial.master)
   const [mixName, setMixName] = React.useState(initial.mixName)
+  const mixTitle = mixLabel(mixName)
   const [dirty, setDirty] = React.useState(initial.dirty)
   const [view, setView] = React.useState<View>(initial.view)
   const [pane, setPane] = React.useState(initial.pane)
@@ -1241,9 +1245,12 @@ export function MurmurApp() {
   }, [mixer, master, vols])
 
   /** Undefined for a sound since removed, which a mix can still list. */
-  const soundName = (id: string) =>
-    sounds.find((s) => s.id === id)?.name ??
-    customsRef.current.find((c) => c.id === id)?.name
+  const soundName = (id: string) => {
+    const custom = customsRef.current.find((c) => c.id === id)
+    return (
+      sounds.find((s) => s.id === id)?.name ?? (custom && customName(custom))
+    )
+  }
   const nameFor = (id: string) => soundName(id) ?? m.sound_that()
 
   /**
@@ -1363,7 +1370,8 @@ export function MurmurApp() {
       ...customsRef.current,
       {
         id,
-        name: clampName(name, SOUND_NAME_MAX) || m.yt_placeholder(),
+        // Left unnamed, the player supplies the video's title.
+        ...(name && { name: clampName(name, SOUND_NAME_MAX) }),
         videoId,
       },
     ])
@@ -1504,7 +1512,7 @@ export function MurmurApp() {
       })
     }
     // One toast per sound, so removing two in a row settles neither early.
-    toast(m.toast_sound_removed({ name: isolate(custom.name) }), {
+    toast(m.toast_sound_removed({ name: isolate(customName(custom)) }), {
       id: `sound-removed:${id}`,
       onAutoClose: purge,
       onDismiss: purge,
@@ -1983,10 +1991,16 @@ export function MurmurApp() {
   }
 
   /**
-   * Copies a link that rebuilds `levels` under `name`. The header shares the
-   * mix on the faders; a saved mix's menu shares that mix without loading it.
+   * Copies a link that rebuilds `levels` under `name`, or with no name for an
+   * untitled mix, which the recipient's app then calls a shared one in their
+   * own language. The header shares the mix on the faders; a saved mix's menu
+   * shares that mix without loading it.
    */
-  const shareMix = (name: string, levels: MixerState, current: boolean) => {
+  const shareMix = (
+    name: string | undefined,
+    levels: MixerState,
+    current: boolean
+  ) => {
     const mix: MixerState = {}
     for (const [id, v] of Object.entries(levels)) {
       // YouTube sounds travel: the id carries the whole reference. Files and
@@ -2012,7 +2026,7 @@ export function MurmurApp() {
       )
       return
     }
-    const url = `${window.location.origin}${window.location.pathname}#mix=${fragment}&n=${encodeURIComponent(name)}`
+    const url = `${window.location.origin}${window.location.pathname}#mix=${fragment}${name ? `&n=${encodeURIComponent(name)}` : ""}`
     const done = () =>
       droppedCustoms
         ? toast.success(m.toast_link_copied_partial())
@@ -2025,7 +2039,8 @@ export function MurmurApp() {
     }
   }
 
-  const share = () => shareMix(mixName, vols, true)
+  const share = () =>
+    shareMix(typeof mixName === "string" ? mixName : undefined, vols, true)
 
   const startTimer = (minutes: number) => {
     fadeMult.current = 1
@@ -2090,9 +2105,8 @@ export function MurmurApp() {
     mixer.onStreamTitle = (id, title) => {
       commitCustoms(
         customsRef.current.map((c) =>
-          // Only fills the placeholder, in whichever language it was left
-          // in: a name the user typed is theirs.
-          c.id === id && fromAnyLocale(m.yt_placeholder, c.name)
+          // Only fills a missing name: a name the user typed is theirs.
+          c.id === id && c.name === undefined
             ? { ...c, name: clampName(title, SOUND_NAME_MAX) }
             : c
         )
@@ -2397,8 +2411,8 @@ export function MurmurApp() {
   }, [prefs.pauseHidden, playing, mixer])
 
   React.useEffect(() => {
-    document.title = playing ? `${mixName} · Murmur` : "Murmur"
-  }, [playing, mixName])
+    document.title = playing ? `${mixTitle} · Murmur` : "Murmur"
+  }, [playing, mixTitle])
 
   // A waiting worker never takes over on its own: the reload it costs would cut
   // a mix mid-play, and with client:only that reload is a 600 KB parse, a fresh
@@ -2479,7 +2493,7 @@ export function MurmurApp() {
     if (!("mediaSession" in navigator)) return
     navigator.mediaSession.metadata = new MediaMetadata({
       title: "Murmur",
-      artist: mixName,
+      artist: mixTitle,
       album: m.media_album(),
       // The "any" icons, not the maskable pair, which a media notification
       // would crop wrongly. Both are precached, because the OS fetches these
@@ -2520,7 +2534,7 @@ export function MurmurApp() {
         }
       }
     }
-  }, [mixName, playing])
+  }, [mixTitle, playing])
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -2596,8 +2610,8 @@ export function MurmurApp() {
       )
     : ""
   const openSaveDialog = () => {
-    // A clean, named mix (a shared one) still starts from its own name.
-    setSaveName(dirty || fromAnyLocale(m.mix_shared, mixName) ? "" : mixName)
+    // A clean mix with a name (a shared one) still starts from its own name.
+    setSaveName(!dirty && typeof mixName === "string" ? mixName : "")
     setSaveOpen(true)
   }
   // What the level meters claim is sound reaching the speakers, so they stop
@@ -2711,7 +2725,7 @@ export function MurmurApp() {
     const custom = customs.find((c) => c.id === id)
     if (!custom) return null
     const iconPath = custom.videoId ? VIDEO_ICON : MUSIC_ICON
-    return [{ id, name: custom.name, iconPath }, true]
+    return [{ id, name: customName(custom), iconPath }, true]
   }
 
   /** A saved mix's menu: the sidebar's, the phone strip's and the header's. */
@@ -3190,7 +3204,7 @@ export function MurmurApp() {
               >
                 <span className="min-w-0">
                   <span className="flex min-w-0 text-sm font-medium">
-                    <MiddleTruncate text={mixName} />
+                    <MiddleTruncate text={mixTitle} />
                     {dirty && (
                       <span className="shrink-0 whitespace-pre"> *</span>
                     )}
@@ -3213,7 +3227,7 @@ export function MurmurApp() {
                 render={<div className="hidden min-w-0 wide:block" />}
               >
                 <p className="flex min-w-0 text-sm font-medium">
-                  <MiddleTruncate text={mixName} />
+                  <MiddleTruncate text={mixTitle} />
                   {dirty && <span className="shrink-0 whitespace-pre"> *</span>}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
@@ -3599,7 +3613,7 @@ export function MurmurApp() {
                       renderSound(
                         {
                           id: c.id,
-                          name: c.name,
+                          name: customName(c),
                           iconPath: c.videoId ? VIDEO_ICON : MUSIC_ICON,
                         },
                         true
@@ -3644,7 +3658,7 @@ export function MurmurApp() {
                   <div className="min-w-0">
                     <h2 className="text-title-medium">{m.now_playing()}</h2>
                     <p className="flex min-w-0 text-xs text-muted-foreground">
-                      <MiddleTruncate text={mixName} />
+                      <MiddleTruncate text={mixTitle} />
                       {dirty && (
                         <span className="shrink-0 whitespace-pre">
                           {m.mix_edited()}
@@ -3727,7 +3741,7 @@ export function MurmurApp() {
             >
               <span className="min-w-0 flex-1">
                 <span className="flex min-w-0 text-sm font-semibold">
-                  <MiddleTruncate text={mixName} />
+                  <MiddleTruncate text={mixTitle} />
                   {dirty && <span className="shrink-0 whitespace-pre"> *</span>}
                 </span>
                 <span className="mt-px block truncate text-xs text-muted-foreground">
@@ -3792,7 +3806,7 @@ export function MurmurApp() {
           <DialogHeader className="shrink-0">
             <DialogTitle className="text-lg">{m.now_playing()}</DialogTitle>
             <DialogDescription>
-              {mixName}
+              {mixTitle}
               {dirty && m.mix_edited()}
             </DialogDescription>
           </DialogHeader>

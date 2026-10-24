@@ -91,12 +91,3 @@ export function chooseLocale(locale: Locale) {
   writeLocaleChoice(locale)
   if (locale !== getLocale()) location.reload()
 }
-
-type Message = (inputs: object, options: { locale: Locale }) => string
-
-/** Whether text is what a message says in any language. For names the app
- * writes itself and stores, such as "New mix", which a later visit in another
- * language should still recognise as its own. */
-export function fromAnyLocale(message: Message, text: string) {
-  return locales.some((locale) => message({}, { locale }) === text)
-}

@@ -14,7 +14,6 @@
 
 import { devFixtures } from "@/data/dev-fixtures"
 import { presets } from "@/data/presets"
-import { fromAnyLocale } from "@/lib/i18n"
 import { m } from "@/paraglide/messages.js"
 
 import type { MixerState } from "./mixer"
@@ -65,7 +64,9 @@ export interface SavedMix {
  */
 export interface CustomSound {
   id: string
-  name: string
+  /** Absent only for a YouTube sound whose player hasn't yet reported the
+   * video's title. Read it through customName(). */
+  name?: string
   url?: string
   hasFile?: boolean
   videoId?: string
@@ -94,10 +95,72 @@ export const DEFAULT_PREFS: Prefs = {
   mixWithOthers: false,
 }
 
+/**
+ * A mix the app names rather than the user: an empty start, sounds on with no
+ * mix loaded, or a link that carried no name. Stored as which, and named in
+ * the language of the day when shown.
+ */
+export type Untitled = { untitled: "new" | "custom" | "shared" }
+
+/** The mix on the faders: a name the user gave or chose (a saved mix's, or one
+ * a shared link carried), or untitled. An untitled mix equals no saved one. */
+export type MixName = string | Untitled
+
+/** What a mix is called on screen. */
+export function mixLabel(name: MixName): string {
+  if (typeof name === "string") return name
+  const label = { new: m.mix_new, custom: m.mix_custom, shared: m.mix_shared }
+  return label[name.untitled]()
+}
+
+/** What one of your own sounds is called on screen. */
+export function customName(sound: CustomSound): string {
+  return sound.name ?? m.yt_placeholder()
+}
+
+/**
+ * What versions before this model stored in place of an untitled mix or a
+ * YouTube sound's missing title: the English, and the three translations that
+ * were live for a few hours on 2026-10-23. Frozen, since it describes data
+ * already written, not today's messages.
+ */
+const LEGACY_UNTITLED: Record<string, Untitled["untitled"]> = {
+  "New mix": "new",
+  "Novo mix": "new",
+  "Nueva mezcla": "new",
+  新しいミックス: "new",
+  "Custom mix": "custom",
+  "Mix personalizado": "custom",
+  "Mezcla personalizada": "custom",
+  カスタムミックス: "custom",
+  "Shared mix": "shared",
+  "Mix compartilhado": "shared",
+  "Mezcla compartida": "shared",
+  共有されたミックス: "shared",
+}
+const LEGACY_YOUTUBE_PLACEHOLDERS = new Set([
+  "YouTube sound",
+  "Som do YouTube",
+  "Sonido de YouTube",
+  "YouTube のサウンド",
+])
+
+function cleanMixName(v: unknown): MixName {
+  if (
+    isRecord(v) &&
+    (v.untitled === "new" || v.untitled === "custom" || v.untitled === "shared")
+  ) {
+    return { untitled: v.untitled }
+  }
+  if (typeof v !== "string" || !v.trim()) return { untitled: "custom" }
+  const legacy = LEGACY_UNTITLED[v]
+  return legacy ? { untitled: legacy } : v
+}
+
 export interface PersistedState {
   vols: MixerState
   master: number
-  mixName: string
+  mixName: MixName
   dirty: boolean
   view: View
   /** The Now playing pane beside the grid, on screens wide enough for it. */
@@ -161,8 +224,9 @@ function cleanCustoms(v: unknown): CustomSound[] {
   const out: CustomSound[] = []
   for (const item of v) {
     if (!isRecord(item) || typeof item.id !== "string" || !item.id) continue
-    if (typeof item.name !== "string" || !item.name.trim()) continue
-    const custom: CustomSound = { id: item.id, name: item.name }
+    const named = typeof item.name === "string" && item.name.trim()
+    const custom: CustomSound = { id: item.id }
+    if (named) custom.name = item.name as string
     if (typeof item.url === "string" && item.url) custom.url = item.url
     if (item.hasFile === true) custom.hasFile = true
     // Validated, not merely copied: this is the one field a shared link can
@@ -170,6 +234,11 @@ function cleanCustoms(v: unknown): CustomSound[] {
     if (isVideoId(item.videoId)) custom.videoId = item.videoId
     // A record pointing at no link, no blob and no video can never resolve.
     if (!custom.url && !custom.hasFile && !custom.videoId) continue
+    // Only a YouTube sound waits for its name, which its player supplies.
+    if (!custom.videoId && !custom.name) continue
+    if (custom.videoId && LEGACY_YOUTUBE_PLACEHOLDERS.has(custom.name ?? "")) {
+      delete custom.name
+    }
     out.push(custom)
   }
   return out
@@ -215,29 +284,17 @@ function upgradePrefs(prefs: Prefs, rev: unknown): Prefs {
   }
 }
 
-/** A name the app gave a mix, in the language it gave it in, comes back in
- * today's. A name anyone typed comes back as it is. */
-function localName(name: string) {
-  const own = [m.mix_new, m.mix_custom, m.mix_shared].find((message) =>
-    fromAnyLocale(message, name)
-  )
-  return own ? own() : name
-}
-
 function coerce(raw: unknown, defaultMaster: number): PersistedState {
   const r = isRecord(raw) ? raw : {}
   const vols = cleanVols(r.vols)
-  const named = typeof r.mixName === "string" && r.mixName.trim()
 
   return {
     vols,
     master: clamp(r.master, 0, 1, defaultMaster),
     // A name only means something alongside a mix to wear it.
     mixName: Object.keys(vols).length
-      ? named
-        ? localName(r.mixName as string)
-        : m.mix_custom()
-      : m.mix_new(),
+      ? cleanMixName(r.mixName)
+      : { untitled: "new" },
     dirty:
       Object.keys(vols).length && typeof r.dirty === "boolean"
         ? r.dirty
