@@ -559,6 +559,23 @@
   * {
     @apply border-border outline-ring;
   }
+  /* shadcn's pointer cursor (changelog, April 2026), carried to every role
+     Base UI renders for something clickable here: menu items, switches,
+     tabs, options, and a label that opens a file picker. Disabled ones keep
+     the arrow. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  :is(
+    [role="menuitem"],
+    [role="menuitemradio"],
+    [role="menuitemcheckbox"],
+    [role="switch"],
+    [role="tab"],
+    [role="option"],
+    label:has(> input[type="file"])
+  ):not([aria-disabled="true"], [data-disabled]) {
+    cursor: pointer;
+  }
   /* M3's focus indicator: a solid 3px ring 2px outside the control,
      following its shape. Solid, because a 30% halo measured 1.4:1 on the
      light page; the amber ring clears 3:1 on every surface. List rows that
