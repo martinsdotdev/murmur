@@ -3269,7 +3269,7 @@ export function MurmurApp() {
               the phone bar stops. The level rides the thumb while it is being
               set, as on every level slider. The speaker mutes, as on any
               player. */}
-          <div className="hidden w-52 min-w-0 items-center gap-1.5 @max-5xl:w-28 @max-5xl:min-w-20 wide:flex">
+          <div className="hidden w-52 min-w-0 items-center gap-2 @max-5xl:w-28 @max-5xl:min-w-20 wide:flex">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -3307,13 +3307,16 @@ export function MurmurApp() {
             className="mx-1 hidden data-vertical:h-5 data-vertical:self-center wide:block"
           />
 
-          {/* This view: tight together, as is this mix's pair after it. */}
-          <div className="flex items-center gap-1">
+          {/* 16px between everything drawn, as from the speaker to the rule:
+              a ghost button's 8px of padding counts toward it, so the ghosts
+              sit 8px from a drawn edge and touch each other. */}
+          <div className="flex items-center gap-2">
             {/* M3's connected button group, as the sleep timer's lengths are:
-                one pill in two tiles, 2px apart and squared where they meet.
-                Each tile has its own shape, so each takes its own focus ring.
-                Cut from the panel's surface rather than the grouped one,
-                which in dark would sit above the chosen tile. */}
+                one pill in two tiles, 2px apart and squared where they meet,
+                its ends squircles where corner-shape is supported and round
+                where it isn't. Each tile has its own shape, so each takes its
+                own focus ring. Cut from the panel's surface rather than the
+                grouped one, which in dark would sit above the chosen tile. */}
             <ToggleGroup
               value={[view]}
               onValueChange={(value) => {
@@ -3334,7 +3337,7 @@ export function MurmurApp() {
                   key={value}
                   value={value}
                   aria-label={label}
-                  className="rounded-m3-xs bg-background text-muted-foreground first:rounded-s-full last:rounded-e-full"
+                  className="rounded-m3-xs bg-background text-muted-foreground [corner-shape:squircle] first:rounded-s-full last:rounded-e-full"
                 >
                   <HugeiconsIcon
                     icon={icon}
@@ -3345,43 +3348,44 @@ export function MurmurApp() {
               ))}
             </ToggleGroup>
 
-            {/* Shows or hides the Now playing pane; only where it fits. */}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="hidden text-muted-foreground wide:expanded:inline-flex"
-              ref={paneToggle}
-              aria-label={m.now_playing()}
-              aria-pressed={pane}
-              title={pane ? m.now_playing_hide() : m.now_playing_show()}
-              onClick={() => showPane(!pane)}
-            >
-              <HugeiconsIcon icon={PanelRightIcon} strokeWidth={2} />
-            </Button>
-          </div>
+            <div className="hidden items-center wide:flex">
+              {/* Shows or hides the Now playing pane; only where it fits. */}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="hidden text-muted-foreground wide:expanded:inline-flex"
+                ref={paneToggle}
+                aria-label={m.now_playing()}
+                aria-pressed={pane}
+                title={pane ? m.now_playing_hide() : m.now_playing_show()}
+                onClick={() => showPane(!pane)}
+              >
+                <HugeiconsIcon icon={PanelRightIcon} strokeWidth={2} />
+              </Button>
 
-          <div className="hidden items-center gap-1 wide:flex">
-            {/* The same action as Now playing's "Turn all off" on a phone, and
-                the same Undo instead of a confirmation. */}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="text-muted-foreground"
-              aria-label={m.action_turn_all_off()}
-              title={m.turn_all_off_shortcut()}
-              disabled={activeIds.length === 0}
-              onClick={turnAllOff}
-            >
-              <HugeiconsIcon
-                icon={RefreshIcon}
-                strokeWidth={2}
-                className="size-4"
-              />
-            </Button>
+              {/* The same action as Now playing's "Turn all off" on a phone,
+                  and the same Undo instead of a confirmation. */}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground"
+                aria-label={m.action_turn_all_off()}
+                title={m.turn_all_off_shortcut()}
+                disabled={activeIds.length === 0}
+                onClick={turnAllOff}
+              >
+                <HugeiconsIcon
+                  icon={RefreshIcon}
+                  strokeWidth={2}
+                  className="size-4"
+                />
+              </Button>
+            </div>
 
             <Button
               variant="outline"
               size="sm"
+              className="hidden wide:inline-flex"
               // The label goes below lg, so it needs a name of its own there.
               aria-label={m.action_share()}
               onClick={share}
