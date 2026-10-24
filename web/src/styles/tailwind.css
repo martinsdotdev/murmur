@@ -748,6 +748,30 @@
   }
 }
 
+/* On hover, the track lights from its start to the pointer, as YouTube's bar
+   does: under the fill it's hidden, and past the thumb it shows where a
+   click would take the level. Slider sets --hover-at as the pointer moves. */
+[data-slot="slider-hover"] {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: var(--hover-at, 0%);
+  background-color: color-mix(in oklab, var(--track), var(--foreground) 16%);
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  [data-slot="slider"]:hover [data-slot="slider-hover"] {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="slider-hover"] {
+    transition: opacity 150ms ease;
+  }
+}
+
 /* A level slider's value on its thumb (Slider's showValue), after YouTube's
    seek pill: the knob grows into a pill carrying the number while the level
    is being set, and shrinks back after. The thumb box never changes size, so

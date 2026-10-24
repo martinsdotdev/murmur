@@ -163,6 +163,7 @@ function Slider({
       : 1
 
   const controlRef = React.useRef<HTMLDivElement>(null)
+  const trackRef = React.useRef<HTMLDivElement>(null)
   // Set from a layout effect, so the second pass lands before paint.
   const [controlMounted, setControlMounted] = React.useState(false)
   React.useLayoutEffect(() => setControlMounted(true), [])
@@ -382,6 +383,18 @@ function Slider({
         onPointerMove={(event) => {
           if (event.movementX || event.movementY)
             aimedAt.current = event.timeStamp
+          // Where the pointer is along the track, for the highlight up to it
+          // (.slider-hover in tailwind.css). Set straight on the element:
+          // a React state here would re-render the slider on every move.
+          const track = trackRef.current
+          if (!track || event.pointerType === "touch") return
+          const rect = track.getBoundingClientRect()
+          let at = (event.clientX - rect.left) / Math.max(1, rect.width)
+          if (getComputedStyle(track).direction === "rtl") at = 1 - at
+          track.style.setProperty(
+            "--hover-at",
+            `${Math.min(1, Math.max(0, at)) * 100}%`
+          )
         }}
         onPointerDown={(event) => {
           if (
@@ -421,10 +434,12 @@ function Slider({
         className="relative flex w-full cursor-pointer touch-pan-y items-center select-none before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] pointer-coarse:before:-inset-y-5 data-disabled:cursor-default data-disabled:opacity-38 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col data-vertical:before:-inset-x-3 data-vertical:before:inset-y-0"
       >
         <SliderPrimitive.Track
+          ref={trackRef}
           data-slot="slider-track"
           // Its height and how it thickens: tailwind.css, by data-slot.
           className="relative grow overflow-hidden rounded-full bg-track select-none data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
         >
+          <span aria-hidden="true" data-slot="slider-hover" />
           <SliderPrimitive.Indicator
             data-slot="slider-range"
             className="bg-primary sheen select-none data-horizontal:h-full data-vertical:w-full"
