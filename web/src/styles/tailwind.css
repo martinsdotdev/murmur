@@ -474,6 +474,22 @@
   }
 }
 
+/* The sidebar's buttons hover and press with its rows' accent fill, not the
+   state layer, so everything in the sidebar answers the same way. Unlayered,
+   so it wins over the state layer and any bg-* utility. */
+[data-slot="sidebar"] [data-slot="button"] {
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--sidebar-accent);
+      background-image: none;
+    }
+  }
+  &:active {
+    background-color: var(--sidebar-accent);
+    background-image: none;
+  }
+}
+
 /*
  * M3 Expressive's segmented list, as Android settings and the Claude app draw
  * theirs: each row its own filled tile, 2px apart, the joins at 4px and the
