@@ -429,6 +429,11 @@ export function PrefSlider({
             // screen reader would otherwise announce is a lie. `display` is the
             // same string shown above the track.
             aria-valuetext={display}
+            // The same string rides the thumb while the value is being set,
+            // as on every level slider. The one above stays for reading it
+            // at rest, since a setting's unit isn't in the track's position.
+            showValue
+            valueLabel={display}
             onValueChange={(v) => onChange(v as number)}
           />
         </div>

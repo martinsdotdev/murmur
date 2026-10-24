@@ -109,6 +109,8 @@ type SliderProps = Omit<
     resetValue?: number
     /** The value rides the thumb while it is being set (see 7 above). */
     showValue?: boolean
+    /** What the pill says, for a value with a unit; the rounded value if unset. */
+    valueLabel?: string
     /**
      * Each change opens the value pill as a wheel notch does: for a value set
      * from elsewhere, like the master's arrow-key shortcut.
@@ -141,6 +143,7 @@ function Slider({
   wheelStep,
   resetValue,
   showValue = false,
+  valueLabel,
   flash,
   onValueChange,
   onValueCommitted,
@@ -460,14 +463,16 @@ function Slider({
                   aria-hidden="true"
                   className="value-ring"
                   style={{ "--r": ratio } as React.CSSProperties}
-                />
+                >
+                  {valueLabel ?? Math.round(value)}
+                </span>
                 <span
                   ref={pillRef}
                   aria-hidden="true"
                   className="value-pill sheen [--sheen-color:var(--brand)]"
                   style={{ "--r": ratio } as React.CSSProperties}
                 >
-                  <span>{Math.round(value)}</span>
+                  <span>{valueLabel ?? Math.round(value)}</span>
                 </span>
               </>
             )}

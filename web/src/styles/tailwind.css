@@ -687,15 +687,24 @@
   --t: 1rem; /* the thumb box */
   --k: 0.75rem; /* the knob, centred in it */
   --h: 1.25rem;
-  --w: 2.375rem; /* fits "100" */
-  --gap: calc(var(--w) - var(--t));
   position: absolute;
   top: 50%;
-  inset-inline-start: calc(var(--r) * -1 * var(--gap));
-  width: var(--w);
+  /* As wide as its label, from "0" to a setting's "Instant", and slid across
+     the thumb with the value whatever that width: its start edge meets the
+     thumb's at 0 and its end edge the thumb's at 1. */
+  inset-inline-start: calc(var(--r) * var(--t));
+  translate: calc(var(--r) * -100%) -50%;
+  box-sizing: border-box;
+  min-width: 2.375rem; /* "100" */
+  width: max-content;
   height: var(--h);
-  translate: 0 -50%;
+  padding-inline: 0.5rem;
   border-radius: 9999px;
+}
+
+[dir="rtl"] .value-pill,
+[dir="rtl"] .value-ring {
+  translate: calc(var(--r) * 100%) -50%;
 }
 
 @media (pointer: coarse) {
@@ -704,7 +713,7 @@
     --t: 1.5rem;
     --k: 1rem;
     --h: 1.75rem;
-    --w: 2.875rem;
+    min-width: 2.875rem;
   }
 }
 
@@ -721,28 +730,48 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  white-space: nowrap;
   opacity: 0;
   /* Closed: clipped to the knob's own circle, which also keeps a closed pill
-     from catching clicks meant for the track. */
+     from catching clicks meant for the track. Percentages are of the pill's
+     own width, so this holds for any label. */
   clip-path: inset(
     calc((var(--h) - var(--k)) / 2)
-      calc((1 - var(--r)) * var(--gap) + (var(--t) - var(--k)) / 2)
+      calc(
+        (1 - var(--r)) * 100% + var(--r) * var(--t) - (var(--t) + var(--k)) / 2
+      )
       calc((var(--h) - var(--k)) / 2)
-      calc(var(--r) * var(--gap) + (var(--t) - var(--k)) / 2) round 9999px
+      calc(var(--r) * 100% - var(--r) * var(--t) + (var(--t) - var(--k)) / 2)
+      round 9999px
   );
 }
 
 [dir="rtl"] .value-pill {
   clip-path: inset(
     calc((var(--h) - var(--k)) / 2)
-      calc(var(--r) * var(--gap) + (var(--t) - var(--k)) / 2)
+      calc(var(--r) * 100% - var(--r) * var(--t) + (var(--t) - var(--k)) / 2)
       calc((var(--h) - var(--k)) / 2)
-      calc((1 - var(--r)) * var(--gap) + (var(--t) - var(--k)) / 2) round 9999px
+      calc(
+        (1 - var(--r)) * 100% + var(--r) * var(--t) - (var(--t) + var(--k)) / 2
+      )
+      round 9999px
   );
 }
 
+/* The ring carries the same label, unseen, so it is exactly the pill's size. */
+.value-ring {
+  color: transparent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: var(--h);
+  white-space: nowrap;
+  text-align: center;
+}
+
 @media (pointer: coarse) {
-  .value-pill {
+  .value-pill,
+  .value-ring {
     font-size: 0.8125rem;
   }
 }
@@ -844,7 +873,6 @@
   .value-pill {
     transition:
       clip-path 200ms var(--ease-out),
-      translate 150ms var(--ease-out),
       opacity 0s 200ms;
   }
 
@@ -862,7 +890,6 @@
     .value-pill {
     transition:
       clip-path 150ms var(--ease-out),
-      translate 150ms var(--ease-out),
       opacity 0s;
   }
 
