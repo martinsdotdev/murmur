@@ -3174,7 +3174,7 @@ export function MurmurApp() {
       // subtree, so anything genuinely worth copying stays selectable.
       // The side insets keep a landscape phone's notch off the brand and grid;
       // viewport-fit=cover would otherwise draw them underneath it.
-      className="h-dvh flex-col overflow-hidden pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-foreground select-none"
+      className="h-dvh flex-col overflow-hidden grain pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] text-foreground select-none"
       // 15rem, not the component's 16rem default: the sidebar was 240px and
       // the sound grid's column count is tuned against the width that leaves.
       style={{ "--sidebar-width": "15rem" } as React.CSSProperties}
@@ -3182,7 +3182,7 @@ export function MurmurApp() {
       {/* From md up the header sits on the frame beside the sidebar, the two
           reading as one title bar over the inset panel. On a phone there is
           no panel, so it keeps its own surface and rule. */}
-      <header className="@container flex shrink-0 items-center border-b bg-background py-3 wide:border-b-0 wide:bg-transparent">
+      <header className="@container flex shrink-0 items-center border-b bg-background grain py-3 wide:border-b-0 wide:bg-transparent wide:bg-none">
         {/* Exactly the sidebar's width, so the controls start where the
             panel does; pl-5 is the sidebar's own inset. */}
         <div className="flex shrink-0 items-center gap-2 pl-4 @max-5xl:w-auto! wide:w-(--sidebar-width) wide:pl-5">
@@ -3440,7 +3440,7 @@ export function MurmurApp() {
         <Sidebar
           variant="inset"
           collapsible="none"
-          className="hidden wide:flex"
+          className="hidden grain wide:flex"
         >
           {/* pt-6 matches the panel's p-6, so "Your mixes" sits level with
               the first category heading. */}

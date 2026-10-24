@@ -252,6 +252,7 @@
   --chart-4: #d8cdb5;
   --chart-5: #5b4936;
   --radius: 0.5rem; /* Fluent medium; md≈6px, xl≈11px */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n' x='0' y='0' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='1.4' intercept='-0.2'/%3E%3CfeFuncG type='linear' slope='1.4' intercept='-0.2'/%3E%3CfeFuncB type='linear' slope='1.4' intercept='-0.2'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --sidebar: #f4eee0; /* neutral-background-side */
   --sidebar-foreground: #1f1311;
   --sidebar-primary: #b86d20;
@@ -296,6 +297,7 @@
   /* The sheen's end lightens only here, where fills carry dark text and
      lighter is more contrast; in light themes it would take it away. */
   --sheen-lift: 0.05;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n' x='0' y='0' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='0.8' intercept='0.1'/%3E%3CfeFuncG type='linear' slope='0.8' intercept='0.1'/%3E%3CfeFuncB type='linear' slope='0.8' intercept='0.1'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --track: rgba(250, 246, 238, 0.14);
   --elevated: #3a3527; /* neutral-background-4 */
   --dialog: #2c281e; /* neutral-background-3 */
@@ -554,6 +556,22 @@
 
 @utility sheen-round {
   --sheen-angle: 135deg;
+}
+
+/*
+ * A fine grain on the frame: grey noise centred on 50%, overlaid on the
+ * surface's own colour, so it neither lightens nor darkens it on average and
+ * leaves pure black pure. sRGB filters, or the noise's middle grey would come
+ * out lighter and wash the frame. Fixed to the viewport, so the sidebar and
+ * the frame behind the top bar tile as one surface. The slope sets how strong
+ * it is: overlay grain grows with a surface's distance from black or white,
+ * so dark takes a gentler one. Not bg-*, which tailwind-merge would take for a colour and trade
+ * for the surface's own.
+ */
+@utility grain {
+  background-image: var(--grain);
+  background-blend-mode: overlay;
+  background-attachment: fixed;
 }
 
 /* Windows contrast themes repaint fills as Canvas, which would erase the
