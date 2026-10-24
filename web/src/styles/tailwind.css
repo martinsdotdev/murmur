@@ -730,6 +730,22 @@
       clip-path 150ms var(--ease-out),
       background-color 150ms ease;
   }
+
+  /* A level that changes with no hand on the slider (a card toggled, a mix
+     applied, a reset, a key or a wheel notch) slides there, as a touch
+     card's level bar does. A drag follows the pointer exactly. */
+  [data-slot="slider-range"] {
+    transition: width 150ms var(--ease-out);
+  }
+
+  [data-slot="slider-thumb"] {
+    transition: inset-inline-start 150ms var(--ease-out);
+  }
+
+  [data-slot="slider"]:is([data-dragging], [data-held])
+    :is([data-slot="slider-range"], [data-slot="slider-thumb"]) {
+    transition: none;
+  }
 }
 
 /* A level slider's value on its thumb (Slider's showValue), after YouTube's
