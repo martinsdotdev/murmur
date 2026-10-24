@@ -121,7 +121,8 @@ type SliderProps = Omit<
 /** Both affordances need to know the current value, so both are controlled-scalar only. */
 const isScalar = (value: unknown): value is number => typeof value === "number"
 
-/** How long a wheel notch or a reset keeps the value pill open. */
+/** How long the value pill stays after the value is set: a drag let go, a
+ * key, a wheel notch or a reset. */
 const FLASH_MS = 1500
 
 /** Onto the step grid and inside the range, as Base UI rounds its own values. */
@@ -343,7 +344,10 @@ function Slider({
       },
       onEnd: () => {
         setHeld(false)
-        if (last !== null) live.current.onValueCommitted?.(last)
+        if (last !== null) {
+          live.current.onValueCommitted?.(last)
+          if (showValue) openPill()
+        }
       },
     })
   }
@@ -365,7 +369,12 @@ function Slider({
       step={step}
       thumbAlignment="edge"
       onValueChange={onValueChange}
-      onValueCommitted={onValueCommitted}
+      // Every commit leaves the pill up a moment, so the level can be read
+      // once the pointer or finger has moved off it.
+      onValueCommitted={(next, details) => {
+        onValueCommitted?.(next, details)
+        if (showValue) openPill()
+      }}
       {...props}
     >
       <SliderPrimitive.Control
