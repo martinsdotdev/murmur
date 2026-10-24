@@ -141,10 +141,20 @@ import {
 import { clampName, isolate, nameFromFile } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import {
+  formatBytes,
+  formatCountdown,
+  formatDuration,
+  formatLanguage,
+  formatList,
+  formatPercent,
+  formatPreset,
+  formatSeconds,
+  formatTime,
+} from "@/lib/format"
+import {
   LOCALE_NAMES,
   around,
   chooseLocale,
-  formatLocale,
   fromAnyLocale,
   startAppLocale,
 } from "@/lib/i18n"
@@ -160,8 +170,8 @@ import { persistStorage, usePwa } from "./use-pwa"
 /** Vite inlines this at build time, in client islands as well as .astro files. */
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "")
 
-// First, before any module-level formatter below and before the first render:
-// messages and Intl read the locale when they're called.
+// Before the first render: messages and formatters read the language when
+// they're first called, and nothing at module level calls them.
 startAppLocale()
 
 const TIMER_PRESETS = [15, 30, 45, 60, 90]
@@ -335,9 +345,8 @@ function mixSummary(
   nameOf: (id: string) => string | undefined
 ) {
   const names = soundsByLevel(mix, nameOf).map(isolate)
-  const list = new Intl.ListFormat(formatLocale(), { type: "conjunction" })
-  if (names.length <= 3) return list.format(names)
-  return list.format([
+  if (names.length <= 3) return formatList(names)
+  return formatList([
     ...names.slice(0, 2),
     m.mix_more({ count: names.length - 2 }),
   ])
@@ -793,15 +802,6 @@ function readInitialState(): {
   return { state, link }
 }
 
-/** A countdown: "9:05", and from an hour "1:04:59" rather than "64:59". */
-function formatClock(totalSeconds: number): string {
-  const s = Math.ceil(totalSeconds)
-  const pad = (n: number) => String(n).padStart(2, "0")
-  const h = Math.floor(s / 3600)
-  const m = Math.floor(s / 60) % 60
-  return h ? `${h}:${pad(m)}:${pad(s % 60)}` : `${m}:${pad(s % 60)}`
-}
-
 /** Where the Now playing pane fits: the desktop shell, from 840px. */
 const PANE_QUERY =
   "(width >= 52.5rem) and (not ((pointer: coarse) and (height < 30rem)))"
@@ -819,55 +819,6 @@ function usePaneFits() {
     () => false
   )
 }
-
-/** A file size: "18 MB", one decimal under 10 MB ("2.4 MB"), kB below 1 MB. */
-function formatBytes(bytes: number): string {
-  const kb = bytes < 1e6
-  const value = kb ? Math.max(1, bytes / 1e3) : bytes / 1e6
-  return new Intl.NumberFormat(formatLocale(), {
-    style: "unit",
-    unit: kb ? "kilobyte" : "megabyte",
-    maximumFractionDigits: !kb && value < 10 ? 1 : 0,
-  }).format(value)
-}
-
-/** A timer length as people say it: "45 min", "1 h", "1 h 15 min". */
-function formatDuration(minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const rest = minutes % 60
-  if (!hours) return m.duration_minutes({ minutes: rest })
-  return rest
-    ? m.duration_hours_minutes({ hours, minutes: rest })
-    : m.duration_hours({ hours })
-}
-
-/** A preset as a chip can hold it: "45 min", "1 h", "1½ h". */
-function presetLabel(minutes: number): string {
-  return minutes === 90 ? m.duration_hour_and_half() : formatDuration(minutes)
-}
-
-/** A level as a screen reader says it: "70%", or "70 %" in Spanish. */
-function formatPercent(pct: number): string {
-  return new Intl.NumberFormat(formatLocale(), { style: "percent" }).format(
-    pct / 100
-  )
-}
-
-/** A short time as Preferences shows it: "1.5s", "30s". */
-function formatSeconds(seconds: number, digits: number): string {
-  return new Intl.NumberFormat(formatLocale(), {
-    style: "unit",
-    unit: "second",
-    unitDisplay: "narrow",
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(seconds)
-}
-
-const clockTime = new Intl.DateTimeFormat(formatLocale(), {
-  hour: "numeric",
-  minute: "2-digit",
-})
 
 /**
  * The wall clock, for "Stops at", read through a store so rendering stays
@@ -936,10 +887,10 @@ function SleepTimerPanel({
     return (
       <>
         {readout(
-          formatClock(left),
+          formatCountdown(left),
           left <= fadeSeconds
             ? m.timer_fading()
-            : m.timer_stops_at({ time: clockTime.format(end) })
+            : m.timer_stops_at({ time: formatTime(end) })
         )}
         <div className="grid grid-cols-2 gap-2">
           <Button
@@ -965,7 +916,7 @@ function SleepTimerPanel({
     <>
       {readout(
         formatDuration(choice),
-        m.timer_stops_at({ time: clockTime.format(now + choice * 60_000) })
+        m.timer_stops_at({ time: formatTime(now + choice * 60_000) })
       )}
       <div className="flex flex-col gap-5">
         {/* A segmented row, as the theme swatches are. A chip reads as chosen
@@ -984,7 +935,7 @@ function SleepTimerPanel({
                   : "border-transparent bg-grouped"
               )}
             >
-              {presetLabel(minutes)}
+              {formatPreset(minutes)}
             </button>
           ))}
         </div>
@@ -1199,18 +1150,12 @@ function LanguageRow({
  */
 function LanguagePage() {
   const current = getLocale()
-  const names = new Intl.DisplayNames([current], {
-    type: "language",
-    languageDisplay: "standard",
-  })
   return (
     <>
       <div className={prefGroup}>
         {locales.map((locale) => {
           const own = LOCALE_NAMES[locale]
-          // Portuguese and Spanish write language names in lower case.
-          const name = names.of(locale) ?? own
-          const here = name.charAt(0).toLocaleUpperCase(current) + name.slice(1)
+          const here = formatLanguage(locale)
           const chosen = locale === current
           return (
             <button
@@ -3018,7 +2963,7 @@ export function MurmurApp() {
         ? m.status_playing({ count: activeIds.length })
         : m.status_paused({ count: activeIds.length })
   const status = timerOn
-    ? m.status_sleeps({ status: playStatus, time: formatClock(timerLeft) })
+    ? m.status_sleeps({ status: playStatus, time: formatCountdown(timerLeft) })
     : playStatus
 
   // A name from the sounds, shown in the empty field and used if it's left
@@ -3903,7 +3848,7 @@ export function MurmurApp() {
               {m.timer_title()}
               {timerOn && (
                 <span className="ml-auto text-xs font-semibold text-brand tabular-nums">
-                  {formatClock(timerLeft)}
+                  {formatCountdown(timerLeft)}
                 </span>
               )}
             </Button>
@@ -4191,7 +4136,7 @@ export function MurmurApp() {
               )}
               aria-label={
                 timerOn
-                  ? m.timer_left_named({ time: formatClock(timerLeft) })
+                  ? m.timer_left_named({ time: formatCountdown(timerLeft) })
                   : m.timer_title()
               }
               onClick={() => setTimerOpen(true)}
@@ -4203,7 +4148,7 @@ export function MurmurApp() {
               />
               {timerOn && (
                 <span className="text-sm font-semibold text-brand tabular-nums">
-                  {formatClock(timerLeft)}
+                  {formatCountdown(timerLeft)}
                 </span>
               )}
             </Button>
@@ -4873,7 +4818,7 @@ export function MurmurApp() {
                       saved.length || customs.length
                         ? m.data_summary({
                             // Only what there is: no "and 0 sounds".
-                            items: new Intl.ListFormat(formatLocale()).format(
+                            items: formatList(
                               [
                                 saved.length &&
                                   m.count_saved_mixes({ count: saved.length }),

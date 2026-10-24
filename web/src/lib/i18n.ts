@@ -92,18 +92,6 @@ export function chooseLocale(locale: Locale) {
   if (locale !== getLocale()) location.reload()
 }
 
-/** The tag for Intl formatting: the app's language with the browser's region
- * where the two agree, so en-GB keeps its 24-hour clock under English. */
-export function formatLocale(): string {
-  const locale = getLocale()
-  const language = locale.split("-")[0].toLowerCase()
-  return (
-    navigator.languages.find(
-      (tag) => tag.split("-")[0].toLowerCase() === language
-    ) ?? locale
-  )
-}
-
 type Message = (inputs: object, options: { locale: Locale }) => string
 
 /** Whether text is what a message says in any language. For names the app
