@@ -141,7 +141,18 @@ export class Mixer {
     this.ctx = new Ctor()
     this.master = this.ctx.createGain()
     this.master.gain.value = this.playing ? levelGain(this.masterVolume) : 0
-    this.master.connect(this.ctx.destination)
+    // A safety limiter, not a sound: trims lift quiet sounds by up to 12 dB,
+    // and a dozen loops summed can pass full scale. Set to act only near it.
+    // The spec's defaults (-24 dB threshold, 30 dB knee) would compress every
+    // ambience into a pumping wall.
+    const limiter = new DynamicsCompressorNode(this.ctx, {
+      threshold: -1,
+      knee: 0,
+      ratio: 20,
+      attack: 0.003,
+      release: 0.25,
+    })
+    this.master.connect(limiter).connect(this.ctx.destination)
     return this.ctx
   }
 
