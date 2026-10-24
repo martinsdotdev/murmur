@@ -7,8 +7,6 @@ import { Popover } from "@base-ui/react/popover"
 import {
   Archive01Icon,
   ArrowDataTransferHorizontalIcon,
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
   ArrowUp01Icon,
   ArrowUpRight01Icon,
   AudioWave01Icon,
@@ -27,7 +25,6 @@ import {
   HeadphonesIcon,
   InstallingUpdates01Icon,
   KeyboardIcon,
-  LanguageSquareIcon,
   LeftToRightListBulletIcon,
   MinusSignCircleIcon,
   Moon02Icon,
@@ -50,13 +47,6 @@ import {
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -84,7 +74,6 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -128,8 +117,6 @@ import {
   readThemeMode,
   writeThemeMode,
   type ThemeMode,
-  SCHEMES,
-  SCHEME_TURNS,
   type Scheme,
   readScheme,
   writeScheme,
@@ -144,27 +131,31 @@ import {
   formatBytes,
   formatCountdown,
   formatDuration,
-  formatLanguage,
   formatList,
   formatPercent,
   formatPreset,
   formatSeconds,
   formatTime,
 } from "@/lib/format"
-import {
-  LOCALE_NAMES,
-  around,
-  chooseLocale,
-  fromAnyLocale,
-  startAppLocale,
-} from "@/lib/i18n"
+import { around, fromAnyLocale, startAppLocale } from "@/lib/i18n"
 import { m } from "@/paraglide/messages.js"
-import { getLocale, locales } from "@/paraglide/runtime.js"
 
 import { DevDataToggle } from "./DevDataToggle"
 import { MiddleTruncate } from "./MiddleTruncate"
 import { SoundIcon } from "./SoundIcon"
 import { useCoarsePointer } from "./use-coarse-pointer"
+import {
+  LanguageRow,
+  PrefInfo,
+  PrefRow,
+  PrefSection,
+  PrefSlider,
+  PreferencesSheet,
+  SchemePicker,
+  ThemePicker,
+  aboutRow,
+  prefGroup,
+} from "./preferences"
 import { persistStorage, usePwa } from "./use-pwa"
 
 /** Vite inlines this at build time, in client islands as well as .astro files. */
@@ -266,14 +257,6 @@ function BrandMark({ size = 18 }: { size?: number }) {
 }
 
 /**
- * Preferences' lists, segmented as the Claude app and Android settings draw
- * theirs. The group's outer corners are 16px inside the phone sheet's 28px,
- * and 8px in the desktop dialog, so a group never rounds more than its frame.
- */
-const prefGroup =
-  "segmented-list [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]"
-
-/**
  * A cell of All mixes' action shelf: an icon over its label, as a segment.
  * Five to a row on a phone is 51px each, narrower than one word in some
  * languages ("Compartilhar"), so a label hyphenates in the page's language,
@@ -282,10 +265,6 @@ const prefGroup =
  */
 const shelfCell =
   "flex min-h-16 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-m3-xs bg-grouped px-0.5 py-1 text-center text-label-small hyphens-auto wrap-anywhere state-layer transition-[background-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px"
-
-/** About's links and actions, as rows of the list like every other one. */
-const aboutRow =
-  "flex min-h-14 items-center gap-4 state-layer px-4 py-3 text-left text-body-large transition-colors"
 
 /** A mix's loudest sound stands in for it, so "Rainy café" reads as a café. */
 function mixIconPath(mix: MixerState) {
@@ -987,332 +966,6 @@ function EqBars({ phase, paused }: { phase: number; paused: boolean }) {
   )
 }
 
-/** Whether this browser can turn the tokens (see scripts/schemes.ts). */
-const SCHEMES_SUPPORTED =
-  typeof CSS !== "undefined" && CSS.supports("color", "oklch(from red l c h)")
-
-const SCHEME_LABEL: Record<Scheme, () => string> = {
-  amber: m.scheme_amber,
-  rose: m.scheme_rose,
-  sage: m.scheme_sage,
-  sky: m.scheme_sky,
-  violet: m.scheme_violet,
-}
-
-/**
- * A colour scheme in Preferences, beside the theme swatches and built like
- * them. Its dot is the scheme's own accent whatever scheme is active: the
- * dark accent, turned by the scheme's angle, which reads on both themes.
- */
-function SchemeSwatch({
-  scheme,
-  active,
-  onSelect,
-}: {
-  scheme: Scheme
-  active: boolean
-  onSelect: () => void
-}) {
-  const turn = scheme === "amber" ? 0 : SCHEME_TURNS[scheme]
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={active}
-      className={cn(
-        "flex cursor-pointer flex-col items-center gap-1.5 rounded-m3-xs border state-layer px-1 pt-2.5 pb-2 transition-[color,background-color,border-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px",
-        active
-          ? "border-brand bg-secondary text-brand"
-          : "border-transparent bg-grouped text-muted-foreground"
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className="size-5 rounded-full ring-1 ring-foreground/10"
-        style={{
-          // Unitless: h is a number here, and an angle would void it.
-          background: `oklch(from #d18a2c l c calc(h + ${turn}))`,
-        }}
-      />
-      <span className="text-xs font-semibold">{SCHEME_LABEL[scheme]()}</span>
-    </button>
-  )
-}
-
-function ThemeSwatch({
-  mode,
-  active,
-  onSelect,
-}: {
-  mode: ThemeMode
-  active: boolean
-  onSelect: () => void
-}) {
-  const label =
-    mode === "system"
-      ? m.theme_auto()
-      : mode === "light"
-        ? m.theme_light()
-        : m.theme_dark()
-  const pane = (tone: "light" | "dark", half: boolean) => (
-    <div
-      className="flex flex-1 flex-col justify-end gap-[3px] p-1"
-      style={{ background: `var(--swatch-${tone}-bg)` }}
-    >
-      {!half && (
-        <span
-          className="h-1 w-3/5 rounded-full"
-          style={{ background: `var(--swatch-${tone}-line)` }}
-        />
-      )}
-      <span
-        className="h-1 w-full rounded-full"
-        style={{ background: `var(--swatch-${tone}-accent)` }}
-      />
-    </div>
-  )
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={active}
-      className={cn(
-        "cursor-pointer rounded-m3-xs border state-layer p-[9px_9px_8px] text-left transition-[color,background-color,border-color,translate] first:rounded-s-(--segment-radius) last:rounded-e-(--segment-radius) motion-safe:active:translate-y-px",
-        // Selected as everywhere else: the raised container plus amber. The
-        // rest are tiles like the list beneath them, with no outline, and
-        // hover and press as the buttons do.
-        active ? "border-brand bg-secondary" : "border-transparent bg-grouped"
-      )}
-    >
-      <span className="flex h-8 overflow-hidden rounded border border-border">
-        {mode === "system" ? (
-          <>
-            {pane("light", true)}
-            {pane("dark", true)}
-          </>
-        ) : (
-          pane(mode === "light" ? "light" : "dark", false)
-        )}
-      </span>
-      <span
-        className={cn(
-          "mt-2 block text-xs font-semibold",
-          active ? "text-brand" : "text-muted-foreground"
-        )}
-      >
-        {label}
-      </span>
-    </button>
-  )
-}
-
-/**
- * Preferences' way into the language page, saying which language is in use,
- * whether the browser's or one picked.
- */
-function LanguageRow({
-  ref,
-  onOpen,
-}: {
-  ref: React.Ref<HTMLButtonElement>
-  onOpen: () => void
-}) {
-  const current = getLocale()
-  return (
-    <button ref={ref} type="button" className={aboutRow} onClick={onOpen}>
-      <HugeiconsIcon
-        icon={LanguageSquareIcon}
-        strokeWidth={2}
-        className="size-5 shrink-0"
-      />
-      <span className="flex-1">{m.pref_language_title()}</span>
-      <span
-        lang={current}
-        className="text-right text-body-medium text-muted-foreground"
-      >
-        {LOCALE_NAMES[current]}
-      </span>
-      <HugeiconsIcon
-        icon={ArrowRight01Icon}
-        strokeWidth={2}
-        className="size-4 shrink-0 text-muted-foreground"
-      />
-    </button>
-  )
-}
-
-/**
- * Preferences' language page. Each language is in its own name, which is how
- * people find theirs, with the name in the language on screen beneath, for
- * someone setting it up for someone else. Until anyone picks, nothing is
- * stored and the app follows the browser. Picking another reloads.
- */
-function LanguagePage() {
-  const current = getLocale()
-  return (
-    <>
-      <div className={prefGroup}>
-        {locales.map((locale) => {
-          const own = LOCALE_NAMES[locale]
-          const here = formatLanguage(locale)
-          const chosen = locale === current
-          return (
-            <button
-              key={locale}
-              type="button"
-              aria-pressed={chosen}
-              // Focus lands on what's chosen, where the row that opened this
-              // page was.
-              autoFocus={chosen}
-              className={aboutRow}
-              onClick={() => chooseLocale(locale)}
-            >
-              <span className="min-w-0 flex-1">
-                <span lang={locale} className="block">
-                  {own}
-                </span>
-                {here !== own && (
-                  <span className="mt-0.5 block text-body-medium text-muted-foreground">
-                    {here}
-                  </span>
-                )}
-              </span>
-              {chosen && (
-                <HugeiconsIcon
-                  icon={Tick02Icon}
-                  strokeWidth={2}
-                  className="size-5 shrink-0 text-brand"
-                />
-              )}
-            </button>
-          )
-        })}
-      </div>
-      <p className="mt-3 px-4 text-body-medium text-muted-foreground">
-        {m.pref_language_description()}
-      </p>
-    </>
-  )
-}
-
-function PrefRow({
-  icon,
-  title,
-  description,
-  checked,
-  onChange,
-}: {
-  icon: typeof PlayIcon
-  title: string
-  description: string
-  checked: boolean
-  onChange: (value: boolean) => void
-}) {
-  return (
-    <label className="flex min-h-14 cursor-pointer items-center gap-4 state-layer px-4 py-3 transition-colors">
-      <HugeiconsIcon icon={icon} strokeWidth={2} className="size-5 shrink-0" />
-      <span className="min-w-0 flex-1">
-        <span className="block text-body-large">{title}</span>
-        <span className="mt-0.5 block text-body-medium text-muted-foreground">
-          {description}
-        </span>
-      </span>
-      <Switch checked={checked} onCheckedChange={onChange} />
-    </label>
-  )
-}
-
-/**
- * A Preferences row that reports a state rather than switching one, with its
- * actions trailing. They wrap under the text when the row is too narrow.
- */
-function PrefInfo({
-  icon,
-  title,
-  description,
-  children,
-}: {
-  icon: typeof PlayIcon
-  title: string
-  description?: React.ReactNode
-  children?: React.ReactNode
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
-      <HugeiconsIcon icon={icon} strokeWidth={2} className="size-5 shrink-0" />
-      <div className="min-w-0 flex-1 basis-40">
-        <p className="text-body-large">{title}</p>
-        {description && (
-          <p className="mt-0.5 text-body-medium text-muted-foreground">
-            {description}
-          </p>
-        )}
-      </div>
-      {children && <div className="ml-auto flex gap-2">{children}</div>}
-    </div>
-  )
-}
-
-function PrefSlider({
-  icon,
-  title,
-  value,
-  display,
-  min,
-  max,
-  step,
-  largeStep,
-  resetValue,
-  onChange,
-}: {
-  icon: typeof PlayIcon
-  title: string
-  value: number
-  display: string
-  min: number
-  max: number
-  step: number
-  largeStep?: number
-  resetValue: number
-  onChange: (value: number) => void
-}) {
-  return (
-    <div className="flex gap-4 px-4 pt-3 pb-4">
-      <HugeiconsIcon
-        icon={icon}
-        strokeWidth={2}
-        className="mt-0.5 size-5 shrink-0"
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="text-body-large">{title}</span>
-          <span className="text-body-medium text-muted-foreground tabular-nums">
-            {display}
-          </span>
-        </div>
-        <div className="mt-4">
-          <Slider
-            value={value}
-            min={min}
-            max={max}
-            step={step}
-            largeStep={largeStep}
-            wheelStep={step}
-            resetValue={resetValue}
-            aria-label={title}
-            // These values are milliseconds and seconds, so the bare number a
-            // screen reader would otherwise announce is a lie. `display` is the
-            // same string shown above the track.
-            aria-valuetext={display}
-            onValueChange={(v) => onChange(v as number)}
-          />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /**
  * Coalesces writes to one per animation frame. Base UI reports a drag from a
  * document-level pointermove, so a 120Hz pointer would otherwise re-render this
@@ -1352,23 +1005,6 @@ function useFrameQueue() {
   )
 
   return { queue, drop }
-}
-
-function PrefSection({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <section>
-      <h3 className="mb-2 px-4 text-label-small text-muted-foreground">
-        {title}
-      </h3>
-      {children}
-    </section>
-  )
 }
 
 /**
@@ -1528,22 +1164,6 @@ export function MurmurApp() {
     })
   const appearanceIsDefault = scheme === "amber" && !blackNight
   const [settingsOpen, setSettingsOpen] = React.useState(false)
-  // Preferences' pages. Going back slides the main page in from the side the
-  // language page left by; opening Preferences shows it without motion.
-  const [prefsPage, setPrefsPage] = React.useState<"main" | "language">("main")
-  const [prefsBack, setPrefsBack] = React.useState(false)
-  const languageRow = React.useRef<HTMLButtonElement>(null)
-  const openLanguagePage = () => {
-    setPrefsBack(false)
-    setPrefsPage("language")
-  }
-  const closeLanguagePage = () => {
-    flushSync(() => {
-      setPrefsBack(true)
-      setPrefsPage("main")
-    })
-    languageRow.current?.focus()
-  }
   // A dialog a shortcut opened or closed comes and goes without motion: the
   // keyboard is the fast path, and animating it reads as lag. Any pointer
   // input hands motion back.
@@ -4520,492 +4140,12 @@ export function MurmurApp() {
         </DialogContent>
       </Dialog>
       {/* Opens with "," per the design; Ctrl+P also works, per the desktop. */}
-      <Dialog
+      <PreferencesSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        onOpenChangeComplete={(open) => {
-          if (open) return
-          setPrefsPage("main")
-          setPrefsBack(false)
-        }}
-      >
-        {/* A column that clips: the base DialogContent scrolls itself, which
-            put a second scrollbar on this dialog and let the header and footer
-            scroll away with the content. Only the body below scrolls now. Its
-            height is fixed at the most the dialog may take, the sheet's 85% on
-            a phone and up to 760px on a desktop with 2rem clear above and
-            below, which the main page always fills. The language page is
-            short, and a sheet that shrank under it and grew back would jump. */}
-        <DialogContent
-          className="flex h-[85dvh] flex-col gap-0 overflow-hidden p-0 max-sm:pt-8 max-sm:pb-0 sm:h-[min(calc(100dvh-4rem),47.5rem)] sm:max-w-lg"
-          instant={keyDriven}
-        >
-          <DialogHeader className="shrink-0 px-5 py-4">
-            {/* The title moves with its page, from the same side. */}
-            {prefsPage === "language" ? (
-              <div className="flex items-center gap-3 transition-[opacity,translate] duration-200 ease-(--ease-out) starting:opacity-0 motion-safe:starting:translate-x-6">
-                {/* The close button's look, on the other side: -my-1 keeps
-                    the header the title's height. */}
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="-my-1 rounded-full bg-secondary"
-                  aria-label={m.action_back()}
-                  onClick={closeLanguagePage}
-                >
-                  <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
-                </Button>
-                {/* Where this page sits, at the title's size: the parent
-                    muted and a way back too, the page itself the title. */}
-                <Breadcrumb aria-label={m.breadcrumb()} className="min-w-0">
-                  <BreadcrumbList className="gap-1.5 font-heading text-lg leading-none font-medium sm:gap-1.5">
-                    <BreadcrumbItem>
-                      <BreadcrumbLink
-                        render={
-                          <button
-                            type="button"
-                            className="cursor-pointer rounded-sm pointer-coarse:hit-target"
-                            onClick={closeLanguagePage}
-                          />
-                        }
-                      >
-                        {m.preferences()}
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-muted-foreground [&>svg]:size-4" />
-                    <BreadcrumbItem>
-                      <DialogTitle
-                        aria-current="page"
-                        className="text-lg text-foreground"
-                      >
-                        {m.pref_language_title()}
-                      </DialogTitle>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </div>
-            ) : (
-              <DialogTitle
-                className={cn(
-                  "text-lg",
-                  prefsBack &&
-                    "transition-[opacity,translate] duration-200 ease-(--ease-out) starting:opacity-0 motion-safe:starting:-translate-x-6"
-                )}
-              >
-                {m.preferences()}
-              </DialogTitle>
-            )}
-          </DialogHeader>
-
-          {/* Pushed in from the side its row points to, and back the other
-              way. A fade alone where motion is reduced. A transition from
-              @starting-style, not an animation: the scroller's animation
-              property belongs to scroll-fade, whose edges are a scroll-driven
-              animation, and an entrance keyframe there replaced it. */}
-          {prefsPage === "language" && (
-            <div className="flex min-h-0 flex-1 scroll-fade [scrollbar-gutter:stable_both-edges] flex-col overflow-y-auto px-5 py-4 transition-[opacity,translate] duration-200 ease-(--ease-out) scroll-fade-5 starting:opacity-0 motion-safe:starting:translate-x-6">
-              <LanguagePage />
-            </div>
-          )}
-
-          {/* both-edges, not stable: the scrollbar was eating 10px of the
-              right padding, so the content sat 20px from the left and 30 from
-              the right. Reserving the gutter on both sides keeps it symmetric,
-              and reserving it at all stops the jump when a pref toggle changes
-              the content past the scroll threshold. */}
-          {prefsPage === "main" && (
-            <div
-              className={cn(
-                "flex min-h-0 flex-1 scroll-fade [scrollbar-gutter:stable_both-edges] flex-col gap-5 overflow-y-auto px-5 py-4 scroll-fade-5",
-                prefsBack &&
-                  "transition-[opacity,translate] duration-200 ease-(--ease-out) starting:opacity-0 motion-safe:starting:-translate-x-6"
-              )}
-            >
-              <PrefSection title={m.section_appearance()}>
-                <div className="mb-2 grid grid-cols-3 gap-0.5 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]">
-                  {(["system", "light", "dark"] as ThemeMode[]).map((mode) => (
-                    <ThemeSwatch
-                      key={mode}
-                      mode={mode}
-                      active={themeMode === mode}
-                      onSelect={() => selectTheme(mode)}
-                    />
-                  ))}
-                </div>
-                {/* Schemes are relative colour, so a browser without it is
-                  offered none rather than five that do nothing. */}
-                {SCHEMES_SUPPORTED && (
-                  <div
-                    role="group"
-                    aria-label={m.colour()}
-                    className="mb-2 grid grid-cols-5 gap-0.5 [--segment-radius:var(--radius-m3-lg)] sm:[--segment-radius:var(--radius-lg)]"
-                  >
-                    {SCHEMES.map((s) => (
-                      <SchemeSwatch
-                        key={s}
-                        scheme={s}
-                        active={scheme === s}
-                        onSelect={() => selectScheme(s)}
-                      />
-                    ))}
-                  </div>
-                )}
-                <div className={prefGroup}>
-                  <LanguageRow ref={languageRow} onOpen={openLanguagePage} />
-                  <PrefRow
-                    icon={DarkModeIcon}
-                    title={m.pref_black_title()}
-                    description={m.pref_black_description()}
-                    checked={blackNight}
-                    onChange={changeBlackNight}
-                  />
-                  <PrefRow
-                    icon={AudioWave01Icon}
-                    title={m.pref_meters_title()}
-                    description={m.pref_meters_description()}
-                    checked={prefs.eq}
-                    onChange={(v) => setPref("eq", v)}
-                  />
-                  {!coarse && (
-                    <PrefRow
-                      icon={KeyboardIcon}
-                      title={m.pref_hints_title()}
-                      description={m.pref_hints_description()}
-                      checked={prefs.hints}
-                      onChange={(v) => setPref("hints", v)}
-                    />
-                  )}
-                </div>
-              </PrefSection>
-
-              <PrefSection title={m.section_playback()}>
-                <div className={prefGroup}>
-                  <PrefSlider
-                    icon={ArrowDataTransferHorizontalIcon}
-                    title={m.pref_fade_title()}
-                    value={prefs.fadeMs}
-                    display={
-                      prefs.fadeMs < 100
-                        ? m.pref_fade_instant()
-                        : formatSeconds(prefs.fadeMs / 1000, 1)
-                    }
-                    min={0}
-                    max={3000}
-                    step={100}
-                    // Base UI's largeStep default is 10, which on this scale is
-                    // smaller than one press of an arrow key.
-                    largeStep={500}
-                    resetValue={DEFAULT_PREFS.fadeMs}
-                    onChange={(v) => setPref("fadeMs", v)}
-                  />
-                  <PrefSlider
-                    icon={Moon02Icon}
-                    title={m.pref_sleep_fade_title()}
-                    value={prefs.sleepFade}
-                    display={formatSeconds(prefs.sleepFade, 0)}
-                    min={2}
-                    max={60}
-                    step={1}
-                    resetValue={DEFAULT_PREFS.sleepFade}
-                    onChange={(v) => setPref("sleepFade", v)}
-                  />
-                  <PrefRow
-                    icon={BrowserIcon}
-                    title={m.pref_pause_title()}
-                    description={m.pref_pause_description()}
-                    checked={prefs.pauseHidden}
-                    onChange={(v) => setPref("pauseHidden", v)}
-                  />
-                  <PrefRow
-                    icon={Sun03Icon}
-                    title={m.pref_awake_title()}
-                    description={m.pref_awake_description()}
-                    checked={prefs.keepAwake}
-                    onChange={(v) => setPref("keepAwake", v)}
-                  />
-                  {"audioSession" in navigator && (
-                    <PrefRow
-                      icon={MusicNote01Icon}
-                      title={m.pref_alongside_title()}
-                      description={m.pref_alongside_description()}
-                      checked={prefs.mixWithOthers}
-                      onChange={(v) => setPref("mixWithOthers", v)}
-                    />
-                  )}
-                </div>
-              </PrefSection>
-
-              {
-              /* No persistent chrome anywhere for this. A standing "offline"
-                badge is redundant with the OS and the browser, and the two
-                honest messages (a sound that isn't saved yet, a YouTube sound
-                that needs a connection) already appear where they matter. */
-            }
-              {(pwa.audio || installRow) && (
-                <PrefSection title={m.section_offline()}>
-                  <div className={prefGroup}>
-                    {pwa.audio && (
-                      <PrefInfo
-                        icon={Download04Icon}
-                        title={m.offline_title()}
-                        description={
-                          // Offline there is nothing to press, so say why.
-                          !pwa.online && pwa.audio.cached < pwa.audio.total
-                            ? m.offline_saved_reconnect({
-                                cached: pwa.audio.cached,
-                                total: pwa.audio.total,
-                              })
-                            : m.offline_saved({
-                                cached: pwa.audio.cached,
-                                total: pwa.audio.total,
-                              })
-                        }
-                      >
-                        {pwa.online && pwa.audio.cached < pwa.audio.total && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={pwa.downloading}
-                            onClick={pwa.downloadSounds}
-                          >
-                            {pwa.downloading
-                              ? m.offline_downloading({
-                                  cached: pwa.audio.cached,
-                                  total: pwa.audio.total,
-                                })
-                              : m.offline_download({
-                                  size: formatBytes(pwa.audio.remainingBytes),
-                                })}
-                          </Button>
-                        )}
-                      </PrefInfo>
-                    )}
-                    {installRow && (
-                      <PrefInfo
-                        icon={InstallingUpdates01Icon}
-                        title={m.install_title()}
-                        // With a prompt the Install button says it all;
-                        // without one, this says where the browser keeps it.
-                        description={
-                          pwa.canInstall
-                            ? undefined
-                            : IS_APPLE_TOUCH
-                              ? m.install_description_apple()
-                              : m.install_description_menu()
-                        }
-                      >
-                        {pwa.canInstall && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void pwa.install()}
-                          >
-                            {m.action_install()}
-                          </Button>
-                        )}
-                      </PrefInfo>
-                    )}
-                  </div>
-                </PrefSection>
-              )}
-
-              <PrefSection title={m.section_data()}>
-                <div className={prefGroup}>
-                  <PrefInfo
-                    icon={Database01Icon}
-                    title={m.data_title()}
-                    description={
-                      saved.length || customs.length
-                        ? m.data_summary({
-                            // Only what there is: no "and 0 sounds".
-                            items: formatList(
-                              [
-                                saved.length &&
-                                  m.count_saved_mixes({ count: saved.length }),
-                                customs.length &&
-                                  m.count_own_sounds({ count: customs.length }),
-                              ].filter((part) => typeof part === "string")
-                            ),
-                          })
-                        : m.data_empty()
-                    }
-                  >
-                    {/* Armed, it turns destructive red. Both labels share one
-                    grid cell and the hidden one keeps its width, so the
-                    button holds the wider label's size and the text beside it
-                    doesn't reflow. */}
-                    <Button
-                      variant={dataArmed ? "destructive" : "outline"}
-                      size="sm"
-                      disabled={saved.length === 0 && customs.length === 0}
-                      onClick={dataArmed ? clearData : armClearData}
-                    >
-                      <span className="grid justify-items-center">
-                        <span
-                          className={cn(
-                            "col-start-1 row-start-1",
-                            dataArmed && "invisible"
-                          )}
-                        >
-                          {m.clear_all()}
-                        </span>
-                        <span
-                          className={cn(
-                            "col-start-1 row-start-1",
-                            !dataArmed && "invisible"
-                          )}
-                        >
-                          {m.clear_sure()}
-                        </span>
-                      </span>
-                    </Button>
-                  </PrefInfo>
-                  <PrefInfo
-                    icon={Archive01Icon}
-                    title={m.backup_title()}
-                    description={m.backup_description()}
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={saved.length === 0 && customs.length === 0}
-                      onClick={() => void exportBackup()}
-                    >
-                      {m.action_export()}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => importInput.current?.click()}
-                    >
-                      {m.action_import()}
-                    </Button>
-                    <input
-                      ref={importInput}
-                      type="file"
-                      accept=".murmur"
-                      className="sr-only"
-                      tabIndex={-1}
-                      aria-hidden="true"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        e.target.value = ""
-                        if (file) void importBackup(file)
-                      }}
-                    />
-                  </PrefInfo>
-                </div>
-              </PrefSection>
-
-              <PrefSection title={m.about()}>
-                <div className={prefGroup}>
-                  <div className="flex items-center gap-4 px-4 py-3">
-                    <img
-                      src={`${BASE}/icon.svg`}
-                      alt=""
-                      width={34}
-                      height={34}
-                      className="block shrink-0 rounded-[7px]"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-serif text-lg">Murmur</span>
-                        <span className="text-body-medium text-muted-foreground tabular-nums">
-                          {__APP_VERSION__}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <a
-                    className={aboutRow}
-                    href={repoUrl}
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    <HugeiconsIcon
-                      icon={GithubIcon}
-                      strokeWidth={2}
-                      className="size-5 shrink-0"
-                    />
-                    <span className="flex-1">{m.about_source()}</span>
-                    <HugeiconsIcon
-                      icon={ArrowUpRight01Icon}
-                      strokeWidth={2}
-                      className="size-4 shrink-0 text-muted-foreground"
-                    />
-                  </a>
-                  {/* The sound attribution table lives on the landing page. */}
-                  <a className={aboutRow} href={`${BASE}/#credits`}>
-                    <HugeiconsIcon
-                      icon={File01Icon}
-                      strokeWidth={2}
-                      className="size-5 shrink-0"
-                    />
-                    <span className="flex-1">{m.about_credits()}</span>
-                    <HugeiconsIcon
-                      icon={ArrowUpRight01Icon}
-                      strokeWidth={2}
-                      className="size-4 shrink-0 text-muted-foreground"
-                    />
-                  </a>
-                  <button
-                    type="button"
-                    className={aboutRow}
-                    onClick={copyBuildInfo}
-                  >
-                    <HugeiconsIcon
-                      icon={Copy01Icon}
-                      strokeWidth={2}
-                      className="size-5 shrink-0"
-                    />
-                    {m.about_copy_build()}
-                  </button>
-
-                  {/* The tint is a gradient layer, so it lies over the tile's
-                    fill rather than replacing it. Narrow, the button drops
-                    under the text instead of squeezing it. */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-linear-to-b from-brand/5 to-brand/5 px-4 py-3">
-                    <div className="min-w-0 flex-1 basis-48">
-                      <p className="text-body-large">{m.support_title()}</p>
-                      <p className="mt-0.5 text-body-medium text-muted-foreground">
-                        {m.support_description()}
-                      </p>
-                    </div>
-                    <a
-                      className="ml-auto flex h-8 shrink-0 items-center gap-2 rounded bg-filled px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-filled-hover"
-                      href={sponsorUrl}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      <HugeiconsIcon
-                        icon={FavouriteIcon}
-                        strokeWidth={2}
-                        className="size-3.5"
-                      />
-                      {m.support_action()}
-                    </a>
-                  </div>
-                </div>
-              </PrefSection>
-            </div>
-          )}
-
-          {/* This dialog sets p-0, which takes the sheet's safe-area padding
-              with it, so the footer has to clear the home indicator itself.
-              It sits a layer below the dialog's background-3, on the
-              background-2 popovers use, the way a WinUI ContentDialog's command
-              area does, so it reads as the dialog's base rather than more of
-              its content. The language page has nothing for it to do, so
-              there it slides down out of the sheet and goes inert, keeping
-              its place so the page above doesn't jump. */}
-          <div
-            inert={prefsPage !== "main"}
-            className={cn(
-              "flex shrink-0 items-center gap-3 border-t border-border bg-popover px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-muted-foreground transition-[opacity,translate] duration-200 ease-(--ease-out) sm:pb-3",
-              prefsPage !== "main" && "opacity-0 motion-safe:translate-y-full"
-            )}
-          >
+        instant={keyDriven}
+        footer={
+          <>
             {!coarse && (
               <span>
                 {pressBefore}
@@ -5056,9 +4196,355 @@ export function MurmurApp() {
             >
               {m.restore_defaults()}
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        {(openLanguage) => (
+          <>
+            <PrefSection title={m.section_appearance()}>
+              <ThemePicker mode={themeMode} onSelect={selectTheme} />
+              <SchemePicker scheme={scheme} onSelect={selectScheme} />
+              <div className={prefGroup}>
+                <LanguageRow onOpen={openLanguage} />
+                <PrefRow
+                  icon={DarkModeIcon}
+                  title={m.pref_black_title()}
+                  description={m.pref_black_description()}
+                  checked={blackNight}
+                  onChange={changeBlackNight}
+                />
+                <PrefRow
+                  icon={AudioWave01Icon}
+                  title={m.pref_meters_title()}
+                  description={m.pref_meters_description()}
+                  checked={prefs.eq}
+                  onChange={(v) => setPref("eq", v)}
+                />
+                {!coarse && (
+                  <PrefRow
+                    icon={KeyboardIcon}
+                    title={m.pref_hints_title()}
+                    description={m.pref_hints_description()}
+                    checked={prefs.hints}
+                    onChange={(v) => setPref("hints", v)}
+                  />
+                )}
+              </div>
+            </PrefSection>
+
+            <PrefSection title={m.section_playback()}>
+              <div className={prefGroup}>
+                <PrefSlider
+                  icon={ArrowDataTransferHorizontalIcon}
+                  title={m.pref_fade_title()}
+                  value={prefs.fadeMs}
+                  display={
+                    prefs.fadeMs < 100
+                      ? m.pref_fade_instant()
+                      : formatSeconds(prefs.fadeMs / 1000, 1)
+                  }
+                  min={0}
+                  max={3000}
+                  step={100}
+                  // Base UI's largeStep default is 10, which on this scale is
+                  // smaller than one press of an arrow key.
+                  largeStep={500}
+                  resetValue={DEFAULT_PREFS.fadeMs}
+                  onChange={(v) => setPref("fadeMs", v)}
+                />
+                <PrefSlider
+                  icon={Moon02Icon}
+                  title={m.pref_sleep_fade_title()}
+                  value={prefs.sleepFade}
+                  display={formatSeconds(prefs.sleepFade, 0)}
+                  min={2}
+                  max={60}
+                  step={1}
+                  resetValue={DEFAULT_PREFS.sleepFade}
+                  onChange={(v) => setPref("sleepFade", v)}
+                />
+                <PrefRow
+                  icon={BrowserIcon}
+                  title={m.pref_pause_title()}
+                  description={m.pref_pause_description()}
+                  checked={prefs.pauseHidden}
+                  onChange={(v) => setPref("pauseHidden", v)}
+                />
+                <PrefRow
+                  icon={Sun03Icon}
+                  title={m.pref_awake_title()}
+                  description={m.pref_awake_description()}
+                  checked={prefs.keepAwake}
+                  onChange={(v) => setPref("keepAwake", v)}
+                />
+                {"audioSession" in navigator && (
+                  <PrefRow
+                    icon={MusicNote01Icon}
+                    title={m.pref_alongside_title()}
+                    description={m.pref_alongside_description()}
+                    checked={prefs.mixWithOthers}
+                    onChange={(v) => setPref("mixWithOthers", v)}
+                  />
+                )}
+              </div>
+            </PrefSection>
+
+            {
+              /* No persistent chrome anywhere for this. A standing "offline"
+                badge is redundant with the OS and the browser, and the two
+                honest messages (a sound that isn't saved yet, a YouTube sound
+                that needs a connection) already appear where they matter. */
+            }
+            {(pwa.audio || installRow) && (
+              <PrefSection title={m.section_offline()}>
+                <div className={prefGroup}>
+                  {pwa.audio && (
+                    <PrefInfo
+                      icon={Download04Icon}
+                      title={m.offline_title()}
+                      description={
+                        // Offline there is nothing to press, so say why.
+                        !pwa.online && pwa.audio.cached < pwa.audio.total
+                          ? m.offline_saved_reconnect({
+                              cached: pwa.audio.cached,
+                              total: pwa.audio.total,
+                            })
+                          : m.offline_saved({
+                              cached: pwa.audio.cached,
+                              total: pwa.audio.total,
+                            })
+                      }
+                    >
+                      {pwa.online && pwa.audio.cached < pwa.audio.total && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={pwa.downloading}
+                          onClick={pwa.downloadSounds}
+                        >
+                          {pwa.downloading
+                            ? m.offline_downloading({
+                                cached: pwa.audio.cached,
+                                total: pwa.audio.total,
+                              })
+                            : m.offline_download({
+                                size: formatBytes(pwa.audio.remainingBytes),
+                              })}
+                        </Button>
+                      )}
+                    </PrefInfo>
+                  )}
+                  {installRow && (
+                    <PrefInfo
+                      icon={InstallingUpdates01Icon}
+                      title={m.install_title()}
+                      // With a prompt the Install button says it all;
+                      // without one, this says where the browser keeps it.
+                      description={
+                        pwa.canInstall
+                          ? undefined
+                          : IS_APPLE_TOUCH
+                            ? m.install_description_apple()
+                            : m.install_description_menu()
+                      }
+                    >
+                      {pwa.canInstall && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void pwa.install()}
+                        >
+                          {m.action_install()}
+                        </Button>
+                      )}
+                    </PrefInfo>
+                  )}
+                </div>
+              </PrefSection>
+            )}
+
+            <PrefSection title={m.section_data()}>
+              <div className={prefGroup}>
+                <PrefInfo
+                  icon={Database01Icon}
+                  title={m.data_title()}
+                  description={
+                    saved.length || customs.length
+                      ? m.data_summary({
+                          // Only what there is: no "and 0 sounds".
+                          items: formatList(
+                            [
+                              saved.length &&
+                                m.count_saved_mixes({ count: saved.length }),
+                              customs.length &&
+                                m.count_own_sounds({ count: customs.length }),
+                            ].filter((part) => typeof part === "string")
+                          ),
+                        })
+                      : m.data_empty()
+                  }
+                >
+                  {/* Armed, it turns destructive red. Both labels share one
+                    grid cell and the hidden one keeps its width, so the
+                    button holds the wider label's size and the text beside it
+                    doesn't reflow. */}
+                  <Button
+                    variant={dataArmed ? "destructive" : "outline"}
+                    size="sm"
+                    disabled={saved.length === 0 && customs.length === 0}
+                    onClick={dataArmed ? clearData : armClearData}
+                  >
+                    <span className="grid justify-items-center">
+                      <span
+                        className={cn(
+                          "col-start-1 row-start-1",
+                          dataArmed && "invisible"
+                        )}
+                      >
+                        {m.clear_all()}
+                      </span>
+                      <span
+                        className={cn(
+                          "col-start-1 row-start-1",
+                          !dataArmed && "invisible"
+                        )}
+                      >
+                        {m.clear_sure()}
+                      </span>
+                    </span>
+                  </Button>
+                </PrefInfo>
+                <PrefInfo
+                  icon={Archive01Icon}
+                  title={m.backup_title()}
+                  description={m.backup_description()}
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={saved.length === 0 && customs.length === 0}
+                    onClick={() => void exportBackup()}
+                  >
+                    {m.action_export()}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => importInput.current?.click()}
+                  >
+                    {m.action_import()}
+                  </Button>
+                  <input
+                    ref={importInput}
+                    type="file"
+                    accept=".murmur"
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      e.target.value = ""
+                      if (file) void importBackup(file)
+                    }}
+                  />
+                </PrefInfo>
+              </div>
+            </PrefSection>
+
+            <PrefSection title={m.about()}>
+              <div className={prefGroup}>
+                <div className="flex items-center gap-4 px-4 py-3">
+                  <img
+                    src={`${BASE}/icon.svg`}
+                    alt=""
+                    width={34}
+                    height={34}
+                    className="block shrink-0 rounded-[7px]"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-serif text-lg">Murmur</span>
+                      <span className="text-body-medium text-muted-foreground tabular-nums">
+                        {__APP_VERSION__}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  className={aboutRow}
+                  href={repoUrl}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <HugeiconsIcon
+                    icon={GithubIcon}
+                    strokeWidth={2}
+                    className="size-5 shrink-0"
+                  />
+                  <span className="flex-1">{m.about_source()}</span>
+                  <HugeiconsIcon
+                    icon={ArrowUpRight01Icon}
+                    strokeWidth={2}
+                    className="size-4 shrink-0 text-muted-foreground"
+                  />
+                </a>
+                {/* The sound attribution table lives on the landing page. */}
+                <a className={aboutRow} href={`${BASE}/#credits`}>
+                  <HugeiconsIcon
+                    icon={File01Icon}
+                    strokeWidth={2}
+                    className="size-5 shrink-0"
+                  />
+                  <span className="flex-1">{m.about_credits()}</span>
+                  <HugeiconsIcon
+                    icon={ArrowUpRight01Icon}
+                    strokeWidth={2}
+                    className="size-4 shrink-0 text-muted-foreground"
+                  />
+                </a>
+                <button
+                  type="button"
+                  className={aboutRow}
+                  onClick={copyBuildInfo}
+                >
+                  <HugeiconsIcon
+                    icon={Copy01Icon}
+                    strokeWidth={2}
+                    className="size-5 shrink-0"
+                  />
+                  {m.about_copy_build()}
+                </button>
+
+                {/* The tint is a gradient layer, so it lies over the tile's
+                    fill rather than replacing it. Narrow, the button drops
+                    under the text instead of squeezing it. */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-linear-to-b from-brand/5 to-brand/5 px-4 py-3">
+                  <div className="min-w-0 flex-1 basis-48">
+                    <p className="text-body-large">{m.support_title()}</p>
+                    <p className="mt-0.5 text-body-medium text-muted-foreground">
+                      {m.support_description()}
+                    </p>
+                  </div>
+                  <a
+                    className="ml-auto flex h-8 shrink-0 items-center gap-2 rounded bg-filled px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-filled-hover"
+                    href={sponsorUrl}
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    <HugeiconsIcon
+                      icon={FavouriteIcon}
+                      strokeWidth={2}
+                      className="size-3.5"
+                    />
+                    {m.support_action()}
+                  </a>
+                </div>
+              </div>
+            </PrefSection>
+          </>
+        )}
+      </PreferencesSheet>
 
       <RenameDialog
         open={renaming !== null}
