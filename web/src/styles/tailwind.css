@@ -679,7 +679,9 @@
    the slider is hovered or held, as YouTube's bar does under the pointer.
    The box is the thick size with a negative margin, so the layout only ever
    sees the resting one, and a clip opens from it: the ends stay round and
-   nothing around it moves. */
+   nothing around it moves. Its unfilled part also darkens a touch (lightens
+   in dark themes), mixed toward the text colour so it holds in every
+   scheme. */
 [data-slot="slider-track"][data-orientation="horizontal"] {
   height: 6px;
   margin-block: -1px;
@@ -695,17 +697,21 @@
 @media (hover: hover) {
   [data-slot="slider"]:hover [data-slot="slider-track"] {
     clip-path: inset(0 round 9999px);
+    background-color: color-mix(in oklab, var(--track), var(--foreground) 8%);
   }
 }
 
 [data-slot="slider-track"][data-dragging],
 [data-slot="slider"][data-held] [data-slot="slider-track"] {
   clip-path: inset(0 round 9999px);
+  background-color: color-mix(in oklab, var(--track), var(--foreground) 8%);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   [data-slot="slider-track"] {
-    transition: clip-path 150ms var(--ease-out);
+    transition:
+      clip-path 150ms var(--ease-out),
+      background-color 150ms ease;
   }
 }
 

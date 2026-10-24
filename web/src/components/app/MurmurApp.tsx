@@ -623,7 +623,11 @@ function LevelTrack({ level, live }: { level: number; live: boolean }) {
         level > 0 ? "bg-track" : "bg-transparent",
         live
           ? "[clip-path:inset(0_round_9999px)]"
-          : "[clip-path:inset(1px_0_round_9999px)]"
+          : "[clip-path:inset(1px_0_round_9999px)]",
+        // Highlighted under a finger, as a slider's track is under the pointer.
+        live &&
+          level > 0 &&
+          "bg-[color-mix(in_oklab,var(--track),var(--foreground)_8%)]"
       )}
     >
       {/* Full width and slid into place rather than sized: a transform
@@ -3626,7 +3630,7 @@ export function MurmurApp() {
                         setAddOpen(true)
                       }}
                       className={cn(
-                        "flex items-center justify-center gap-2 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground",
+                        "flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed text-xs font-semibold text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground",
                         // 83px is what a sound card measures. It only matters when
                         // this tile is alone, since the grid stretches it to the
                         // cards beside it otherwise, but it has to be the card's
