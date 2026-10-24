@@ -3311,12 +3311,11 @@ export function MurmurApp() {
               a ghost button's 8px of padding counts toward it, so the ghosts
               sit 8px from a drawn edge and touch each other. */}
           <div className="flex items-center gap-2">
-            {/* M3's connected button group, as the sleep timer's lengths are:
-                one pill in two tiles, 2px apart and squared where they meet,
-                its ends squircles where corner-shape is supported and round
-                where it isn't. Each tile has its own shape, so each takes its
-                own focus ring. Cut from the panel's surface rather than the
-                grouped one, which in dark would sit above the chosen tile. */}
+            {/* A segmented row, as the sleep timer's lengths are: two tiles
+                2px apart, 4px where they meet and 8px at the ends. Each tile
+                has its own shape, so each takes its own focus ring. Cut from
+                the panel's surface rather than the grouped one, which in dark
+                would sit above the chosen tile. */}
             <ToggleGroup
               value={[view]}
               onValueChange={(value) => {
@@ -3337,7 +3336,7 @@ export function MurmurApp() {
                   key={value}
                   value={value}
                   aria-label={label}
-                  className="rounded-m3-xs bg-background text-muted-foreground [corner-shape:squircle] first:rounded-s-full last:rounded-e-full"
+                  className="rounded-m3-xs bg-background text-muted-foreground first:rounded-s-lg last:rounded-e-lg"
                 >
                   <HugeiconsIcon
                     icon={icon}
