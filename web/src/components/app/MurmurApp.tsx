@@ -1192,20 +1192,11 @@ export function MurmurApp() {
     })
   const appearanceIsDefault = scheme === "amber" && !blackNight
   const [settingsOpen, setSettingsOpen] = React.useState(false)
-  // A dialog a shortcut opened or closed comes and goes without motion: the
-  // keyboard is the fast path, and animating it reads as lag. Any pointer
-  // input hands motion back.
-  const [keyDriven, setKeyDriven] = React.useState(false)
   const [pageHidden, setPageHidden] = React.useState(() => document.hidden)
   React.useEffect(() => {
     const sync = () => setPageHidden(document.hidden)
     document.addEventListener("visibilitychange", sync)
     return () => document.removeEventListener("visibilitychange", sync)
-  }, [])
-  React.useEffect(() => {
-    const off = () => setKeyDriven(false)
-    window.addEventListener("pointerdown", off)
-    return () => window.removeEventListener("pointerdown", off)
   }, [])
   const [renaming, setRenaming] = React.useState<string | null>(null)
   /** An imported sound being renamed; the rename dialog serves both. */
@@ -2562,7 +2553,6 @@ export function MurmurApp() {
           if (Object.keys(vols).length) turnAllOff()
         } else if (key === "i") {
           e.preventDefault()
-          setKeyDriven(true)
           setAddName("")
           setAddUrl("")
           setAddOpen(true)
@@ -2571,7 +2561,6 @@ export function MurmurApp() {
           setView(view === "grid" ? "list" : "grid")
         } else if (key === "p") {
           e.preventDefault()
-          setKeyDriven(true)
           setSettingsOpen((o) => !o)
         }
         return
@@ -2579,7 +2568,6 @@ export function MurmurApp() {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return
       if (e.key === ",") {
         e.preventDefault()
-        setKeyDriven(true)
         setSettingsOpen((o) => !o)
         return
       }
@@ -2595,7 +2583,6 @@ export function MurmurApp() {
       } else if (e.key === "s" || e.key === "S") {
         share()
       } else if (e.key === "t" || e.key === "T") {
-        setKeyDriven(true)
         setTimerOpen((o) => !o)
       }
     }
@@ -4097,10 +4084,7 @@ export function MurmurApp() {
       </Dialog>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent
-          className="content-start max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none"
-          instant={keyDriven}
-        >
+        <DialogContent className="content-start max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none">
           <DialogHeader>
             <DialogTitle className="text-lg">{m.add_own_sound()}</DialogTitle>
           </DialogHeader>
@@ -4164,7 +4148,7 @@ export function MurmurApp() {
       </Dialog>
 
       <Dialog open={timerOpen} onOpenChange={setTimerOpen}>
-        <DialogContent className="sm:max-w-sm" instant={keyDriven}>
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-lg">{m.timer_title()}</DialogTitle>
           </DialogHeader>
@@ -4185,7 +4169,6 @@ export function MurmurApp() {
       <PreferencesSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        instant={keyDriven}
         footer={
           <>
             {!coarse && (

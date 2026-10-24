@@ -484,14 +484,11 @@ const PAGE =
 export function PreferencesSheet({
   open,
   onOpenChange,
-  instant,
   footer,
   children,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** No open or close motion, for a sheet a keyboard shortcut drives. */
-  instant: boolean
   /** The main page's command bar. */
   footer: React.ReactNode
   /** The main page, given the way into the language page. */
@@ -526,10 +523,7 @@ export function PreferencesSheet({
           a phone and up to 760px on a desktop with 2rem clear above and
           below, which the main page always fills. The language page is
           short, and a sheet that shrank under it and grew back would jump. */}
-      <DialogContent
-        className="flex h-[85dvh] flex-col gap-0 overflow-hidden p-0 max-sm:pt-8 max-sm:pb-0 sm:h-[min(calc(100dvh-4rem),47.5rem)] sm:max-w-lg"
-        instant={instant}
-      >
+      <DialogContent className="flex h-[85dvh] flex-col gap-0 overflow-hidden p-0 max-sm:pt-8 max-sm:pb-0 sm:h-[min(calc(100dvh-4rem),47.5rem)] sm:max-w-lg">
         <DialogHeader className="shrink-0 px-5 py-4">
           {onLanguage ? (
             <div className={cn("flex items-center gap-3", ENTER[view.arrived])}>

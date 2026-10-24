@@ -445,13 +445,6 @@
   }
 }
 
-/* Opened or closed from a keyboard shortcut: no motion at all. The keyboard
-   is the fast path, and animating it reads as lag. */
-[data-slot="dialog-overlay"][data-instant],
-[data-slot="dialog-content"][data-instant] {
-  transition: none;
-}
-
 /*
  * M3 state layers: the content colour over the control at 8% on hover and
  * 10% on focus and press, and held while a menu trigger's menu is open. Drawn

@@ -77,12 +77,9 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
-  instant = false,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
-  /** No open or close motion, for a dialog a keyboard shortcut drives. */
-  instant?: boolean
 }) {
   const sheet = useSheet()
   const popupClassName = cn(
@@ -123,13 +120,11 @@ function DialogContent({
       <DrawerPrimitive.Portal>
         <DrawerPrimitive.Backdrop
           data-slot="dialog-overlay"
-          data-instant={instant || undefined}
           className="fixed inset-0 isolate z-50 bg-black/30 supports-backdrop-filter:backdrop-blur-sm"
         />
         <DrawerPrimitive.Viewport className="fixed inset-0 z-50">
           <DrawerPrimitive.Popup
             data-slot="dialog-content"
-            data-instant={instant || undefined}
             className={popupClassName}
             {...(props as DrawerPrimitive.Popup.Props)}
           >
@@ -148,10 +143,9 @@ function DialogContent({
 
   return (
     <DialogPortal>
-      <DialogOverlay data-instant={instant || undefined} />
+      <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        data-instant={instant || undefined}
         className={popupClassName}
         {...props}
       >
