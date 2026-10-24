@@ -4479,6 +4479,9 @@ export function MurmurApp() {
                         {__APP_VERSION__}
                       </span>
                     </div>
+                    <p className="mt-0.5 text-body-medium text-muted-foreground">
+                      {m.about_tagline()}
+                    </p>
                   </div>
                 </div>
 
