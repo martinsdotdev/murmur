@@ -124,20 +124,22 @@ export function customName(sound: CustomSound): string {
  * were live for a few hours on 2026-10-23. Frozen, since it describes data
  * already written, not today's messages.
  */
-const LEGACY_UNTITLED: Record<string, Untitled["untitled"]> = {
-  "New mix": "new",
-  "Novo mix": "new",
-  "Nueva mezcla": "new",
-  新しいミックス: "new",
-  "Custom mix": "custom",
-  "Mix personalizado": "custom",
-  "Mezcla personalizada": "custom",
-  カスタムミックス: "custom",
-  "Shared mix": "shared",
-  "Mix compartilhado": "shared",
-  "Mezcla compartida": "shared",
-  共有されたミックス: "shared",
-}
+// A Map, not an object: a stored name is anything a shared link's n= said,
+// and on an object "constructor" or "toString" would find a built-in.
+const LEGACY_UNTITLED = new Map<string, Untitled["untitled"]>([
+  ["New mix", "new"],
+  ["Novo mix", "new"],
+  ["Nueva mezcla", "new"],
+  ["新しいミックス", "new"],
+  ["Custom mix", "custom"],
+  ["Mix personalizado", "custom"],
+  ["Mezcla personalizada", "custom"],
+  ["カスタムミックス", "custom"],
+  ["Shared mix", "shared"],
+  ["Mix compartilhado", "shared"],
+  ["Mezcla compartida", "shared"],
+  ["共有されたミックス", "shared"],
+])
 const LEGACY_YOUTUBE_PLACEHOLDERS = new Set([
   "YouTube sound",
   "Som do YouTube",
@@ -153,7 +155,7 @@ function cleanMixName(v: unknown): MixName {
     return { untitled: v.untitled }
   }
   if (typeof v !== "string" || !v.trim()) return { untitled: "custom" }
-  const legacy = LEGACY_UNTITLED[v]
+  const legacy = LEGACY_UNTITLED.get(v)
   return legacy ? { untitled: legacy } : v
 }
 
