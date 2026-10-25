@@ -1,6 +1,6 @@
 # Murmur website
 
-The marketing site at `murmur.umaru.dev`. Astro static build, deployed by GitHub Actions.
+The browser app at the root of `murmur.umaru.dev`, and the About page at `/about/`, with `/pt-br/about/`, `/es/about/` and `/ja/about/` for the other languages. It's a static Astro build with the app as a React island, deployed by GitHub Actions.
 
 ## Develop
 
@@ -10,7 +10,7 @@ pnpm install
 pnpm dev         # → http://localhost:4321/
 ```
 
-`dev` and `build` both run `scripts/copy-assets.mjs` first, copying the app icon and the 14 bundled OGGs from `../Murmur/Assets/Source/AppIcon.svg` and `../Murmur/Sounds/*.ogg` into `public/` so the demo can play them locally. It is chained into the script rather than run from a `predev`/`prebuild` hook: those hooks are off by default in pnpm 10 and earlier, and the failure mode is a green build that ships no favicon and no audio.
+`dev` and `build` both run `scripts/copy-assets.mjs` first, copying the app icon and the 14 bundled OGGs from `../Murmur/Assets/Source/AppIcon.svg` and `../Murmur/Sounds/*.ogg` into `public/`, where the app serves them from. It is chained into the script rather than run from a `predev`/`prebuild` hook: those hooks are off by default in pnpm 10 and earlier, and the failure mode is a green build that ships no favicon and no audio.
 
 ## Build
 
@@ -39,7 +39,7 @@ python -m http.server 4402 --directory dist
 
 ## Deploy
 
-Pushed to `master`, the `.github/workflows/website.yml` workflow builds and deploys to GitHub Pages. The repo's _Settings → Pages → Source_ must be set to _GitHub Actions_ (one-time manual toggle).
+When a push to `master` changes `web/`, the bundled sounds or the app icon, the `.github/workflows/website.yml` workflow builds and deploys to GitHub Pages. The repo's _Settings → Pages → Source_ must be set to _GitHub Actions_ (one-time manual toggle).
 
 ## Source-of-truth links
 
