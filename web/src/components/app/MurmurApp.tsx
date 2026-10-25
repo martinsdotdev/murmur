@@ -3302,6 +3302,7 @@ export function MurmurApp() {
               player. */}
           <div className="hidden w-52 min-w-0 items-center gap-2 @max-5xl:w-28 @max-5xl:min-w-20 wide:flex">
             <Button
+              shape="fluent"
               variant="ghost"
               size="icon-sm"
               className="shrink-0 text-muted-foreground hover:text-foreground"
@@ -3342,9 +3343,8 @@ export function MurmurApp() {
               a ghost button's 8px of padding counts toward it, so the ghosts
               sit 8px from a drawn edge and touch each other. */}
           <div className="flex items-center gap-2">
-            {/* A segmented row, as the sleep timer's lengths are: two tiles
-                2px apart, 4px where they meet and 8px at the ends. Each tile
-                has its own shape, so each takes its own focus ring. Cut from
+            {/* Two tiles 2px apart, each with Fluent's 4px as the header's
+                other buttons have, so each takes its own focus ring. Cut from
                 the panel's surface rather than the grouped one, which in dark
                 would sit above the chosen tile. */}
             <ToggleGroup
@@ -3367,7 +3367,7 @@ export function MurmurApp() {
                   key={value}
                   value={value}
                   aria-label={label}
-                  className="rounded-m3-xs bg-background text-muted-foreground first:rounded-s-lg last:rounded-e-lg"
+                  className="rounded bg-background text-muted-foreground"
                 >
                   <HugeiconsIcon
                     icon={icon}
@@ -3381,6 +3381,7 @@ export function MurmurApp() {
             <div className="hidden items-center wide:flex">
               {/* Shows or hides the Now playing pane; only where it fits. */}
               <Button
+                shape="fluent"
                 variant="ghost"
                 size="icon-sm"
                 className="hidden text-muted-foreground wide:expanded:inline-flex"
@@ -3396,6 +3397,7 @@ export function MurmurApp() {
               {/* The same action as Now playing's "Turn all off" on a phone,
                   and the same Undo instead of a confirmation. */}
               <Button
+                shape="fluent"
                 variant="ghost"
                 size="icon-sm"
                 className="text-muted-foreground"
