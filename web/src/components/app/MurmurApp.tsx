@@ -83,7 +83,7 @@ import {
 import { Toaster } from "@/components/ui/sonner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { categoryLabel, sounds, type SoundCategory } from "@/data/sounds"
-import { repoUrl, sponsorUrl } from "@/data/site"
+import { repoUrl, tipUrl } from "@/data/site"
 import {
   DEFAULT_MASTER,
   DEFAULT_PREFS,
@@ -4614,7 +4614,7 @@ export function MurmurApp() {
                   </div>
                   <a
                     className="ml-auto flex h-8 shrink-0 items-center gap-2 rounded bg-filled px-3.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-filled-hover"
-                    href={sponsorUrl}
+                    href={tipUrl}
                     target="_blank"
                     rel="noopener"
                   >
