@@ -27,9 +27,17 @@ const PLAYER_HOST = "https://www.youtube-nocookie.com"
 /** YouTube ids are 11 characters of base64url, always. */
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/
 
-/** The two onStateChange codes this module acts on. */
+/** The onStateChange codes this module acts on. */
 const ENDED = 0
 const PLAYING = 1
+const PAUSED = 2
+
+/**
+ * How long to wait before each play again of a player that paused itself
+ * behind a hidden page, and so how many. After the last it waits for the
+ * page to come back, rather than wrestling a browser that means it.
+ */
+const HIDDEN_RETRIES_MS = [250, 1000, 3000]
 
 /** The desktop's accepted set, verbatim (YouTubeAudioImportService.cs:132-139). */
 const HOSTS = new Set([
@@ -205,6 +213,14 @@ export interface YouTubeSound {
  * onError and no onAutoplayBlocked. So the player boots muted, and the volume
  * the caller asks for is held back until the first PLAYING. Unmuting a player
  * that is already running is fine, which is what makes the wait sufficient.
+ *
+ * On a phone, the player pauses itself when the page goes into the
+ * background, since background play is a YouTube Premium feature, and iOS
+ * pauses video behind a hidden page as well. A player the mixer wants
+ * playing is told to play again, a few times, while hidden, which goes
+ * against YouTube's terms as hiding it does; and once the page is back, it
+ * plays again in step with the rest of the mix, rather than staying silent
+ * under a card that says it's on.
  */
 export async function createYouTubeSound(
   videoId: string,
@@ -230,6 +246,24 @@ export async function createYouTubeSound(
   let started = false
   /** The last volume asked for, applied for real once playback is under way. */
   let desired = 0
+  /** Whether the mixer wants it playing: play() since the last pause(). */
+  let wanted = true
+  let hiddenRetries = 0
+  let retry: number | undefined
+
+  // The next tap or key anywhere, which a browser always lets play.
+  const onTap = () => {
+    disarmTap()
+    if (wanted && !destroyed) player?.playVideo()
+  }
+  const armTap = () => {
+    document.addEventListener("pointerdown", onTap, true)
+    document.addEventListener("keydown", onTap, true)
+  }
+  const disarmTap = () => {
+    document.removeEventListener("pointerdown", onTap, true)
+    document.removeEventListener("keydown", onTap, true)
+  }
 
   const applyVolume = () => {
     if (!player || destroyed) return
@@ -277,14 +311,31 @@ export async function createYouTubeSound(
             event.target.seekTo(0, true)
             event.target.playVideo()
           }
+          if (
+            event.data === PAUSED &&
+            wanted &&
+            document.hidden &&
+            hiddenRetries < HIDDEN_RETRIES_MS.length
+          ) {
+            const target = event.target
+            window.clearTimeout(retry)
+            retry = window.setTimeout(() => {
+              if (wanted && !destroyed) target.playVideo()
+            }, HIDDEN_RETRIES_MS[hiddenRetries++])
+          }
         },
         onError: (event: YTEvent) => {
           const message = errorMessage(event.data)
           if (settled) handlers.onError?.(message)
           else reject(new Error(message))
         },
+        // A first start refused in plain view is the user's to know about.
+        // One refused behind a hidden page, or later on, playing again on
+        // the way back, is no fault of the video's: it waits for the next
+        // tap, rather than turning the sound off.
         onAutoplayBlocked: () => {
-          handlers.onError?.(m.yt_autoplay_blocked())
+          if (started || document.hidden) armTap()
+          else handlers.onError?.(m.yt_autoplay_blocked())
         },
       },
     })
@@ -293,20 +344,35 @@ export async function createYouTubeSound(
   const live = player as YTPlayer | null
   if (!live) throw new Error(m.yt_unreachable())
 
+  const onVisibility = () => {
+    if (document.hidden) return
+    hiddenRetries = 0
+    window.clearTimeout(retry)
+    if (wanted && !destroyed) live.playVideo()
+  }
+  document.addEventListener("visibilitychange", onVisibility)
+
   return {
     setVolume(fraction) {
       desired = fraction
       applyVolume()
     },
     play() {
+      wanted = true
       if (!destroyed) live.playVideo()
     },
     pause() {
+      wanted = false
+      window.clearTimeout(retry)
       if (!destroyed) live.pauseVideo()
     },
     destroy() {
       if (destroyed) return
       destroyed = true
+      wanted = false
+      window.clearTimeout(retry)
+      disarmTap()
+      document.removeEventListener("visibilitychange", onVisibility)
       try {
         live.destroy()
       } catch {
