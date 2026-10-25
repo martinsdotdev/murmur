@@ -127,7 +127,7 @@ ${rotatedDark(light, dark)}
   }
 }
 
-/* Pure black at night. Amber's values as they are; a scheme's turned below. */
+/* Pure black, in the dark theme only. Amber's values as they are; a scheme's turned below. */
 :root[data-night="black"][data-theme="dark"] {
 ${black.map(([name, value]) => `  ${name}: ${value};`).join("\n")}
 }
