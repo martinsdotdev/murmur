@@ -4,6 +4,8 @@
 /* Self-hosted @font-face only. The one stylesheet both surfaces share; see the
    header of fonts.css for why that is safe. */
 @import "./fonts.css";
+/* The level meter, shared with the landing page. See meter.css. */
+@import "./meter.css";
 /* Generated Material 3 roles: the outline stroke and the prefers-contrast set.
    See scripts/m3-colors.ts. */
 @import "./m3-colors.css";
@@ -706,23 +708,6 @@
 @media (prefers-reduced-motion: reduce) {
   .mm-rail {
     animation: none;
-  }
-}
-
-@keyframes murmur-eq {
-  0%,
-  100% {
-    transform: scaleY(0.3);
-  }
-  50% {
-    transform: scaleY(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [style*="murmur-eq"] {
-    animation: none !important;
-    transform: scaleY(0.6);
   }
 }
 

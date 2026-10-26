@@ -2,6 +2,8 @@
 /* Self-hosted @font-face only. The one stylesheet both surfaces share; see the
    header of fonts.css for why that is safe. */
 @import "./fonts.css";
+/* The level meter, shared with the app. See meter.css. */
+@import "./meter.css";
 
 /* ==========================================================================
    Reset

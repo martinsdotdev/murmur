@@ -1021,20 +1021,18 @@ function meterPhase(id: string): number {
   return (hash % 10) / 10
 }
 
+/** The level meter, shared with the About page's hero button (meter.css). */
 function EqBars({ phase, paused }: { phase: number; paused: boolean }) {
   return (
-    <div className="flex h-3 items-end gap-0.5" aria-hidden="true">
-      {[0.9, 1.2, 0.7].map((duration, i) => (
-        <span
-          key={i}
-          className="w-[3px] origin-bottom rounded-full bg-brand"
-          style={{
-            height: "100%",
-            animation: `murmur-eq ${duration}s ease-in-out ${-(i * 0.3 + phase)}s infinite`,
-            animationPlayState: paused ? "paused" : "running",
-          }}
-        />
-      ))}
+    <div
+      className="meter text-brand"
+      data-paused={paused ? "" : undefined}
+      style={{ "--phase": phase } as React.CSSProperties}
+      aria-hidden="true"
+    >
+      <span />
+      <span />
+      <span />
     </div>
   )
 }
