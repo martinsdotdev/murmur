@@ -3339,6 +3339,26 @@ export function MurmurApp() {
             />
           </div>
 
+          {/* Drift never moves the slider, so this is the one sign it's on.
+              Static, and it opens Preferences, where the switch is. */}
+          {prefs.drift && (
+            <Button
+              shape="fluent"
+              variant="ghost"
+              size="icon-sm"
+              className="hidden shrink-0 text-muted-foreground hover:text-foreground wide:inline-flex"
+              aria-label={m.drift_on()}
+              title={m.drift_on()}
+              onClick={() => setSettingsOpen(true)}
+            >
+              <HugeiconsIcon
+                icon={Sine02Icon}
+                strokeWidth={2}
+                className="size-4"
+              />
+            </Button>
+          )}
+
           <Separator
             orientation="vertical"
             className="mx-1 hidden data-vertical:h-5 data-vertical:self-center wide:block"

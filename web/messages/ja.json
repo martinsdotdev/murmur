@@ -224,6 +224,7 @@
   "now_playing_empty": "まだ何もオンになっていません。サウンドをタップして追加しましょう。",
   "master": "マスター",
   "master_volume": "マスター音量",
+  "drift_on": "音量のゆらぎがオン",
   "view_grid": "グリッド表示",
   "view_list": "リスト表示",
   "turn_all_off_shortcut": "すべてオフ (Ctrl+R)",

@@ -233,6 +233,7 @@
   "now_playing_empty": "Nothing on yet. Tap a sound to add it.",
   "master": "Master",
   "master_volume": "Master volume",
+  "drift_on": "Volume drift is on",
   "view_grid": "Grid view",
   "view_list": "List view",
   "turn_all_off_shortcut": "Turn all off (Ctrl+R)",

@@ -233,6 +233,7 @@
   "now_playing_empty": "Aún no hay nada. Toca un sonido para añadirlo.",
   "master": "General",
   "master_volume": "Volumen general",
+  "drift_on": "Oscilación de volumen activada",
   "view_grid": "Vista de cuadrícula",
   "view_list": "Vista de lista",
   "turn_all_off_shortcut": "Apagar todo (Ctrl+R)",
