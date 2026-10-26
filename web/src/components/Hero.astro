@@ -149,10 +149,13 @@ const shots = Object.fromEntries(
     height: 17px;
   }
 
+  /* Each icon blurs as it goes and sharpens as it comes, so the swap reads
+     as one icon changing rather than two crossing. */
   .hero-mix-icon > :global(*) {
     grid-area: 1 / 1;
     transition:
       opacity 150ms ease,
+      filter 150ms ease,
       transform 200ms var(--curve-decelerate-mid);
   }
 
@@ -162,6 +165,7 @@ const shots = Object.fromEntries(
     gap: 2px;
     height: 12px;
     opacity: 0;
+    filter: blur(2px);
     transform: scale(0.9);
   }
 
@@ -190,11 +194,13 @@ const shots = Object.fromEntries(
      when the page comes back from history. */
   .hero-mix:focus-visible .hero-mix-icon > :global(svg) {
     opacity: 0;
+    filter: blur(2px);
     transform: scale(0.9);
   }
 
   .hero-mix:focus-visible .hero-mix-meter {
     opacity: 1;
+    filter: none;
     transform: scale(1);
   }
 
@@ -222,11 +228,13 @@ const shots = Object.fromEntries(
 
     .hero-mix:hover .hero-mix-icon > :global(svg) {
       opacity: 0;
+      filter: blur(2px);
       transform: scale(0.9);
     }
 
     .hero-mix:hover .hero-mix-meter {
       opacity: 1;
+      filter: none;
       transform: scale(1);
     }
 
