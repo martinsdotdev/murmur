@@ -819,12 +819,16 @@
   --k: 0.75rem; /* the knob, centred in it */
   --h: 1.25rem;
   position: absolute;
-  top: 50%;
+  /* Laid out centred on the track, where Base UI lays the thumb's top edge
+     before lifting the thumb by half; the pill's translate puts that half
+     back. Laid out lower than it was drawn, the last row of a list view
+     column had its pill split across columns. */
+  top: calc(var(--h) / -2);
   /* As wide as its label, from "0" to a setting's "Instant", and slid across
      the thumb with the value whatever that width: its start edge meets the
      thumb's at 0 and its end edge the thumb's at 1. */
   inset-inline-start: calc(var(--r) * var(--t));
-  translate: calc(var(--r) * -100%) -50%;
+  translate: calc(var(--r) * -100%) calc(var(--t) / 2);
   box-sizing: border-box;
   min-width: 2.375rem; /* "100" */
   /* The label's measured width (Slider sets --label-w), so a change of label
@@ -837,7 +841,7 @@
 
 [dir="rtl"] .value-pill,
 [dir="rtl"] .value-ring {
-  translate: calc(var(--r) * 100%) -50%;
+  translate: calc(var(--r) * 100%) calc(var(--t) / 2);
 }
 
 @media (pointer: coarse) {
