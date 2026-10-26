@@ -282,7 +282,7 @@
   "pref_fade_instant": "即時",
   "pref_sleep_fade_title": "スリープタイマーのフェードアウト",
   "pref_drift_title": "音量のゆらぎ",
-  "pref_drift_description": "各サウンドが小さくなっては戻ります。設定より大きくはなりません。",
+  "pref_drift_description": "設定した音量より下でゆらぎます。",
   "pref_pause_title": "バックグラウンドで一時停止",
   "pref_pause_description": "戻ると再開します。",
   "pref_awake_title": "画面をオンのままにする",

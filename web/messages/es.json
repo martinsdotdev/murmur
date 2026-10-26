@@ -292,7 +292,7 @@
   "pref_fade_instant": "Instantánea",
   "pref_sleep_fade_title": "Atenuación del temporizador",
   "pref_drift_title": "Oscilación de volumen",
-  "pref_drift_description": "Cada sonido baja y vuelve, nunca más alto de lo que lo pusiste.",
+  "pref_drift_description": "Oscila por debajo de tu volumen, nunca por encima.",
   "pref_pause_title": "Pausar en pestañas en segundo plano",
   "pref_pause_description": "Sigue al volver.",
   "pref_awake_title": "Mantener la pantalla encendida",

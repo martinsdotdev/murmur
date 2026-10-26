@@ -292,7 +292,7 @@
   "pref_fade_instant": "Instantânea",
   "pref_sleep_fade_title": "Fade-out do timer para dormir",
   "pref_drift_title": "Oscilação de volume",
-  "pref_drift_description": "Cada som baixa e volta, nunca mais alto do que você ajustou.",
+  "pref_drift_description": "Oscila abaixo do seu volume, nunca acima.",
   "pref_pause_title": "Pausar em abas em segundo plano",
   "pref_pause_description": "Volta quando você retorna.",
   "pref_awake_title": "Manter a tela ligada",
