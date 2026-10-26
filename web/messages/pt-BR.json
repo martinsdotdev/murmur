@@ -233,7 +233,6 @@
   "now_playing_empty": "Nada ligado ainda. Toque em um som para adicioná-lo.",
   "master": "Geral",
   "master_volume": "Volume geral",
-  "drift_on": "Oscilação de volume ativada",
   "view_grid": "Ver em grade",
   "view_list": "Ver em lista",
   "turn_all_off_shortcut": "Desligar tudo (Ctrl+R)",
