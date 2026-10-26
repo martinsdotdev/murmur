@@ -4,7 +4,7 @@
  *
  * Attribution mirrors Murmur/Sounds/SOUNDS_LICENSING.md.
  *
- * Keep these in sync when the app catalog changes, there are only 14 entries,
+ * Keep these in sync when the app catalog changes, there are only 15 entries,
  * so no automated codegen is justified.
  *
  * Names are getters so each read is in the page's language, which the app
@@ -244,6 +244,20 @@ export const sounds: Sound[] = [
       license: "CC BY-SA",
       sourceUrl:
         "https://commons.wikimedia.org/w/index.php?title=File%3AWhite-noise-sound-20sec-mono-44100Hz.ogg",
+    },
+  },
+  {
+    id: "brown-noise",
+    get name() {
+      return m.sound_brown_noise()
+    },
+    category: "generated",
+    trimDb: 0,
+    iconPath: "M12 20V10 M18 20v-4 M6 20V4",
+    attribution: {
+      author: "Murmur",
+      license: "CC0",
+      sourceUrl: "https://github.com/martinsdotdev/Murmur/blob/master/justfile",
     },
   },
 ]

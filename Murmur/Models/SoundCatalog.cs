@@ -35,6 +35,7 @@ public sealed class SoundCatalog
             Built("train", "Train", "urban"),
             Built("pink-noise", "Pink noise", "generated"),
             Built("white-noise", "White noise", "generated"),
+            Built("brown-noise", "Brown noise", "generated"),
         };
     }
 

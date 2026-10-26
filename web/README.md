@@ -10,7 +10,7 @@ pnpm install
 pnpm dev         # → http://localhost:4321/
 ```
 
-`dev` and `build` both run `scripts/copy-assets.mjs` first, copying the app icon and the 14 bundled OGGs from `../Murmur/Assets/Source/AppIcon.svg` and `../Murmur/Sounds/*.ogg` into `public/`, where the app serves them from. It is chained into the script rather than run from a `predev`/`prebuild` hook: those hooks are off by default in pnpm 10 and earlier, and the failure mode is a green build that ships no favicon and no audio.
+`dev` and `build` both run `scripts/copy-assets.mjs` first, copying the app icon and the 15 bundled OGGs from `../Murmur/Assets/Source/AppIcon.svg` and `../Murmur/Sounds/*.ogg` into `public/`, where the app serves them from. It is chained into the script rather than run from a `predev`/`prebuild` hook: those hooks are off by default in pnpm 10 and earlier, and the failure mode is a green build that ships no favicon and no audio.
 
 ## Build
 

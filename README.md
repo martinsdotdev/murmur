@@ -9,17 +9,17 @@ It runs on Windows and in the browser. It's free, open source under GPLv3, and h
 
 ## Sounds
 
-Fourteen sounds come built in:
+Fifteen sounds come built in:
 
-| Nature                                                | Urban                                     | Generated               |
-| ----------------------------------------------------- | ----------------------------------------- | ----------------------- |
-| Birds, Rain, Storm, Stream, Summer night, Waves, Wind | Boat, City, Coffee shop, Fireplace, Train | Pink noise, White noise |
+| Nature                                                | Urban                                     | Generated                            |
+| ----------------------------------------------------- | ----------------------------------------- | ------------------------------------ |
+| Birds, Rain, Storm, Stream, Summer night, Waves, Wind | Boat, City, Coffee shop, Fireplace, Train | Pink noise, White noise, Brown noise |
 
 You can add your own audio files and YouTube links next to them, and save any blend as a mix.
 
 ## Windows and the browser
 
-Both apps play the same fourteen files. Here is where they differ.
+Both apps play the same fifteen files. Here is where they differ.
 
 |                   | Windows                                                                             | Browser                                                                        |
 | ----------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
@@ -76,7 +76,7 @@ pnpm dev      # http://localhost:4321/
 pnpm build    # writes dist/
 ```
 
-`dev` and `build` copy the app icon and the fourteen OGG files from `Murmur/` into `web/public/`, so both apps play the same files. [`web/README.md`](web/README.md) covers icons, testing offline and the files kept in step with the Windows app by hand. [`web/messages/README.md`](web/messages/README.md) covers translations.
+`dev` and `build` copy the app icon and the fifteen OGG files from `Murmur/` into `web/public/`, so both apps play the same files. [`web/README.md`](web/README.md) covers icons, testing offline and the files kept in step with the Windows app by hand. [`web/messages/README.md`](web/messages/README.md) covers translations.
 
 ## Contributing
 
@@ -92,4 +92,4 @@ If Murmur helps you focus or sleep, you can [leave a tip on Ko-fi](https://ko-fi
 
 Murmur's code is under the GNU General Public License v3; see [`LICENSE`](LICENSE).
 
-The sound set was assembled by [Blanket](https://apps.gnome.org/Blanket/). Each sound keeps its own license (CC0, CC BY, CC BY-SA or public domain), and [`Murmur/Sounds/SOUNDS_LICENSING.md`](Murmur/Sounds/SOUNDS_LICENSING.md) lists each one with its author and source.
+Fourteen of the sounds come from the set [Blanket](https://apps.gnome.org/Blanket/) assembled. Brown noise is made by the `brown-noise` recipe in the [`justfile`](justfile). Each sound keeps its own license (CC0, CC BY, CC BY-SA or public domain), and [`Murmur/Sounds/SOUNDS_LICENSING.md`](Murmur/Sounds/SOUNDS_LICENSING.md) lists each one with its author and source.

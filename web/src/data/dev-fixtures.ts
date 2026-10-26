@@ -12,6 +12,7 @@
 const CATALOG = [
   "birds",
   "boat",
+  "brown-noise",
   "city",
   "coffee-shop",
   "fireplace",
@@ -90,7 +91,10 @@ const worst = () => ({
     { name: "Jo", mix: { "white-noise": 0.01 } },
     { name: "Deep work 🎧🌧️", mix: { yt_mPZkdNFkNps: 0.6, rain: 0.3 } },
     { name: "مطر هادئ وقت النوم", mix: { cu1700000000003: 0.5, wind: 0.2 } },
-    { name: "Everything at once (all 14 + mine)", mix: everything() },
+    {
+      name: `Everything at once (all ${CATALOG.length} + mine)`,
+      mix: everything(),
+    },
     {
       name: "Łódź – Wiśniewska-Kowalczyk focus blend",
       mix: { stream: 1, birds: 0.35 },
@@ -120,7 +124,10 @@ const huge = () => ({
   dirty: false,
   saved: Array.from({ length: 80 }, (_, i) => ({
     name: `${["Focus", "Sleep", "Morning", "Rainy", "Train", "Reading"][i % 6]} ${i + 1}`,
-    mix: { [CATALOG[i % 14]]: 0.6, [CATALOG[(i + 5) % 14]]: 0.3 },
+    mix: {
+      [CATALOG[i % CATALOG.length]]: 0.6,
+      [CATALOG[(i + 5) % CATALOG.length]]: 0.3,
+    },
   })),
   customs: Array.from({ length: 40 }, (_, i) => ({
     id: `cu17000000${String(i).padStart(5, "0")}`,

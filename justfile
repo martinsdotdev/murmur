@@ -70,6 +70,14 @@ format-check:
 lint:
     cd {{project}}; dotnet build -c Debug -p:Platform={{platform}} --verbosity:minimal -nologo
 
+# ---- Sounds -------------------------------------------------------------
+
+# Make Sounds/brown-noise.ogg, which no one recorded, so it's CC0. A brown noise
+# per channel, cut below 20 Hz, its last 2 s crossfaded into its first so the
+# 20 s loop has no seam, at the -27 LUFS web/scripts/measure-loudness.mjs aims for.
+brown-noise:
+    ffmpeg -y -f lavfi -i "anoisesrc=color=brown:seed=1:sample_rate=44100:duration=22" -f lavfi -i "anoisesrc=color=brown:seed=2:sample_rate=44100:duration=22" -filter_complex "[0][1]join=inputs=2:channel_layout=stereo,highpass=f=20,asplit[a][b];[a]atrim=2:22,asetpts=PTS-STARTPTS[body];[b]atrim=0:2,asetpts=PTS-STARTPTS[head];[body][head]acrossfade=d=2:c1=qsin:c2=qsin,volume=-14.4dB" -c:a libvorbis -q:a 4 "{{project}}/Sounds/brown-noise.ogg"
+
 # ---- MSIX install -------------------------------------------------------
 
 # Build then sideload-register so Start menu, autostart, and the tray icon work.

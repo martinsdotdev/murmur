@@ -68,6 +68,7 @@
   "sound_train": "Trem",
   "sound_pink_noise": "Ruído rosa",
   "sound_white_noise": "Ruído branco",
+  "sound_brown_noise": "Ruído marrom",
   "category_nature": "Natureza",
   "category_urban": "Urbano",
   "category_generated": "Gerados",

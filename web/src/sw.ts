@@ -10,7 +10,7 @@
  *    MurmurApp.js paints a blank dark page with no error and no spinner. A
  *    partial shell is worse than none, which is what Workbox's all-or-nothing
  *    install buys.
- *  - The 17.6 MB of audio is staged after activation, driven by a message from
+ *  - The 17.9 MB of audio is staged after activation, driven by a message from
  *    the page. Nothing on that path may reach install or activate, because a
  *    client waits for a worker to finish activating and would sit behind the
  *    whole download.
@@ -30,7 +30,7 @@ import { CacheFirst } from "workbox-strategies"
 
 // Relative rather than "@/data/sounds": this file is built in vite-plugin-pwa's
 // own Vite pass, which inherits resolve but not Astro's plugins, so the alias
-// is absent. Importing the catalog rather than restating fourteen ids is what
+// is absent. Importing the catalog rather than restating fifteen ids is what
 // keeps the two from drifting.
 import { sounds } from "./data/sounds"
 
@@ -41,7 +41,7 @@ declare const self: ServiceWorkerGlobalScope & {
 /**
  * Bumped by hand when the OGGs themselves change, deliberately not keyed to
  * __APP_VERSION__: the files are unhashed and change on their own schedule, so
- * versioning them per build would re-download 17.6 MB on every release. The
+ * versioning them per build would re-download 17.9 MB on every release. The
  * precache needs no such constant, Workbox already keys it per file.
  */
 const AUDIO_CACHE = "murmur-audio-v1"
@@ -108,7 +108,7 @@ self.addEventListener("activate", (event) => {
       // The registration from when the app lived at /app/: its precache goes
       // (Workbox names it after the scope), and so does it, which hands /app/
       // to the root registration's redirect. Audio is shared by name, so the
-      // 17.6 MB stays.
+      // 17.9 MB stays.
       if (new URL(self.registration.scope).pathname === LEGACY_SCOPE) {
         await Promise.all(
           names
@@ -136,7 +136,7 @@ self.addEventListener("message", (event) => {
   } else if (type === "PRIME_AUDIO") {
     // waitUntil on a message keeps the worker alive without delaying a single
     // fetch, which is the whole reason this is not in activate. It doubles as
-    // the status request: a run with nothing missing is fourteen cache lookups
+    // the status request: a run with nothing missing is fifteen cache lookups
     // and two posts.
     event.waitUntil(primeAudio())
   }
@@ -157,7 +157,7 @@ function primeAudio(): Promise<void> {
 }
 
 /**
- * Sequential, not parallel: fourteen concurrent downloads would queue the one
+ * Sequential, not parallel: fifteen concurrent downloads would queue the one
  * sound the user actually reached for behind 17 MB of the thirteen they did
  * not.
  */

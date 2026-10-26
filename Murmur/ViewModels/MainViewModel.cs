@@ -135,7 +135,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         await _mixer.InitializeAsync();
 
-        StatusMessage = "Decoding 14 sounds…";
+        StatusMessage = $"Decoding {SoundCatalog.Instance.BuiltIn.Count} sounds…";
         var registerTasks = SoundCatalog
             .Instance.BuiltIn.Select(s => _mixer.RegisterSoundAsync(s))
             .ToArray();

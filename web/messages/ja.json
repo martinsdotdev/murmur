@@ -68,6 +68,7 @@
   "sound_train": "列車",
   "sound_pink_noise": "ピンクノイズ",
   "sound_white_noise": "ホワイトノイズ",
+  "sound_brown_noise": "ブラウンノイズ",
   "category_nature": "自然",
   "category_urban": "街の音",
   "category_generated": "生成音",

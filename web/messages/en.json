@@ -68,6 +68,7 @@
   "sound_train": "Train",
   "sound_pink_noise": "Pink noise",
   "sound_white_noise": "White noise",
+  "sound_brown_noise": "Brown noise",
   "category_nature": "Nature",
   "category_urban": "Urban",
   "category_generated": "Generated",

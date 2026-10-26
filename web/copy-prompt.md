@@ -6,10 +6,10 @@ You are writing every user-facing string on the landing page of Murmur, a free a
 
 - Murmur plays several looping ambient sounds at once, each with its own volume slider. You blend rain against a fireplace, or a train against white noise, until the room sounds right, then save the blend as a named preset.
 - Describe Murmur on its own terms. It is not positioned as a port of, or a companion to, any other app; do not introduce lineage, ancestry, or "inspired by" framing anywhere in the copy.
-- 14 built-in sounds in three groups.
+- 15 built-in sounds in three groups.
   Nature: birds, rain, storm, stream, summer night (crickets), waves, wind.
   Urban: boat, city, coffee shop, fireplace, train.
-  Generated: pink noise, white noise.
+  Generated: pink noise, white noise, brown noise.
 - Users can add their own sounds: import an audio file, or paste a YouTube link and Murmur extracts the audio.
 - It behaves the way background software should: the close button hides it to the system tray and playback continues, the keyboard media keys control it, it can start with Windows, and it follows the system light or dark theme.
 - Free and open source under GPLv3. No telemetry, no account, no ads.

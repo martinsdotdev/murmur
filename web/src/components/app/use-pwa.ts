@@ -108,10 +108,10 @@ export function usePwa() {
     navigator.serviceWorker.addEventListener("message", onMessage)
 
     // Sent on every launch and again on reconnect. A worker killed mid-download
-    // resumes from this; one that already finished skips every file in fourteen
+    // resumes from this; one that already finished skips every file in fifteen
     // cache lookups. `ready` rather than the register callback, because on a
     // first install the registration has no active worker yet. Never on a
-    // metered connection or where the files can't play: 17.6 MB of mobile data,
+    // metered connection or where the files can't play: 17.9 MB of mobile data,
     // or of Ogg an older iPhone can't decode, is a download nobody asked for.
     // Preferences' Download button still fetches them on request.
     const prime = () => {

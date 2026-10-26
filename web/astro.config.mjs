@@ -132,7 +132,7 @@ export default defineConfig({
         ],
       },
       injectManifest: {
-        // The shell only. The 17.6 MB of audio is staged by the worker after
+        // The shell only. The 17.9 MB of audio is staged by the worker after
         // activation, and the About pages are not part of the installed app.
         globPatterns: [
           "index.html",

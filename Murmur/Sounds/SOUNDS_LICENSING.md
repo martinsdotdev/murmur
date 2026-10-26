@@ -5,6 +5,7 @@
 | :-:  | :-: | :-: | :-:
 | [Birds](https://freesound.org/people/kvgarlic/sounds/156826/) | kvgarlic | Porrumentzio | CC0
 | [Boat](https://freesound.org/people/Falcet/sounds/439365/) | Falcet | Porrumentzio | CC0
+| [Brown noise](https://github.com/martinsdotdev/Murmur/blob/master/justfile) | Murmur | - | CC0
 | [City](https://freesound.org/people/gezortenplotz/sounds/44796/) | gezortenplotz | Porrumentzio | CC BY
 | [Coffee Shop](https://soundbible.com/1664-Restaurant-Ambiance.html) | stephan | - | Public Domain
 | [Fireplace](https://soundbible.com/1543-Fireplace.html) | ezwa | - | Public Domain
