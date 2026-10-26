@@ -105,6 +105,7 @@
   "action_remove": "Remove",
   "action_rename": "Rename",
   "action_rename_ellipsis": "Rename…",
+  "action_replace": "Replace",
   "action_reset_level": "Reset level",
   "action_save": "Save",
   "action_save_changes": "Save changes",
@@ -245,7 +246,6 @@
   "add_own_sound": "Add your own sound",
   "key_space": "Space",
   "media_album": "Ambient mixer",
-  "save_title": "Save this mix",
   "save_description": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -257,6 +257,7 @@
     }
   ],
   "save_description_empty": "Nothing is playing, so the mix will be empty.",
+  "save_replaces": "This replaces “{name}”.",
   "name_your_mix": "Name your mix",
   "name_your_sound": "Name your sound",
   "rename_mix": "Rename mix",
@@ -362,6 +363,7 @@
   "toast_imported_relinked": "Imported {mixes} and {sounds}, and brought back {files}",
   "toast_cleared": "Saved mixes and your own sounds cleared",
   "toast_saved": "Saved “{name}”",
+  "toast_replaced": "Replaced “{name}”",
   "toast_no_clipboard": "Clipboard unavailable in this browser",
   "toast_build_copied": "Build info copied",
   "toast_build_copy_failed": "Couldn’t copy the build info",

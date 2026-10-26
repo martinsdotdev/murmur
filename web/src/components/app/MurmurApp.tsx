@@ -97,6 +97,7 @@ import {
   parseBackupData,
   savePersisted,
   type CustomSound,
+  type MixName,
   type PersistedState,
   type Prefs,
   type SavedMix,
@@ -308,22 +309,27 @@ function soundsByLevel(
 }
 
 /**
- * The name Save offers: the loudest sound, and the next if both fit, so
- * "Rain and Coffee shop". Numbered past any mix already called that, since
- * saving under a taken name replaces it and accepting the offer shouldn't.
+ * The name Save offers: the mix's own if it has one, else the loudest sound,
+ * and the next if both fit, so "Rain and Coffee shop". Numbered past any mix
+ * already called that, since saving under a taken name replaces it and
+ * accepting the offer shouldn't.
  */
 function suggestMixName(
+  own: MixName,
   mix: MixerState,
   nameOf: (id: string) => string | undefined,
   taken: (name: string) => boolean
 ) {
-  const [first, second] = soundsByLevel(mix, nameOf)
-  if (!first) return ""
-  const both = second ? m.mix_name_pair({ first, second }) : first
-  const base =
-    clampName(both, MIX_NAME_MAX) === both
-      ? both
-      : clampName(first, MIX_NAME_MAX)
+  let base = typeof own === "string" ? own : ""
+  if (!base) {
+    const [first, second] = soundsByLevel(mix, nameOf)
+    if (!first) return ""
+    const both = second ? m.mix_name_pair({ first, second }) : first
+    base =
+      clampName(both, MIX_NAME_MAX) === both
+        ? both
+        : clampName(first, MIX_NAME_MAX)
+  }
   let name = base
   for (let n = 2; taken(name); n++) {
     name = `${clampName(base, MIX_NAME_MAX - ` ${n}`.length)} ${n}`
@@ -2040,11 +2046,27 @@ export function MurmurApp() {
     if (!name) return
     const mix: MixerState = {}
     for (const [id, v] of Object.entries(vols)) if (v > 0) mix[id] = v
-    setSaved((prev) => [...prev.filter((s) => s.name !== name), { name, mix }])
+    const previous = saved.find((s) => s.name === name)?.mix
+    setSaved((prev) =>
+      previous
+        ? // In its place, as Save changes does, not moved to the end.
+          prev.map((s) => (s.name === name ? { ...s, mix } : s))
+        : [...prev, { name, mix }]
+    )
     setMixName(name)
     setDirty(false)
     setSaveOpen(false)
-    toast.success(m.toast_saved({ name: isolate(name) }))
+    if (previous) {
+      toast.success(m.toast_replaced({ name: isolate(name) }), {
+        id: "mix-saved",
+        action: {
+          label: m.action_undo(),
+          onClick: () => undoRef.current.undoSaveChanges(name, previous),
+        },
+      })
+    } else {
+      toast.success(m.toast_saved({ name: isolate(name) }))
+    }
   }
 
   /** What a bug report needs: which build, and which browser rendered it. */
@@ -2655,17 +2677,18 @@ export function MurmurApp() {
     ? m.status_sleeps({ status: playStatus, time: formatCountdown(timerLeft) })
     : playStatus
 
-  // A name from the sounds, shown in the empty field and used if it's left
-  // empty. Not filled in: iOS Safari often ignores the select-on-focus, which
-  // left the keyboard typing onto the end of it.
+  // The name for the empty field, used if it's left empty: the mix's own,
+  // numbered past a saved mix wearing it, else the loudest sounds'.
   const saveSuggestion = saveOpen
-    ? suggestMixName(vols, soundName, (name) =>
+    ? suggestMixName(mixName, vols, soundName, (name) =>
         saved.some((s) => s.name === name)
       )
     : ""
+  // Typing a saved mix's name replaces it, and the dialog says so first.
+  const typedName = saveName.trim()
+  const saveReplaces = saveOpen && saved.some((s) => s.name === typedName)
   const openSaveDialog = () => {
-    // A clean mix with a name (a shared one) still starts from its own name.
-    setSaveName(!dirty && typeof mixName === "string" ? mixName : "")
+    setSaveName("")
     setSaveOpen(true)
   }
   // What the level meters claim is sound reaching the speakers, so they stop
@@ -4105,28 +4128,34 @@ export function MurmurApp() {
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogContent className="content-start max-sm:h-dvh max-sm:max-h-dvh max-sm:rounded-none">
           <DialogHeader>
-            <DialogTitle className="text-lg">{m.save_title()}</DialogTitle>
+            <DialogTitle className="text-lg">{m.action_save_mix()}</DialogTitle>
             <DialogDescription>
               {activeIds.length
                 ? m.save_description({ count: activeIds.length })
                 : m.save_description_empty()}
             </DialogDescription>
           </DialogHeader>
-          <Input
-            autoFocus
-            value={saveName}
-            maxLength={MIX_NAME_MAX}
-            placeholder={saveSuggestion || m.name_your_mix()}
-            autoComplete="off"
-            enterKeyHint="done"
-            // Select the prefilled name so typing replaces it instead of
-            // appending to it, the standard "save as" behaviour.
-            onFocus={(e) => e.currentTarget.select()}
-            onChange={(e) => setSaveName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") saveMix()
-            }}
-          />
+          <div className="flex flex-col gap-2">
+            <Input
+              autoFocus
+              value={saveName}
+              maxLength={MIX_NAME_MAX}
+              placeholder={saveSuggestion || m.name_your_mix()}
+              autoComplete="off"
+              enterKeyHint="done"
+              onChange={(e) => setSaveName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveMix()
+              }}
+            />
+            {/* Always laid out, so the footer holds still as it comes and goes. */}
+            <p
+              className="min-h-4 text-xs text-muted-foreground"
+              aria-live="polite"
+            >
+              {saveReplaces && m.save_replaces({ name: isolate(typedName) })}
+            </p>
+          </div>
           <DialogFooter>
             <Button
               shape="fluent"
@@ -4136,7 +4165,7 @@ export function MurmurApp() {
               {m.action_cancel()}
             </Button>
             <Button shape="fluent" onClick={saveMix}>
-              {m.action_save()}
+              {saveReplaces ? m.action_replace() : m.action_save()}
             </Button>
           </DialogFooter>
         </DialogContent>

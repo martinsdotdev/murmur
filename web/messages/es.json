@@ -105,6 +105,7 @@
   "action_remove": "Quitar",
   "action_rename": "Renombrar",
   "action_rename_ellipsis": "Renombrar…",
+  "action_replace": "Reemplazar",
   "action_reset_level": "Restablecer volumen",
   "action_save": "Guardar",
   "action_save_changes": "Guardar cambios",
@@ -245,7 +246,6 @@
   "add_own_sound": "Añadir un sonido propio",
   "key_space": "Espacio",
   "media_album": "Mezclador de sonidos ambientales",
-  "save_title": "Guardar esta mezcla",
   "save_description": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -257,6 +257,7 @@
     }
   ],
   "save_description_empty": "No suena nada, así que la mezcla quedará vacía.",
+  "save_replaces": "Esto reemplaza “{name}”.",
   "name_your_mix": "Ponle nombre a la mezcla",
   "name_your_sound": "Ponle nombre al sonido",
   "rename_mix": "Renombrar mezcla",
@@ -362,6 +363,7 @@
   "toast_imported_relinked": "Se importaron {mixes} y {sounds}, y se recuperaron {files}",
   "toast_cleared": "Se borraron las mezclas guardadas y tus propios sonidos",
   "toast_saved": "Se guardó “{name}”",
+  "toast_replaced": "Se reemplazó “{name}”",
   "toast_no_clipboard": "El portapapeles no está disponible en este navegador",
   "toast_build_copied": "Información de la versión copiada",
   "toast_build_copy_failed": "No se pudo copiar la información de la versión",

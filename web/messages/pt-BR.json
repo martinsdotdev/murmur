@@ -105,6 +105,7 @@
   "action_remove": "Remover",
   "action_rename": "Renomear",
   "action_rename_ellipsis": "Renomear…",
+  "action_replace": "Substituir",
   "action_reset_level": "Redefinir volume",
   "action_save": "Salvar",
   "action_save_changes": "Salvar alterações",
@@ -245,7 +246,6 @@
   "add_own_sound": "Adicionar seu próprio som",
   "key_space": "Espaço",
   "media_album": "Mixer de sons ambiente",
-  "save_title": "Salvar este mix",
   "save_description": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -257,6 +257,7 @@
     }
   ],
   "save_description_empty": "Nada está tocando, então o mix ficará vazio.",
+  "save_replaces": "Isso substitui “{name}”.",
   "name_your_mix": "Dê um nome ao mix",
   "name_your_sound": "Dê um nome ao som",
   "rename_mix": "Renomear mix",
@@ -362,6 +363,7 @@
   "toast_imported_relinked": "{mixes} e {sounds} importados, e {files} recuperados",
   "toast_cleared": "Mixes salvos e seus próprios sons apagados",
   "toast_saved": "“{name}” salvo",
+  "toast_replaced": "“{name}” substituído",
   "toast_no_clipboard": "Área de transferência indisponível neste navegador",
   "toast_build_copied": "Informações da versão copiadas",
   "toast_build_copy_failed": "Não foi possível copiar as informações da versão",

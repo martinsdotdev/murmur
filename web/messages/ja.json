@@ -104,6 +104,7 @@
   "action_remove": "削除",
   "action_rename": "名前を変更",
   "action_rename_ellipsis": "名前を変更…",
+  "action_replace": "置き換える",
   "action_reset_level": "音量をリセット",
   "action_save": "保存",
   "action_save_changes": "変更を保存",
@@ -236,7 +237,6 @@
   "add_own_sound": "自分のサウンドを追加",
   "key_space": "Space",
   "media_album": "環境音ミキサー",
-  "save_title": "このミックスを保存",
   "save_description": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -247,6 +247,7 @@
     }
   ],
   "save_description_empty": "何も再生していないので、空のミックスになります。",
+  "save_replaces": "「{name}」を置き換えます。",
   "name_your_mix": "ミックスの名前",
   "name_your_sound": "サウンドの名前",
   "rename_mix": "ミックスの名前を変更",
@@ -351,6 +352,7 @@
   "toast_imported_relinked": "{mixes}と{sounds}をインポートし、{files}を復元しました",
   "toast_cleared": "保存したミックスと自分のサウンドを削除しました",
   "toast_saved": "「{name}」を保存しました",
+  "toast_replaced": "「{name}」を置き換えました",
   "toast_no_clipboard": "このブラウザーではクリップボードを使えません",
   "toast_build_copied": "ビルド情報をコピーしました",
   "toast_build_copy_failed": "ビルド情報をコピーできませんでした",
