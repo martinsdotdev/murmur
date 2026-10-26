@@ -2,9 +2,22 @@
 import BrandLogo from "./BrandLogo.astro"
 import Icon from "./Icon.astro"
 import { Download04Icon, PlayIcon } from "@hugeicons/core-free-icons"
+import { Picture } from "astro:assets"
+import type { ImageMetadata } from "astro"
 import { m } from "@/paraglide/messages.js"
+import { getLocale } from "@/paraglide/runtime.js"
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
+
+// <locale>-<theme>.png, taken by scripts/screenshots.mjs.
+const shots = Object.fromEntries(
+  Object.entries(
+    import.meta.glob<{ default: ImageMetadata }>(
+      "../assets/screenshots/*.png",
+      { eager: true }
+    )
+  ).map(([path, mod]) => [path.split("/").pop()!.slice(0, -4), mod.default])
+)
 ---
 
 <header class="hero" id="top" aria-labelledby="hero-heading">
@@ -16,24 +29,41 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
     <p class="hero-sub">{m.hero_sub()}</p>
 
     <div class="hero-ctas">
-      <a href="#download" class="btn btn-primary btn-large hero-download">
-        <Icon icon={Download04Icon} size={17} />
-        {m.hero_download()}
-      </a>
-      <a href={`${baseUrl}/`} class="btn btn-secondary btn-large hero-try">
+      <a href={`${baseUrl}/`} class="btn btn-primary btn-large">
         <Icon icon={PlayIcon} size={17} />
         {m.hero_try()}
+      </a>
+      <a href="#download" class="btn btn-secondary btn-large">
+        <Icon icon={Download04Icon} size={17} />
+        {m.hero_download()}
       </a>
     </div>
 
     <p class="hero-meta">{m.hero_meta()}</p>
+
+    <div class="hero-shot">
+      {
+        (["light", "dark"] as const).map((theme) => (
+          <Picture
+            src={shots[`${getLocale()}-${theme}`]}
+            formats={["avif", "webp"]}
+            widths={[640, 1280, 1920]}
+            sizes="(min-width: 1040px) 960px, calc(100vw - 48px)"
+            alt={m.hero_screenshot_alt()}
+            class={`hero-shot-${theme}`}
+            loading="lazy"
+            decoding="async"
+          />
+        ))
+      }
+    </div>
   </div>
 </header>
 
 <style>
   /* An app page, not a pitch: the mark identifies the thing, the name is the
-     heading, and one line says what it does. No decorative gradients, and no
-     drawn approximation of a window the visitor can open for real from here. */
+     heading, one line says what it does, and a screenshot shows the real
+     mixer. No decorative gradients, and no device frame around it. */
   .hero-inner {
     display: flex;
     flex-direction: column;
@@ -72,25 +102,24 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
     margin-top: 22px;
   }
 
-  /* A phone can't install a Windows app, so there trying it in the browser
-     leads: first, and in the primary style the download gives up. 720px is
-     where the nav's "Try it" link goes, which would otherwise leave this the
-     only way into the app, and a secondary one. */
-  @media (max-width: 720px) {
-    .hero-try {
-      order: -1;
-      background-color: var(--color-brand-background);
-      color: var(--color-neutral-foreground-on-brand);
-      border-color: transparent;
-      box-shadow: var(--shadow-2);
-    }
+  /* The theme's own shot. Both are lazy, so the hidden one is never fetched. */
+  .hero-shot {
+    width: 100%;
+    max-width: 960px;
+    margin-top: clamp(40px, 6vw, 64px);
+  }
 
-    .hero-download {
-      background-color: var(--color-neutral-background-2);
-      color: var(--color-neutral-foreground-1);
-      border-color: var(--color-neutral-stroke-1);
-      box-shadow: none;
-    }
+  .hero-shot :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: var(--stroke-width-thin) solid var(--color-neutral-stroke-2);
+    border-radius: var(--border-radius-large);
+  }
+
+  :global([data-theme="dark"]) .hero-shot :global(.hero-shot-light),
+  :global([data-theme="light"]) .hero-shot :global(.hero-shot-dark) {
+    display: none;
   }
 
   @media (max-width: 560px) {

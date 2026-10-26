@@ -1,22 +1,23 @@
 # Write the copy for the Murmur landing page
 
-You are writing every user-facing string on the landing page of Murmur, a free ambient-sound mixer for Windows. The strings ship verbatim into the page, so respect each slot's length limit. Work only from the facts below; if a claim is not listed here, do not make it.
+You are writing every user-facing string on the landing page of Murmur, a free ambient-sound mixer that runs in the browser and on Windows. The strings ship verbatim into the page, so respect each slot's length limit. Work only from the facts below; if a claim is not listed here, do not make it.
 
 ## The facts
 
-- Murmur plays several looping ambient sounds at once, each with its own volume slider. You blend rain against a fireplace, or a train against white noise, until the room sounds right, then save the blend as a named preset.
+- Murmur plays several looping ambient sounds at once, each with its own volume slider. You blend rain against a fireplace, or a train against white noise, until the room sounds right, then save it as a named mix.
 - Describe Murmur on its own terms. It is not positioned as a port of, or a companion to, any other app; do not introduce lineage, ancestry, or "inspired by" framing anywhere in the copy.
 - 15 built-in sounds in three groups.
   Nature: birds, rain, storm, stream, summer night (crickets), waves, wind.
   Urban: boat, city, coffee shop, fireplace, train.
   Generated: pink noise, white noise, brown noise.
 - Users can add their own sounds: import an audio file, or paste a YouTube link and Murmur extracts the audio.
-- It behaves the way background software should: the close button hides it to the system tray and playback continues, the keyboard media keys control it, it can start with Windows, and it follows the system light or dark theme.
+- In the browser: a sleep timer from five minutes to four hours that fades out, share links for mixes, and it installs as an app that plays offline once the built-in sounds are saved.
+- On Windows: the close button hides it to the system tray and playback continues, the keyboard media keys control it, and it can start with Windows.
 - Free and open source under GPLv3. No telemetry, no account, no ads.
 - Runs on Windows 10 (build 19041 or later) and Windows 11, x64 and ARM64.
 - Install friction, and how to talk about it: releases are MSIX bundles signed with a self-signed certificate. A first install means downloading a small `.cer` file, trusting it (Local Machine → Trusted People), then double-clicking the bundle. Each release is signed with a new certificate, so every update means trusting that release's `.cer` too. Explain this plainly. The honest framing: self-signing keeps the project free and independent, and a future Store release may remove the step. Never call the process "easy".
 - Every bundled sound is Creative Commons or public domain, from named artists (freesound.org, SoundBible, Wikimedia). The footer shows a full attribution table, and a single line under it credits the Blanket project for assembling the sound set. That credit belongs to the attribution area only; it is not a fact about what Murmur is.
-- The whole mixer runs in the browser at the site's root, with this page at `/about/`, playing the app's actual sound files. A visitor can mix before downloading anything, save mixes, and share one as a link. The landing page points there from the nav and from the hero; it does not try to be a second mixer, and it does not list the sounds outside the footer's attribution table.
+- The whole mixer runs in the browser at the site's root, with this page at `/about/`, playing the app's actual sound files. The page leads with it: it needs no install and no certificate. The Windows app is the second way to run Murmur. The landing page points to the mixer from the nav and from the hero's first button; it does not try to be a second mixer, and it does not list the sounds outside the footer's attribution table.
 
 ## The voice
 
@@ -40,12 +41,12 @@ Never:
 
 Current copy is shown for register. Beat it or keep it; do not change a line just to have changed it.
 
-1. **Meta title**: 60 characters max. Current: `Murmur · Ambient sound mixer for Windows`
-2. **Meta description**: 155 characters max. It is read out of context, in a search result, so it must name the app and a real sound rather than gesture at atmosphere. Current: `Layer rain over a fireplace, or a train over white noise. A free, open-source ambient sound mixer for Windows.`
+1. **Meta title**: 60 characters max. Current: `Murmur · Ambient sound mixer for your browser and Windows`
+2. **Meta description**: 155 characters max. It is read out of context, in a search result, so it must name the app and a real sound rather than gesture at atmosphere. Current: `Layer rain over a fireplace, or a train over white noise. A free, open-source ambient sound mixer for your browser and Windows.`
 3. **Hero heading**: the product name. The hero is icon-led, like a GNOME app page: mark, name, one line. There is no eyebrow. Current: `Murmur`
-4. **Hero subtitle**: 120 characters max, renders as two lines on a wide screen and three on a phone. It is the only prose above the feature grid, so it must say what the app does and name a real sound. One example, not a list of them. Current: `Play ambient sounds while you work, read, or fall asleep. Layer rain over a fireplace, and save the blend.`
-5. **Hero meta line**: dot-separated bare facts. Current: `Free · GPLv3 · No telemetry · Windows 10 and 11`
-6. **Feature section heading and intro**: a heading of two to four words, then one line framing all six cards at once. It says how the app behaves, never what it contains, and never restates a card. Current: `What it does` / `Designed to be ignored. It remembers your blends and stays out of the way.`
+4. **Hero subtitle**: 120 characters max, renders as two lines on a wide screen and three on a phone. It is the only prose above the feature grid, so it must say what the app does and name a real sound. One example, not a list of them. Current: `Play ambient sounds while you work, read, or fall asleep. Layer rain over a fireplace and save the mix.`
+5. **Hero meta line**: dot-separated bare facts. Current: `Free · GPLv3 · No account · No telemetry`
+6. **Feature section heading and intro**: a heading of two to four words, then one line framing all six cards at once. It says where the cards apply, never what the app contains, and never restates a card. Current: `What it does` / `Most of this works in the browser and on Windows. Where it doesn’t, the card says.`
 7. **Six feature cards**: each a title of 2 to 6 words plus one short line under it; no paragraph.
    - Titles are plain verb phrases, not taglines. No "X, one Y", no implied contrasts.
    - The subtitle names specifics the title leaves out. Do not restate the title in it.
@@ -54,18 +55,17 @@ Current copy is shown for register. Beat it or keep it; do not change a line jus
    - No sound count anywhere in the grid. It dates the page the moment the catalogue changes, and the footer's attribution table already names every sound.
    - The layering card is not scoped to the bundled set. Imported files and YouTube audio layer the same way, so "the built-in sounds" understates it.
    - Every subtitle states a fact or lands a joke. Neither may be a benefit claim: "you never have to set it" is the register to avoid, and the voice section already rules out outcomes.
-   - Exactly one card is allowed to be funny, and it is the theme card. A second joke would make the grid a bit, and the page is quiet everywhere else.
-   - No card says "Windows". The meta title, meta description, hero meta line, download requirements and footer all name the platform already; a card describes behaviour, so write "at startup" and "your system theme".
+   - A card that only one of the two apps has names its platform at the start of its subtitle ("In the browser, …", "On Windows, …"). A card both apps share names neither.
    - Read each subtitle aloud. "Media keys work; starts with Windows if you want" was two spec bullets joined by a semicolon, and "Name a mix; get it back" left a reader asking what came back.
 
    Current:
 
    - `Layer sounds at any volume` / `A storm over a coffee shop`
-   - `Save blends as presets` / `Every slider back where you left it`
+   - `Save mixes and share them` / `A link opens the same mix in another browser`
    - `Bring your own audio` / `An audio file, or a YouTube link`
-   - `Closes to the tray, keeps playing` / `Your media keys still work, and it can launch at startup`
-   - `Follows your system theme` / `No flashbang at 2am`
-   - `Free, GPLv3, no telemetry` / `No account, no ads`
+   - `Fade out on a sleep timer` / `In the browser, from five minutes to four hours`
+   - `Install it, play offline` / `In the browser, once you’ve saved the built-in sounds`
+   - `Closes to the tray, keeps playing` / `On Windows, with media keys and launch at startup`
 
 8. **Download heading**: short; the build system appends a version tag, so do not include one. Current: `Get Murmur`
 9. **Certificate disclosure**: a summary line stating the requirement before the reassurance, since the reader has not installed anything yet and the steps below are what they need. Do not concede the friction inside a clause. Current: `Windows won’t install Murmur until you trust its certificate. Each release comes with its own, so you trust it again for every update.`

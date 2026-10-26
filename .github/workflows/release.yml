@@ -176,6 +176,6 @@ jobs:
             2. Download the `.msixbundle` for your CPU (`x64` for most PCs, `arm64` for Snapdragon / Surface Pro X).
             3. Double-click the `.msixbundle` to install. Murmur appears in your Start menu.
 
-            See the [Murmur website](https://murmur.umaru.dev/#download) for a visual walk-through.
+            The same steps are on the [Murmur website](https://murmur.umaru.dev/about/#download).
 
             *The `.cer` is regenerated each release. Trust it once per release.*

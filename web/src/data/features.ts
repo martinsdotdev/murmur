@@ -1,19 +1,19 @@
 /**
- * Six features for the landing page. The redesign gives each a title plus a
- * one-line subtitle (the earlier title-only rows grew a hint line).
+ * Six features for the landing page, each a title plus a one-line subtitle.
+ * A card that only one of the two apps has names it in its subtitle.
  *
- * Icons come from @hugeicons/core-free-icons, the same set the app imports, so
- * the two halves of the site draw from one vocabulary.
+ * Icons come from @hugeicons/core-free-icons, the same set the app imports,
+ * and each is the one the app draws on the same control.
  *
  * Text is a getter, as the sound names are: the build imports this module
  * once and renders it for every locale, so each read has to be in the
  * language of the page being rendered.
  */
 import {
-  Bookmark01Icon,
   ComputerIcon,
-  ContrastIcon,
-  FavouriteIcon,
+  InstallingUpdates01Icon,
+  Moon02Icon,
+  Share01Icon,
   SlidersVerticalIcon,
   Upload04Icon,
 } from "@hugeicons/core-free-icons"
@@ -37,12 +37,12 @@ export const features: Feature[] = [
     },
   },
   {
-    icon: Bookmark01Icon,
+    icon: Share01Icon,
     get title() {
-      return m.feature_presets_title()
+      return m.feature_save_title()
     },
     get sub() {
-      return m.feature_presets_sub()
+      return m.feature_save_sub()
     },
   },
   {
@@ -55,30 +55,30 @@ export const features: Feature[] = [
     },
   },
   {
+    icon: Moon02Icon,
+    get title() {
+      return m.feature_timer_title()
+    },
+    get sub() {
+      return m.feature_timer_sub()
+    },
+  },
+  {
+    icon: InstallingUpdates01Icon,
+    get title() {
+      return m.feature_offline_title()
+    },
+    get sub() {
+      return m.feature_offline_sub()
+    },
+  },
+  {
     icon: ComputerIcon,
     get title() {
       return m.feature_tray_title()
     },
     get sub() {
       return m.feature_tray_sub()
-    },
-  },
-  {
-    icon: ContrastIcon,
-    get title() {
-      return m.feature_theme_title()
-    },
-    get sub() {
-      return m.feature_theme_sub()
-    },
-  },
-  {
-    icon: FavouriteIcon,
-    get title() {
-      return m.feature_free_title()
-    },
-    get sub() {
-      return m.feature_free_sub()
     },
   },
 ]

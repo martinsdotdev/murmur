@@ -18,7 +18,8 @@
     "tokens": "tsx scripts/m3-colors.ts",
     "schemes": "tsx scripts/schemes.ts && prettier --write src/styles/schemes.css",
     "messages": "tsx scripts/check-messages.ts",
-    "loudness": "node scripts/measure-loudness.mjs"
+    "loudness": "node scripts/measure-loudness.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^5",
@@ -36,6 +37,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "shadcn": "^4.14.1",
+    "sharp": "0.34.5",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4",
@@ -56,6 +58,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17",
+    "playwright-core": "1.57.0",
     "prettier": "^3.8.3",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.8.0",

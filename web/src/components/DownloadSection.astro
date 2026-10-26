@@ -1,24 +1,19 @@
 ---
-import { repoUrl, releasesUrl, latestReleaseApi } from "../data/site.ts"
+import { releasesUrl } from "../data/site.ts"
+import { latestRelease } from "../data/release.ts"
 import Icon from "./Icon.astro"
 import { Download04Icon } from "@hugeicons/core-free-icons"
 import { m } from "@/paraglide/messages.js"
+import { getLocale } from "@/paraglide/runtime.js"
 import Message from "./Message.astro"
 
-interface Release {
-  tag_name: string
-  html_url: string
-}
-
-let release: Release | null = null
-try {
-  const res = await fetch(latestReleaseApi, {
-    headers: { Accept: "application/vnd.github+json" },
-  })
-  if (res.ok) release = (await res.json()) as Release
-} catch {
-  // Offline build / API rate limited, fall through to placeholder.
-}
+const release = await latestRelease
+const version = release?.version
+const released =
+  release &&
+  new Intl.DateTimeFormat(getLocale(), { dateStyle: "long" }).format(
+    release.published
+  )
 ---
 
 <section class="download" id="download" aria-labelledby="download-heading">
@@ -26,8 +21,15 @@ try {
     <div class="download-pitch">
       <h2 id="download-heading" class="section-h2">{m.download_heading()}</h2>
       <p class="download-reqs">{m.download_reqs()}</p>
+      {
+        version && released && (
+          <p class="download-version">
+            {m.download_version({ version, date: released })}
+          </p>
+        )
+      }
       <a
-        href={release?.html_url ?? releasesUrl}
+        href={release?.url ?? releasesUrl}
         class="btn btn-primary btn-large"
         target="_blank"
         rel="noopener"
@@ -43,7 +45,7 @@ try {
               tags={{
                 link: {
                   as: "a",
-                  href: repoUrl,
+                  href: releasesUrl,
                   target: "_blank",
                   rel: "noopener",
                 },
@@ -62,7 +64,12 @@ try {
           <p>
             <Message
               parts={m.cert_download_body.parts({})}
-              tags={{ file: { as: "code", text: "Murmur.cer" } }}
+              tags={{
+                file: {
+                  as: "code",
+                  text: `Murmur-${version ?? "<version>"}.cer`,
+                },
+              }}
             />
           </p>
         </li>
@@ -113,6 +120,12 @@ try {
     color: var(--color-neutral-foreground-2);
     max-width: 40ch;
     margin-bottom: 26px;
+  }
+
+  .download-version {
+    font-size: 13px;
+    color: var(--color-neutral-foreground-3);
+    margin: -16px 0 var(--space-l);
   }
 
   .download-soon {

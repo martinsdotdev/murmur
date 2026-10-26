@@ -6,7 +6,8 @@ import BrandLogo from "../components/BrandLogo.astro"
 import Icon from "../components/Icon.astro"
 import { GithubIcon } from "@hugeicons/core-free-icons"
 import Footer from "../components/Footer.astro"
-import { repoUrl } from "../data/site.ts"
+import { releasesUrl, repoUrl } from "../data/site.ts"
+import { latestRelease } from "../data/release.ts"
 import { m } from "@/paraglide/messages.js"
 import {
   baseLocale,
@@ -29,6 +30,35 @@ const locale = getLocale()
 // Every language's copy of this page, for search engines to offer the right
 // one. x-default is where someone whose language isn't here should land.
 const alternate = (l: Locale) => new URL(aboutPath(l), Astro.site).href
+
+// Open Graph wants a territory: en_US, not en.
+const OG_LOCALE: Record<Locale, string> = {
+  en: "en_US",
+  "pt-BR": "pt_BR",
+  es: "es_ES",
+  ja: "ja_JP",
+}
+// The social card, one per language, taken by scripts/screenshots.mjs.
+const card = new URL(`/og/${locale}.png`, Astro.site).href
+
+// What the page describes, for search engines. No rating: there is none to
+// give, and a made-up one is what gets a page penalised.
+const release = await latestRelease
+const app = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Murmur",
+  description,
+  url: alternate(locale),
+  applicationCategory: "MultimediaApplication",
+  operatingSystem: "Windows 10, Windows 11, web browser",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  isAccessibleForFree: true,
+  license: "https://www.gnu.org/licenses/gpl-3.0.html",
+  downloadUrl: release?.url ?? releasesUrl,
+  ...(release && { softwareVersion: release.version }),
+  inLanguage: locales,
+}
 ---
 
 <!doctype html>
@@ -40,11 +70,25 @@ const alternate = (l: Locale) => new URL(aboutPath(l), Astro.site).href
     <meta name="generator" content={Astro.generator} />
 
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Murmur" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    {/* og:image intentionally omitted until a 1200×630 social card exists. */}
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:url" content={alternate(locale)} />
+    <meta property="og:image" content={card} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={m.hero_screenshot_alt()} />
+    <meta property="og:locale" content={OG_LOCALE[locale]} />
+    {
+      locales
+        .filter((l) => l !== locale)
+        .map((l) => (
+          <meta property="og:locale:alternate" content={OG_LOCALE[l]} />
+        ))
+    }
+    <meta name="twitter:card" content="summary_large_image" />
 
+    <link rel="icon" type="image/svg+xml" href={`${baseUrl}/icon.svg`} />
     <link rel="icon" type="image/x-icon" href={`${baseUrl}/favicon.ico`} />
     <link rel="canonical" href={alternate(locale)} />
     {
@@ -53,7 +97,7 @@ const alternate = (l: Locale) => new URL(aboutPath(l), Astro.site).href
       ))
     }
     <link rel="alternate" hreflang="x-default" href={alternate(baseLocale)} />
-    <meta property="og:locale" content={locale.replace("-", "_")} />
+    <script type="application/ld+json" set:html={JSON.stringify(app)} />
 
     {
       /* The landing page's own surface, which is not the app's. See the same
