@@ -29,8 +29,11 @@ const shots = Object.fromEntries(
     <p class="hero-sub">{m.hero_sub()}</p>
 
     <div class="hero-ctas">
-      <a href={`${baseUrl}/`} class="btn btn-primary btn-large">
-        <Icon icon={PlayIcon} size={17} />
+      <a href={`${baseUrl}/`} class="btn btn-primary btn-large hero-mix">
+        <span class="hero-mix-icon" aria-hidden="true">
+          <Icon icon={PlayIcon} size={17} />
+          <span class="hero-mix-meter"><i></i><i></i><i></i></span>
+        </span>
         {m.hero_try()}
       </a>
       <a href="#download" class="btn btn-secondary btn-large">
@@ -94,6 +97,139 @@ const shots = Object.fromEntries(
     flex-wrap: wrap;
     justify-content: center;
     margin-top: 30px;
+  }
+
+  /* The page's one loud control, in the app's own terms: the sheen its filled
+     buttons carry, a highlight along the top edge and a shadow in the button's
+     own amber. Hovered, the play triangle becomes the level meter a playing
+     card shows, which is what pressing it starts. */
+  .hero-mix {
+    background-image: linear-gradient(
+      135deg,
+      oklch(from var(--color-brand-fill) l c h / 0) 20%,
+      oklch(
+        from var(--color-brand-fill) calc(l + 0.04) calc(c + 0.03)
+          calc(h - 25) / 0.9
+      )
+    );
+    box-shadow:
+      inset 0 1px 0 oklch(100% 0 0 / 0.24),
+      0 1px 2px oklch(from var(--color-brand-fill) calc(l - 0.35) c h / 0.35),
+      0 8px 20px -8px oklch(from var(--color-brand-fill) l c h / 0.6);
+    transition:
+      background-color 150ms ease,
+      box-shadow 200ms var(--curve-decelerate-mid),
+      transform 160ms var(--curve-decelerate-mid);
+  }
+
+  .hero-mix:active {
+    transform: scale(0.97);
+    box-shadow:
+      inset 0 1px 0 oklch(100% 0 0 / 0.16),
+      0 1px 2px oklch(from var(--color-brand-fill) calc(l - 0.35) c h / 0.35);
+    transition-duration: 100ms;
+  }
+
+  .hero-mix-icon {
+    display: grid;
+    place-items: center;
+    width: 17px;
+    height: 17px;
+  }
+
+  .hero-mix-icon > :global(*) {
+    grid-area: 1 / 1;
+    transition:
+      opacity 150ms ease,
+      transform 200ms var(--curve-decelerate-mid);
+  }
+
+  .hero-mix-meter {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  .hero-mix-meter i {
+    width: 3px;
+    height: 100%;
+    border-radius: 9999px;
+    background: currentColor;
+    transform-origin: bottom;
+    animation: hero-mix-eq 0.9s ease-in-out infinite paused;
+  }
+
+  /* The app's meter timings, so it moves as a playing card's does. */
+  .hero-mix-meter i:nth-child(2) {
+    animation-duration: 1.2s;
+    animation-delay: -0.3s;
+  }
+
+  .hero-mix-meter i:nth-child(3) {
+    animation-duration: 0.7s;
+    animation-delay: -0.6s;
+  }
+
+  .hero-mix:is(:hover, :focus-visible) .hero-mix-icon > :global(svg) {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  .hero-mix:is(:hover, :focus-visible) .hero-mix-meter {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .hero-mix:is(:hover, :focus-visible) .hero-mix-meter i {
+    animation-play-state: running;
+  }
+
+  /* A real pointer only: a tap fires a hover that sticks. */
+  @media (hover: hover) and (pointer: fine) {
+    .hero-mix:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1px 0 oklch(100% 0 0 / 0.24),
+        0 1px 2px oklch(from var(--color-brand-fill) calc(l - 0.35) c h / 0.35),
+        0 12px 28px -10px oklch(from var(--color-brand-fill) l c h / 0.7);
+    }
+
+    .hero-mix:hover:active {
+      transform: scale(0.97);
+    }
+  }
+
+  @keyframes hero-mix-eq {
+    0%,
+    100% {
+      transform: scaleY(0.3);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  /* Reduced motion keeps the swap as a fade and the bars still. */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-mix,
+    .hero-mix:hover,
+    .hero-mix:active,
+    .hero-mix:hover:active,
+    .hero-mix-icon > :global(*) {
+      transform: none !important;
+    }
+
+    .hero-mix-meter i {
+      animation: none;
+      transform: scaleY(0.6);
+    }
+
+    .hero-mix-meter i:nth-child(2) {
+      transform: scaleY(0.9);
+    }
   }
 
   .hero-meta {
