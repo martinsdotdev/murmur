@@ -37,6 +37,7 @@ import {
   RefreshIcon,
   Settings01Icon,
   Share01Icon,
+  Sine02Icon,
   Sun03Icon,
   Tick02Icon,
   Upload04Icon,
@@ -2436,6 +2437,10 @@ export function MurmurApp() {
     mixer.fadeInMs = prefs.fadeMs
   }, [mixer, prefs.fadeMs])
 
+  React.useEffect(() => {
+    mixer.setDrift(prefs.drift)
+  }, [mixer, prefs.drift])
+
   // iOS gives Web Audio the "ambient" session unless told otherwise, so the
   // silent switch mutes it and locking the screen stops it: the bedside use
   // case, gone. "playback" survives both but pauses other apps' audio, which
@@ -4344,6 +4349,13 @@ export function MurmurApp() {
                   step={1}
                   resetValue={DEFAULT_PREFS.sleepFade}
                   onChange={(v) => setPref("sleepFade", v)}
+                />
+                <PrefRow
+                  icon={Sine02Icon}
+                  title={m.pref_drift_title()}
+                  description={m.pref_drift_description()}
+                  checked={prefs.drift}
+                  onChange={(v) => setPref("drift", v)}
                 />
                 <PrefRow
                   icon={BrowserIcon}

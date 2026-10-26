@@ -89,6 +89,8 @@ export interface Prefs {
   keepAwake: boolean
   /** iOS audio session "ambient" rather than "playback". See MurmurApp. */
   mixWithOthers: boolean
+  /** Each sound slowly dips below its slider and back. See lib/drift.ts. */
+  drift: boolean
 }
 
 /** A second's fade-in, so a sound swells in rather than popping on, and half
@@ -100,6 +102,7 @@ export const DEFAULT_PREFS: Prefs = {
   pauseHidden: false,
   keepAwake: false,
   mixWithOthers: false,
+  drift: false,
 }
 
 /**
@@ -270,6 +273,7 @@ function cleanPrefs(v: unknown): Prefs {
     pauseHidden: bool(v.pauseHidden, DEFAULT_PREFS.pauseHidden),
     keepAwake: bool(v.keepAwake, DEFAULT_PREFS.keepAwake),
     mixWithOthers: bool(v.mixWithOthers, DEFAULT_PREFS.mixWithOthers),
+    drift: bool(v.drift, DEFAULT_PREFS.drift),
   }
 }
 

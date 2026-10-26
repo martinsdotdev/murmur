@@ -291,6 +291,8 @@
   "pref_fade_title": "Transição entre sons",
   "pref_fade_instant": "Instantânea",
   "pref_sleep_fade_title": "Fade-out do timer para dormir",
+  "pref_drift_title": "Deixar os sons oscilarem",
+  "pref_drift_description": "Cada um baixa e volta, nunca acima do seu controle.",
   "pref_pause_title": "Pausar em abas em segundo plano",
   "pref_pause_description": "Volta quando você retorna.",
   "pref_awake_title": "Manter a tela ligada",

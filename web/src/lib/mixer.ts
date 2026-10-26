@@ -30,11 +30,21 @@
 
 import { m } from "@/paraglide/messages.js"
 
+import { driftAt, driftShape, type DriftShape } from "./drift"
 import { levelGain, soundGain } from "./levels"
 import { createYouTubeSound, type YouTubeSound } from "./youtube"
 
 const DEFAULT_FADE_IN_MS = 200
 const FADE_OUT_MS = 80
+
+/**
+ * Drift is sampled this often and ramped between samples. A second is fine
+ * for a curve this slow, and it's as often as a hidden tab's timers run.
+ */
+const DRIFT_STEP_MS = 1000
+
+/** Drift switched on or off grows to full depth, or back to none, over this. */
+const DRIFT_EASE_MS = 5000
 
 /** ~60fps. A YouTube player has no ramp of its own, so fades are stepped. */
 const RAMP_STEP_MS = 16
@@ -64,6 +74,13 @@ interface BufferNode {
   /** Currently playing source, null when volume === 0. */
   source: AudioBufferSourceNode | null
   gain: GainNode
+  /**
+   * After `gain`, so drift lives on a node of its own: setVolume cancels
+   * whatever is scheduled on `gain`, which would wipe drift out, and drift
+   * scheduled there would fight a fade.
+   */
+  drift: GainNode
+  shape: DriftShape
   /** Last requested volume in [0, 1]. */
   volume: number
   /** Pending decode; held to deduplicate concurrent activations. */
@@ -86,6 +103,9 @@ interface StreamNode {
   ramp: number | null
   /** Bumped on every apply, so a stale teardown timer knows to stand down. */
   generation: number
+  shape: DriftShape
+  /** The gain drift has it at now, 1 with drift off. */
+  drift: number
 }
 
 type SoundNode = BufferNode | StreamNode
@@ -103,6 +123,13 @@ export class Mixer {
    */
   fadeInMs = DEFAULT_FADE_IN_MS
   private playing = true
+
+  private driftOn = false
+  /** The depth drift had when last switched, and when that was. */
+  private driftFrom = 0
+  private driftSince = 0
+  /** setInterval handle, live while drift is on or still easing out. */
+  private driftTimer: number | null = null
 
   /**
    * Set by MurmurApp. A stream can fail long after the call that started it
@@ -162,7 +189,10 @@ export class Mixer {
     const ctx = this.ensureContext()
     const gain = ctx.createGain()
     gain.gain.value = 0
-    gain.connect(this.master!)
+    const shape = driftShape()
+    const drift = ctx.createGain()
+    drift.gain.value = this.driftNow(shape)
+    gain.connect(drift).connect(this.master!)
     const n: BufferNode = {
       kind: "buffer",
       id,
@@ -170,6 +200,8 @@ export class Mixer {
       buffer: null,
       source: null,
       gain,
+      drift,
+      shape,
       volume: 0,
       loading: null,
     }
@@ -189,6 +221,7 @@ export class Mixer {
     const existing = this.sounds.get(id)
     if (existing?.kind === "stream" && existing.videoId === videoId) return
     if (existing) this.unregister(id)
+    const shape = driftShape()
     this.sounds.set(id, {
       kind: "stream",
       id,
@@ -199,6 +232,8 @@ export class Mixer {
       applied: 0,
       ramp: null,
       generation: 0,
+      shape,
+      drift: this.driftNow(shape),
     })
   }
 
@@ -213,6 +248,7 @@ export class Mixer {
     }
     this.stopSource(n)
     n.gain.disconnect()
+    n.drift.disconnect()
   }
 
   private async ensureBuffer(n: BufferNode): Promise<AudioBuffer> {
@@ -262,12 +298,14 @@ export class Mixer {
   /**
    * What a stream should actually be playing at. The master gain node does
    * this arithmetic for buffer sounds; a YouTube player has only one volume,
-   * so the same three factors have to be multiplied by hand. The sleep timer
-   * rides along for free, since it drives masterVolume. Your own sounds carry
-   * no trim, so a stream's gain is the two levels' alone.
+   * so the same factors have to be multiplied by hand. The sleep timer rides
+   * along for free, since it drives masterVolume. Your own sounds carry no
+   * trim, so a stream's gain is the two levels' and drift's alone.
    */
   private streamTarget(n: StreamNode): number {
-    return this.playing ? levelGain(n.volume) * levelGain(this.masterVolume) : 0
+    return this.playing
+      ? levelGain(n.volume) * levelGain(this.masterVolume) * n.drift
+      : 0
   }
 
   private rampStream(n: StreamNode, to: number, ms: number) {
@@ -498,6 +536,62 @@ export class Mixer {
     this.master.gain.cancelScheduledValues(now)
     this.master.gain.setValueAtTime(this.master.gain.value, now)
     this.master.gain.linearRampToValueAtTime(target, now + FADE_OUT_MS / 1000)
+  }
+
+  /**
+   * The "Let sounds drift" preference. Only gain moves, never a node's
+   * volume, so sliders, saved mixes and share links keep the level that was
+   * set.
+   */
+  setDrift(on: boolean): void {
+    if (on === this.driftOn) return
+    const now = performance.now()
+    this.driftFrom = this.driftDepth(now)
+    this.driftSince = now
+    this.driftOn = on
+    this.driftTimer ??= window.setInterval(
+      () => this.stepDrift(),
+      DRIFT_STEP_MS
+    )
+  }
+
+  /** 0 to 1, eased from where it was when drift was last switched. */
+  private driftDepth(now: number): number {
+    const t = Math.min(1, (now - this.driftSince) / DRIFT_EASE_MS)
+    return this.driftFrom + ((this.driftOn ? 1 : 0) - this.driftFrom) * t
+  }
+
+  private driftNow(shape: DriftShape): number {
+    const now = performance.now()
+    return driftAt(shape, now / 1000, this.driftDepth(now))
+  }
+
+  private stepDrift() {
+    const now = performance.now()
+    const depth = this.driftDepth(now)
+    for (const n of this.sounds.values()) {
+      const gain = driftAt(n.shape, now / 1000, depth)
+      if (n.kind === "buffer") {
+        // A buffer node implies a context: nodeFor creates one first.
+        const at = this.ctx!.currentTime
+        const param = n.drift.gain
+        param.cancelScheduledValues(at)
+        param.setValueAtTime(param.value, at)
+        param.linearRampToValueAtTime(gain, at + DRIFT_STEP_MS / 1000)
+        continue
+      }
+      n.drift = gain
+      // A fade owns the player while it runs, and lands on the drifted level
+      // anyway, through streamTarget.
+      if (n.player && n.ramp === null && n.applied > 0) {
+        n.applied = this.streamTarget(n)
+        n.player.setVolume(n.applied)
+      }
+    }
+    if (!this.driftOn && depth === 0 && this.driftTimer !== null) {
+      window.clearInterval(this.driftTimer)
+      this.driftTimer = null
+    }
   }
 
   getVolume(id: string): number {

@@ -291,6 +291,8 @@
   "pref_fade_title": "Transición entre sonidos",
   "pref_fade_instant": "Instantánea",
   "pref_sleep_fade_title": "Atenuación del temporizador",
+  "pref_drift_title": "Dejar que los sonidos oscilen",
+  "pref_drift_description": "Cada uno baja y vuelve, nunca por encima de su control.",
   "pref_pause_title": "Pausar en pestañas en segundo plano",
   "pref_pause_description": "Sigue al volver.",
   "pref_awake_title": "Mantener la pantalla encendida",
