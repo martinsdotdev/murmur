@@ -21,13 +21,13 @@ You can add your own audio files and YouTube links next to them, and save any bl
 
 Both apps play the same fifteen files. Here is where they differ.
 
-|                   | Windows                                                                             | Browser                                                                                                                           |
-| ----------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Your own audio    | OGG files                                                                           | Any format the browser plays, such as MP3 or M4A                                                                                  |
-| YouTube links     | Streams the audio alone                                                             | Plays the whole video in a hidden player                                                                                          |
-| In the background | Closes to the tray and keeps playing. Media keys work, and it can launch at startup | Installs as an app, and the built-in sounds can be saved for offline use                                                          |
-| Also              | Can keep the PC from sleeping while a sound plays                                   | Sleep timer, drift (each sound dips below its slider and back), share links for mixes, and a backup file of your mixes and sounds |
-| Languages         | English                                                                             | English, Portuguese (Brazil), Spanish and Japanese                                                                                |
+|                   | Windows                                                                             | Browser                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Your own audio    | OGG files                                                                           | Any format the browser plays, such as MP3 or M4A                                      |
+| YouTube links     | Streams the audio alone                                                             | Plays the whole video in a hidden player                                              |
+| In the background | Closes to the tray and keeps playing. Media keys work, and it can launch at startup | Installs as an app, and the built-in sounds can be saved for offline use              |
+| Also              | Can keep the PC from sleeping while a sound plays                                   | Sleep timer, drift, share links for mixes, and a backup file of your mixes and sounds |
+| Languages         | English                                                                             | English, Portuguese (Brazil), Spanish and Japanese                                    |
 
 Safari plays the built-in sounds from version 18.4. On an iPhone, a YouTube sound's level is set with the phone's volume buttons, since iOS doesn't let a page change a video's volume.
 

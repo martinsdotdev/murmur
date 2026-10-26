@@ -89,7 +89,7 @@ export interface Prefs {
   keepAwake: boolean
   /** iOS audio session "ambient" rather than "playback". See MurmurApp. */
   mixWithOthers: boolean
-  /** Each sound slowly dips below its slider and back. See lib/drift.ts. */
+  /** See lib/drift.ts. */
   drift: boolean
 }
 

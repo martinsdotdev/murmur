@@ -1,6 +1,6 @@
 /**
  * Mirror of Murmur/Models/SoundCatalog.cs (id, displayName, category) and
- * Murmur/ViewModels/SoundCardViewModel.cs lines 80-126 (lucide path data).
+ * Murmur/ViewModels/SoundCardViewModel.cs PathFor (lucide path data).
  *
  * Attribution mirrors Murmur/Sounds/SOUNDS_LICENSING.md.
  *

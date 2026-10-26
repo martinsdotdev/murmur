@@ -138,7 +138,7 @@ public sealed partial class SoundCardViewModel : ObservableObject
             // audio-lines
             "white-noise" => "M2 10v3 M6 6v11 M10 3v18 M14 8v7 M18 5v13 M22 10v3",
 
-            // chart-no-axes-column-decreasing, brown noise's spectrum falling with frequency
+            // chart-no-axes-column-decreasing
             "brown-noise" => "M12 20V10 M18 20v-4 M6 20V4",
 
             // music

@@ -37,13 +37,10 @@ import { createYouTubeSound, type YouTubeSound } from "./youtube"
 const DEFAULT_FADE_IN_MS = 200
 const FADE_OUT_MS = 80
 
-/**
- * Drift is sampled this often and ramped between samples. A second is fine
- * for a curve this slow, and it's as often as a hidden tab's timers run.
- */
+/** How often drift is sampled. Hidden tabs run timers no faster. */
 const DRIFT_STEP_MS = 1000
 
-/** Drift switched on or off grows to full depth, or back to none, over this. */
+/** How long drift takes to ease in or out. */
 const DRIFT_EASE_MS = 5000
 
 /** ~60fps. A YouTube player has no ramp of its own, so fades are stepped. */
@@ -74,11 +71,7 @@ interface BufferNode {
   /** Currently playing source, null when volume === 0. */
   source: AudioBufferSourceNode | null
   gain: GainNode
-  /**
-   * After `gain`, so drift lives on a node of its own: setVolume cancels
-   * whatever is scheduled on `gain`, which would wipe drift out, and drift
-   * scheduled there would fight a fade.
-   */
+  /** Drift's own node, after `gain`, so setVolume's ramps don't cancel it. */
   drift: GainNode
   shape: DriftShape
   /** Last requested volume in [0, 1]. */
@@ -104,7 +97,7 @@ interface StreamNode {
   /** Bumped on every apply, so a stale teardown timer knows to stand down. */
   generation: number
   shape: DriftShape
-  /** The gain drift has it at now, 1 with drift off. */
+  /** Drift's current gain, 1 when off. */
   drift: number
 }
 
@@ -125,10 +118,10 @@ export class Mixer {
   private playing = true
 
   private driftOn = false
-  /** The depth drift had when last switched, and when that was. */
+  /** Depth and time at the last switch, for the ease. */
   private driftFrom = 0
   private driftSince = 0
-  /** setInterval handle, live while drift is on or still easing out. */
+  /** Runs while drift is on or easing out. */
   private driftTimer: number | null = null
 
   /**
@@ -299,8 +292,8 @@ export class Mixer {
    * What a stream should actually be playing at. The master gain node does
    * this arithmetic for buffer sounds; a YouTube player has only one volume,
    * so the same factors have to be multiplied by hand. The sleep timer rides
-   * along for free, since it drives masterVolume. Your own sounds carry no
-   * trim, so a stream's gain is the two levels' and drift's alone.
+   * along for free, since it drives masterVolume. A stream has no trim, so
+   * its gain is the two levels and drift.
    */
   private streamTarget(n: StreamNode): number {
     return this.playing
@@ -538,11 +531,7 @@ export class Mixer {
     this.master.gain.linearRampToValueAtTime(target, now + FADE_OUT_MS / 1000)
   }
 
-  /**
-   * The "Let sounds drift" preference. Only gain moves, never a node's
-   * volume, so sliders, saved mixes and share links keep the level that was
-   * set.
-   */
+  /** Drift moves gain only, never a level, so sliders and saved mixes don't change. */
   setDrift(on: boolean): void {
     if (on === this.driftOn) return
     const now = performance.now()
@@ -555,7 +544,7 @@ export class Mixer {
     )
   }
 
-  /** 0 to 1, eased from where it was when drift was last switched. */
+  /** 0 to 1, eased from the depth at the last switch. */
   private driftDepth(now: number): number {
     const t = Math.min(1, (now - this.driftSince) / DRIFT_EASE_MS)
     return this.driftFrom + ((this.driftOn ? 1 : 0) - this.driftFrom) * t
@@ -572,7 +561,7 @@ export class Mixer {
     for (const n of this.sounds.values()) {
       const gain = driftAt(n.shape, now / 1000, depth)
       if (n.kind === "buffer") {
-        // A buffer node implies a context: nodeFor creates one first.
+        // nodeFor creates the context before any buffer node.
         const at = this.ctx!.currentTime
         const param = n.drift.gain
         param.cancelScheduledValues(at)
@@ -581,8 +570,7 @@ export class Mixer {
         continue
       }
       n.drift = gain
-      // A fade owns the player while it runs, and lands on the drifted level
-      // anyway, through streamTarget.
+      // Skip a fade in progress. streamTarget already includes drift.
       if (n.player && n.ramp === null && n.applied > 0) {
         n.applied = this.streamTarget(n)
         n.player.setVolume(n.applied)

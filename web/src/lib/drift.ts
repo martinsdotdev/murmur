@@ -1,17 +1,12 @@
 /**
- * Drift: each sound slowly dips below its slider and comes back, so a long
- * mix doesn't settle into something heard as a loop. Only ever down: the
- * slider stays the loudest a sound gets, which matters most to someone
- * falling asleep.
- *
- * No Web Audio here. The mixer samples drift once a step and ramps each
- * sound toward it (see Mixer.setDrift).
+ * Drift: each sound slowly dips below its slider and comes back, never above
+ * it. The mixer samples it once a second.
  */
 
-/** How far a dip goes at its deepest: half the amplitude, clearly there but never gone. */
+/** The deepest dip. */
 const DEPTH_DB = 6
 
-/** One sound's wander: two slow sines, each with its own period and phase. */
+/** Two slow sines per sound, each with its own period and phase. */
 export interface DriftShape {
   /** Seconds. */
   periods: [number, number]
@@ -19,11 +14,7 @@ export interface DriftShape {
   phases: [number, number]
 }
 
-/**
- * Drawn once per sound. Periods this far apart never line up into a pattern
- * the ear catches, and random phases keep a mix's sounds from dipping
- * together.
- */
+/** Random per sound, so the sounds in a mix don't dip together. */
 export function driftShape(): DriftShape {
   return {
     periods: [30 + 40 * Math.random(), 75 + 45 * Math.random()],
@@ -32,10 +23,8 @@ export function driftShape(): DriftShape {
 }
 
 /**
- * The gain a sound has drifted to at `t` seconds: 1 at its slider, down to
- * DEPTH_DB below it. `depth`, 0 to 1, eases drift in and out. At most it
- * moves about 0.4 dB a second, so a ramp between samples a second apart is
- * as smooth as the curve itself.
+ * A sound's drift gain at `t` seconds: 1 at its slider, down to DEPTH_DB
+ * below. `depth`, 0 to 1, eases drift in and out.
  */
 export function driftAt(shape: DriftShape, t: number, depth: number): number {
   const [a, b] = shape.periods
