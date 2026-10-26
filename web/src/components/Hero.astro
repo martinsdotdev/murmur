@@ -112,21 +112,33 @@ const shots = Object.fromEntries(
           calc(h - 25) / 0.9
       )
     );
+    position: relative;
     box-shadow:
       inset 0 1px 0 oklch(100% 0 0 / 0.24),
       0 1px 2px oklch(from var(--color-brand-fill) calc(l - 0.35) c h / 0.35),
       0 8px 20px -8px oklch(from var(--color-brand-fill) l c h / 0.6);
     transition:
       background-color 150ms ease,
-      box-shadow 200ms var(--curve-decelerate-mid),
       transform 160ms var(--curve-decelerate-mid);
+  }
+
+  /* The hover shadow, faded in by opacity rather than by transitioning
+     box-shadow, which would repaint the button every frame. An outer shadow
+     is never drawn under its own box, so this one sits behind nothing. */
+  .hero-mix::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 12px 28px -10px
+      oklch(from var(--color-brand-fill) l c h / 0.7);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms var(--curve-decelerate-mid);
   }
 
   .hero-mix:active {
     transform: scale(0.97);
-    box-shadow:
-      inset 0 1px 0 oklch(100% 0 0 / 0.16),
-      0 1px 2px oklch(from var(--color-brand-fill) calc(l - 0.35) c h / 0.35);
     transition-duration: 100ms;
   }
 
@@ -150,7 +162,7 @@ const shots = Object.fromEntries(
     gap: 2px;
     height: 12px;
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.9);
   }
 
   .hero-mix-meter i {
@@ -173,32 +185,53 @@ const shots = Object.fromEntries(
     animation-delay: -0.6s;
   }
 
-  .hero-mix:is(:hover, :focus-visible) .hero-mix-icon > :global(svg) {
+  /* From the keyboard on every device; from a pointer only where hover is
+     real, since a tap leaves a hover behind that would keep the meter going
+     when the page comes back from history. */
+  .hero-mix:focus-visible .hero-mix-icon > :global(svg) {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.9);
   }
 
-  .hero-mix:is(:hover, :focus-visible) .hero-mix-meter {
+  .hero-mix:focus-visible .hero-mix-meter {
     opacity: 1;
     transform: scale(1);
   }
 
-  .hero-mix:is(:hover, :focus-visible) .hero-mix-meter i {
+  .hero-mix:focus-visible .hero-mix-meter i {
     animation-play-state: running;
   }
 
-  /* A real pointer only: a tap fires a hover that sticks. */
   @media (hover: hover) and (pointer: fine) {
     .hero-mix:hover {
       transform: translateY(-1px);
-      box-shadow:
-        inset 0 1px 0 oklch(100% 0 0 / 0.24),
-        0 1px 2px oklch(from var(--color-brand-fill) calc(l - 0.35) c h / 0.35),
-        0 12px 28px -10px oklch(from var(--color-brand-fill) l c h / 0.7);
+    }
+
+    .hero-mix:hover::after {
+      opacity: 1;
     }
 
     .hero-mix:hover:active {
       transform: scale(0.97);
+    }
+
+    .hero-mix:hover:active::after {
+      opacity: 0;
+      transition-duration: 100ms;
+    }
+
+    .hero-mix:hover .hero-mix-icon > :global(svg) {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+
+    .hero-mix:hover .hero-mix-meter {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .hero-mix:hover .hero-mix-meter i {
+      animation-play-state: running;
     }
   }
 
