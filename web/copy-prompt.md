@@ -44,8 +44,8 @@ Current copy is shown for register. Beat it or keep it; do not change a line jus
 1. **Meta title**: 60 characters max. Current: `Murmur · Ambient sound mixer for your browser and Windows`
 2. **Meta description**: 155 characters max. It is read out of context, in a search result, so it must name the app and a real sound rather than gesture at atmosphere. Current: `Layer rain over a fireplace, or a train over white noise. A free, open-source ambient sound mixer for your browser and Windows.`
 3. **Hero heading**: the product name. The hero is icon-led, like a GNOME app page: mark, name, one line. There is no eyebrow. Current: `Murmur`
-4. **Hero subtitle**: 120 characters max, renders as two lines on a wide screen and three on a phone. It is the only prose above the feature grid, so it must say what the app does and name a real sound. One example, not a list of them. Current: `Play ambient sounds while you work, read, or fall asleep. Layer rain over a fireplace and save the mix.`
-5. **Hero meta line**: dot-separated bare facts. Current: `Free · GPLv3 · No account · No telemetry`
+4. **Hero subtitle**: one line on a wide screen. It says what Murmur is, in the meta title's words, as a plain sentence; the feature cards carry the examples. Current: `Ambient sound mixer for your browser and Windows.`
+5. **Hero meta line**: dot-separated bare facts; the licence links to the repository. Current: `Free · {#link}GPLv3{/link} · No account · No telemetry`
 6. **Feature section heading and intro**: a heading of two to four words, then one line framing all six cards at once. It says where the cards apply, never what the app contains, and never restates a card. Current: `What it does` / `Most of this works in the browser and on Windows. Where it doesn’t, the card says.`
 7. **Six feature cards**: each a title of 2 to 6 words plus one short line under it; no paragraph.
    - Titles are plain verb phrases, not taglines. No "X, one Y", no implied contrasts.

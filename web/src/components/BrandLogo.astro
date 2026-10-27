@@ -8,14 +8,26 @@
  * except that the hero's, given `rise`, makes one entrance (see below).
  */
 
+import { uniqueId } from "@/lib/ids"
+
 interface Props {
   size?: number
   class?: string
   /** The hero's mark: its three bars rise once on load, a meter coming up. */
   rise?: boolean
+  /** Next to the name in text, so read once: hidden, not labelled. */
+  decorative?: boolean
 }
 
-const { size = 56, class: className = "", rise = false } = Astro.props
+const {
+  size = 56,
+  class: className = "",
+  rise = false,
+  decorative = false,
+} = Astro.props
+
+// A page shows the mark three times, and each gradient needs an id of its own.
+const tile = uniqueId("bl-tile")
 ---
 
 <svg
@@ -24,18 +36,19 @@ const { size = 56, class: className = "", rise = false } = Astro.props
   width={size}
   height={size}
   class={`brand-logo ${rise ? "rise" : ""} ${className}`}
-  aria-label="Murmur"
-  role="img"
+  {...decorative
+    ? { "aria-hidden": "true" }
+    : { role: "img", "aria-label": "Murmur" }}
 >
   <defs>
-    <radialGradient id="bl-tile" cx="0.7" cy="0.15" r="0.95">
+    <radialGradient id={tile} cx="0.7" cy="0.15" r="0.95">
       <stop offset="0" stop-color="#FFEDC8"></stop>
       <stop offset="0.5" stop-color="#F5C375"></stop>
       <stop offset="1" stop-color="#A85820"></stop>
     </radialGradient>
   </defs>
   <rect width="768" height="768" rx="144" fill="#A85820"></rect>
-  <rect width="768" height="744" rx="144" fill="url(#bl-tile)"></rect>
+  <rect width="768" height="744" rx="144" fill={`url(#${tile})`}></rect>
   <rect
     class="bar"
     style="--i: 0"

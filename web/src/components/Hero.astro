@@ -1,16 +1,19 @@
 ---
 import BrandLogo from "./BrandLogo.astro"
 import Icon from "./Icon.astro"
+import Message from "./Message.astro"
 import { Download04Icon, PlayIcon } from "@hugeicons/core-free-icons"
-import { Picture } from "astro:assets"
+import { getImage } from "astro:assets"
 import type { ImageMetadata } from "astro"
+import { repoUrl } from "../data/site.ts"
 import { m } from "@/paraglide/messages.js"
 import { getLocale } from "@/paraglide/runtime.js"
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
 
-// <locale>-<theme>.png, taken by scripts/screenshots.mjs.
-const shots = Object.fromEntries(
+// Taken by scripts/screenshots.mjs: the mixer, <locale>-<theme>.png, and for
+// phones its Now playing pane, <locale>-<theme>-playing.png.
+const files = Object.fromEntries(
   Object.entries(
     import.meta.glob<{ default: ImageMetadata }>(
       "../assets/screenshots/*.png",
@@ -18,11 +21,45 @@ const shots = Object.fromEntries(
     )
   ).map(([path, mod]) => [path.split("/").pop()!.slice(0, -4), mod.default])
 )
+
+/** Where the phone's picture takes over. The same width the buttons stack at. */
+const PHONE = "(max-width: 560px)"
+
+/**
+ * One theme's picture, built by hand: Astro's <Picture> can't choose a
+ * different image by screen width, and a phone needs the pane, not the whole
+ * mixer shrunk until its labels are 3px.
+ */
+async function shot(theme: "light" | "dark") {
+  const desktop = files[`${getLocale()}-${theme}`]
+  const phone = files[`${getLocale()}-${theme}-playing`]
+  const set = (src: ImageMetadata, widths: number[], format: "avif" | "webp") =>
+    getImage({ src, widths, format }).then((i) => i.srcSet.attribute)
+  const desktopWidths = [640, 960, 1280, 1920]
+  const phoneWidths = [400, 800, phone.width]
+  return {
+    theme,
+    phone: {
+      avif: await set(phone, phoneWidths, "avif"),
+      webp: await set(phone, phoneWidths, "webp"),
+      width: phone.width,
+      height: phone.height,
+    },
+    desktop: {
+      avif: await set(desktop, desktopWidths, "avif"),
+      webp: await set(desktop, desktopWidths, "webp"),
+    },
+    fallback: await getImage({ src: desktop, width: 1280, format: "webp" }),
+  }
+}
+const shots = await Promise.all([shot("light"), shot("dark")])
+const desktopSizes =
+  "(min-width: 1440px) 1080px, (min-width: 1040px) 960px, calc(100vw - 40px)"
 ---
 
 <header class="hero" id="top" aria-labelledby="hero-heading">
   <div class="hero-inner container">
-    <BrandLogo size={72} rise />
+    <BrandLogo size={56} rise decorative />
 
     <h1 id="hero-heading" class="serif-display hero-title">Murmur</h1>
 
@@ -44,24 +81,74 @@ const shots = Object.fromEntries(
       </a>
     </div>
 
-    <p class="hero-meta">{m.hero_meta()}</p>
+    <p class="hero-meta">
+      <Message
+        parts={m.hero_meta.parts({})}
+        tags={{
+          link: { as: "a", href: repoUrl, target: "_blank", rel: "noopener" },
+        }}
+      />
+    </p>
 
     <div class="hero-shot">
       {
-        (["light", "dark"] as const).map((theme) => (
-          <Picture
-            src={shots[`${getLocale()}-${theme}`]}
-            formats={["avif", "webp"]}
-            widths={[640, 1280, 1920]}
-            sizes="(min-width: 1040px) 960px, calc(100vw - 48px)"
-            alt={m.hero_screenshot_alt()}
-            class={`hero-shot-${theme}`}
-            loading="lazy"
-            decoding="async"
-          />
+        shots.map((s) => (
+          <picture class={`hero-shot-${s.theme}`}>
+            <source
+              media={PHONE}
+              type="image/avif"
+              srcset={s.phone.avif}
+              sizes="calc(100vw - 40px)"
+              width={s.phone.width}
+              height={s.phone.height}
+            />
+            <source
+              media={PHONE}
+              type="image/webp"
+              srcset={s.phone.webp}
+              sizes="calc(100vw - 40px)"
+              width={s.phone.width}
+              height={s.phone.height}
+            />
+            <source
+              type="image/avif"
+              srcset={s.desktop.avif}
+              sizes={desktopSizes}
+            />
+            <source
+              type="image/webp"
+              srcset={s.desktop.webp}
+              sizes={desktopSizes}
+            />
+            <img
+              src={s.fallback.src}
+              width={s.fallback.attributes.width}
+              height={s.fallback.attributes.height}
+              alt={m.hero_screenshot_alt()}
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
         ))
       }
     </div>
+    {
+      /* The shown theme's picture is the hero's largest paint, so it loads at
+        once and first; the hidden one stays lazy, so it's never fetched unless
+        the theme toggle shows it. data-theme is set before paint by
+        ThemeBootstrap. */
+    }
+    <script is:inline>
+      {
+        const img = document.querySelector(
+          ".hero-shot-" + document.documentElement.dataset.theme + " img"
+        )
+        if (img) {
+          img.fetchPriority = "high"
+          img.loading = "eager"
+        }
+      }
+    </script>
   </div>
 </header>
 
@@ -69,23 +156,25 @@ const shots = Object.fromEntries(
   /* An app page, not a pitch: the mark identifies the thing, the name is the
      heading, one line says what it does, and a screenshot shows the real
      mixer. No decorative gradients, and no device frame around it. */
+  /* Tight enough that most of the screenshot is above a laptop's fold, and
+     cut by it, so the page visibly goes on. */
   .hero-inner {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding-block: clamp(56px, 9vw, 96px) clamp(48px, 8vw, 80px);
+    padding-block: clamp(32px, 4vw, 48px) clamp(48px, 8vw, 80px);
   }
 
   .hero-title {
-    margin: 22px 0 0;
+    margin: 18px 0 0;
   }
 
   .hero-sub {
     font-size: 17px;
     line-height: 1.6;
     color: var(--color-neutral-foreground-2);
-    max-width: 46ch;
+    max-width: 60ch;
     margin: 14px 0 0;
     /* balance, not pretty: a short centred block wants even line lengths.
        pretty only protects the last line, which leaves the ones above it
@@ -98,7 +187,7 @@ const shots = Object.fromEntries(
     gap: var(--space-m);
     flex-wrap: wrap;
     justify-content: center;
-    margin-top: 30px;
+    margin-top: 28px;
   }
 
   /* The page's one loud control, in the app's own terms: the sheen its filled
@@ -238,28 +327,48 @@ const shots = Object.fromEntries(
   }
 
   .hero-meta {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--color-neutral-foreground-3);
-    margin-top: 22px;
+    margin-top: var(--space-mn);
   }
 
-  /* The theme's own shot. Both are lazy, so the hidden one is never fetched. */
+  /* The licence links to the code it covers. Underlined, since the line's
+     colour alone wouldn't mark it. */
+  .hero-meta :global(a) {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
+    text-underline-offset: 3px;
+  }
+
+  .hero-meta :global(a:hover) {
+    color: var(--color-neutral-foreground-1);
+  }
+
+  /* The theme's own shot; the other is hidden and, being lazy, never fetched. */
   .hero-shot {
     width: 100%;
     max-width: 960px;
-    margin-top: clamp(40px, 6vw, 64px);
+    margin-top: 40px;
   }
 
-  .hero-shot :global(img) {
+  @media (min-width: 1440px) {
+    .hero-shot {
+      max-width: 1080px;
+    }
+  }
+
+  .hero-shot img {
     display: block;
     width: 100%;
     height: auto;
-    border: var(--stroke-width-thin) solid var(--color-neutral-stroke-2);
+    border: var(--stroke-width-thin) solid var(--color-neutral-stroke-1);
     border-radius: var(--border-radius-large);
+    box-shadow: var(--shadow-16);
   }
 
-  :global([data-theme="dark"]) .hero-shot :global(.hero-shot-light),
-  :global([data-theme="light"]) .hero-shot :global(.hero-shot-dark) {
+  :global([data-theme="dark"]) .hero-shot-light,
+  :global([data-theme="light"]) .hero-shot-dark {
     display: none;
   }
 

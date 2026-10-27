@@ -1,7 +1,8 @@
 /**
- * Takes the About page's pictures from the real app: a screenshot of the mixer
- * playing the Rainy café starter mix for each language and theme
- * (src/assets/screenshots/<locale>-<theme>.png), and a 1200×630 card for link
+ * Takes the About page's pictures from the real app, playing the Rainy café
+ * starter mix, for each language and theme: the mixer
+ * (src/assets/screenshots/<locale>-<theme>.png), its Now playing pane for
+ * phones (<locale>-<theme>-playing.png), and a 1200×630 card for link
  * previews per language (public/og/<locale>.png).
  *
  * Run against a preview of a fresh build, then build again so the pages pick
@@ -40,11 +41,11 @@ const browser = await chromium.launch({
 for (const locale of locales) {
   const m = messages(locale)
 
-  for (const theme of ["light", "dark"]) {
-    // 1280 wide at 1.5x: 1920 pixels, the largest width the page asks for.
+  /** The mixer at 1280×800 playing Rainy café, in this language and theme. */
+  async function playing(theme, deviceScaleFactor) {
     const context = await browser.newContext({
       viewport: { width: 1280, height: 800 },
-      deviceScaleFactor: 1.5,
+      deviceScaleFactor,
       locale,
       colorScheme: theme,
       // Holds the level meters still, mid-height, as a picture should.
@@ -68,12 +69,37 @@ for (const locale of locales) {
     const play = page.getByRole("button", { name: m.action_play, exact: true })
     if (await play.count()) await play.first().click()
     await page.mouse.move(1279, 799)
-    await page.waitForTimeout(1500)
-    await page.screenshot({
+    return { context, page }
+  }
+
+  for (const theme of ["light", "dark"]) {
+    // 1280 wide at 1.5x: 1920 pixels, the largest width the page asks for.
+    const desktop = await playing(theme, 1.5)
+    await desktop.page.waitForTimeout(1500)
+    await desktop.page.screenshot({
       path: fileURLToPath(new URL(`${locale}-${theme}.png`, shots)),
     })
-    await context.close()
-    console.log(`screenshot ${locale}-${theme}`)
+    await desktop.context.close()
+
+    // Phones get the Now playing pane instead: the mix's three sounds and
+    // their levels, legible at a phone's width. 3x for a 3x screen.
+    const pane = await playing(theme, 3)
+    await pane.page
+      .getByRole("button", { name: m.now_playing, exact: true })
+      .first()
+      .click()
+    await pane.page.waitForTimeout(1500)
+    const box = await pane.page
+      .getByRole("complementary", { name: m.now_playing, exact: true })
+      .boundingBox()
+    await pane.page.screenshot({
+      path: fileURLToPath(new URL(`${locale}-${theme}-playing.png`, shots)),
+      // Past the pane's own left border, which would draw a line down the
+      // picture's edge.
+      clip: { x: box.x + 1, y: box.y, width: box.width - 1, height: 300 },
+    })
+    await pane.context.close()
+    console.log(`screenshots ${locale}-${theme}`)
   }
 
   // The card is drawn on the About page itself, so it takes the page's fonts,
