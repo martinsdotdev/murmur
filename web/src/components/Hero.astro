@@ -11,8 +11,7 @@ import { getLocale } from "@/paraglide/runtime.js"
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "")
 
-// Taken by scripts/screenshots.mjs: the mixer, <locale>-<theme>.png, and for
-// phones its Now playing pane, <locale>-<theme>-playing.png.
+// <locale>-<theme>.png, taken by scripts/screenshots.mjs.
 const files = Object.fromEntries(
   Object.entries(
     import.meta.glob<{ default: ImageMetadata }>(
@@ -22,38 +21,21 @@ const files = Object.fromEntries(
   ).map(([path, mod]) => [path.split("/").pop()!.slice(0, -4), mod.default])
 )
 
-/** Where the phone's picture takes over. The same width the buttons stack at. */
-const PHONE = "(max-width: 560px)"
-
-/**
- * One theme's picture, built by hand: Astro's <Picture> can't choose a
- * different image by screen width, and a phone needs the pane, not the whole
- * mixer shrunk until its labels are 3px.
- */
+/** One theme's picture, as AVIF and WebP sets and a WebP fallback. */
 async function shot(theme: "light" | "dark") {
-  const desktop = files[`${getLocale()}-${theme}`]
-  const phone = files[`${getLocale()}-${theme}-playing`]
-  const set = (src: ImageMetadata, widths: number[], format: "avif" | "webp") =>
+  const src = files[`${getLocale()}-${theme}`]
+  const widths = [640, 960, 1280, 1920]
+  const set = (format: "avif" | "webp") =>
     getImage({ src, widths, format }).then((i) => i.srcSet.attribute)
-  const desktopWidths = [640, 960, 1280, 1920]
-  const phoneWidths = [400, 800, phone.width]
   return {
     theme,
-    phone: {
-      avif: await set(phone, phoneWidths, "avif"),
-      webp: await set(phone, phoneWidths, "webp"),
-      width: phone.width,
-      height: phone.height,
-    },
-    desktop: {
-      avif: await set(desktop, desktopWidths, "avif"),
-      webp: await set(desktop, desktopWidths, "webp"),
-    },
-    fallback: await getImage({ src: desktop, width: 1280, format: "webp" }),
+    avif: await set("avif"),
+    webp: await set("webp"),
+    fallback: await getImage({ src, width: 1280, format: "webp" }),
   }
 }
 const shots = await Promise.all([shot("light"), shot("dark")])
-const desktopSizes =
+const sizes =
   "(min-width: 1440px) 1080px, (min-width: 1040px) 960px, calc(100vw - 40px)"
 ---
 
@@ -94,32 +76,8 @@ const desktopSizes =
       {
         shots.map((s) => (
           <picture class={`hero-shot-${s.theme}`}>
-            <source
-              media={PHONE}
-              type="image/avif"
-              srcset={s.phone.avif}
-              sizes="calc(100vw - 40px)"
-              width={s.phone.width}
-              height={s.phone.height}
-            />
-            <source
-              media={PHONE}
-              type="image/webp"
-              srcset={s.phone.webp}
-              sizes="calc(100vw - 40px)"
-              width={s.phone.width}
-              height={s.phone.height}
-            />
-            <source
-              type="image/avif"
-              srcset={s.desktop.avif}
-              sizes={desktopSizes}
-            />
-            <source
-              type="image/webp"
-              srcset={s.desktop.webp}
-              sizes={desktopSizes}
-            />
+            <source type="image/avif" srcset={s.avif} sizes={sizes} />
+            <source type="image/webp" srcset={s.webp} sizes={sizes} />
             <img
               src={s.fallback.src}
               width={s.fallback.attributes.width}
@@ -135,15 +93,15 @@ const desktopSizes =
     {
       /* The shown theme's picture is the hero's largest paint, so it loads at
         once and first; the hidden one stays lazy, so it's never fetched unless
-        the theme toggle shows it. data-theme is set before paint by
-        ThemeBootstrap. */
+        the theme toggle shows it. Phones show neither, and lazy, neither is
+        fetched there. data-theme is set before paint by ThemeBootstrap. */
     }
     <script is:inline>
       {
         const img = document.querySelector(
           ".hero-shot-" + document.documentElement.dataset.theme + " img"
         )
-        if (img) {
+        if (img && !matchMedia("(max-width: 560px)").matches) {
           img.fetchPriority = "high"
           img.loading = "eager"
         }
@@ -358,13 +316,19 @@ const desktopSizes =
     }
   }
 
+  /* The top half only: the playing mix's header, the mixes and the first
+     rows of sounds, fading out where it's cut so the cut reads as meant. */
   .hero-shot img {
     display: block;
     width: 100%;
     height: auto;
+    aspect-ratio: 16 / 5;
+    object-fit: cover;
+    object-position: top;
     border: var(--stroke-width-thin) solid var(--color-neutral-stroke-1);
-    border-radius: var(--border-radius-large);
-    box-shadow: var(--shadow-16);
+    border-bottom: 0;
+    border-radius: var(--border-radius-large) var(--border-radius-large) 0 0;
+    mask-image: linear-gradient(#000 55%, transparent);
   }
 
   :global([data-theme="dark"]) .hero-shot-light,
@@ -372,11 +336,17 @@ const desktopSizes =
     display: none;
   }
 
+  /* Phones show no screenshot: at their width the mixer's labels would be a
+     few pixels tall. */
   @media (max-width: 560px) {
     .hero-ctas {
       width: 100%;
       flex-direction: column;
       align-items: stretch;
+    }
+
+    .hero-shot {
+      display: none;
     }
   }
 </style>
