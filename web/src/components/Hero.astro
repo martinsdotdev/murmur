@@ -116,14 +116,6 @@ const sizes =
      mixer. No decorative gradients, and no device frame around it. */
   /* Tight enough that most of the screenshot is above a laptop's fold, and
      cut by it, so the page visibly goes on. */
-  /* Clips the grid behind the screenshot, which reaches past the screen's
-     edges. Isolated, so the grid's z-index -1 stays behind the hero's
-     content and above the page's background. */
-  .hero {
-    overflow: clip;
-    isolation: isolate;
-  }
-
   .hero-inner {
     display: flex;
     flex-direction: column;
@@ -313,31 +305,9 @@ const sizes =
 
   /* The theme's own shot; the other is hidden and, being lazy, never fetched. */
   .hero-shot {
-    position: relative;
     width: 100%;
     max-width: 960px;
     margin-top: 40px;
-  }
-
-  /* A grid drawn from the screenshot: 60px cells laid from its top-left
-     corner, so its edges sit on grid lines at both its widths (960 and 1080
-     are 16 and 18 cells). It reaches 6 cells above, behind the name, and 8
-     to each side, and fades out from around the screenshot's top edge. */
-  .hero-shot::before {
-    content: "";
-    position: absolute;
-    inset: -360px -480px 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image:
-      linear-gradient(var(--color-neutral-stroke-2) 1px, transparent 1px),
-      linear-gradient(90deg, var(--color-neutral-stroke-2) 1px, transparent 1px);
-    background-size: 60px 60px;
-    mask-image: radial-gradient(
-      ellipse 50% 60% at 50% 58%,
-      #000 25%,
-      transparent 80%
-    );
   }
 
   @media (min-width: 1440px) {
@@ -347,36 +317,7 @@ const sizes =
   }
 
   /* The top half only: the playing mix's header, the mixes and the first
-     rows of sounds, blurring and fading out where it's cut so the cut reads
-     as meant. */
-  .hero-shot picture {
-    display: block;
-    position: relative;
-  }
-
-  /* The blur, in two steps so it deepens rather than starts at one line:
-     a light one through the middle of the fade, a heavier one at its end.
-     Each blurs what's behind it, the picture, through its own mask. */
-  .hero-shot picture::before,
-  .hero-shot picture::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .hero-shot picture::before {
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
-    mask-image: linear-gradient(transparent 40%, #000 65%);
-  }
-
-  .hero-shot picture::after {
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-    mask-image: linear-gradient(transparent 60%, #000 90%);
-  }
-
+     rows of sounds, fading out where it's cut so the cut reads as meant. */
   .hero-shot img {
     display: block;
     width: 100%;
@@ -390,9 +331,8 @@ const sizes =
     mask-image: linear-gradient(#000 55%, transparent);
   }
 
-  /* Through .hero-shot, so it outranks the display: block above. */
-  :global([data-theme="dark"]) .hero-shot .hero-shot-light,
-  :global([data-theme="light"]) .hero-shot .hero-shot-dark {
+  :global([data-theme="dark"]) .hero-shot-light,
+  :global([data-theme="light"]) .hero-shot-dark {
     display: none;
   }
 
