@@ -312,7 +312,8 @@ function soundsByLevel(
  * The name Save offers: the mix's own if it has one, else the loudest sound,
  * and the next if both fit, so "Rain and Coffee shop". Numbered past any mix
  * already called that, since saving under a taken name replaces it and
- * accepting the offer shouldn't.
+ * accepting the offer shouldn't. A name that already ends in a number counts
+ * on from it, so a saved "Lo-fi 2" offers "Lo-fi 3", not "Lo-fi 2 2".
  */
 function suggestMixName(
   own: MixName,
@@ -330,9 +331,14 @@ function suggestMixName(
         ? both
         : clampName(first, MIX_NAME_MAX)
   }
+  // Up to six digits: a counter, not a long number that n++ can't move.
+  const numbered = /^(.*\S) (\d{1,6})$/.exec(base)
+  const stem = numbered ? numbered[1] : base
+  let n = numbered ? Number(numbered[2]) : 1
   let name = base
-  for (let n = 2; taken(name); n++) {
-    name = `${clampName(base, MIX_NAME_MAX - ` ${n}`.length)} ${n}`
+  while (taken(name)) {
+    n++
+    name = `${clampName(stem, MIX_NAME_MAX - ` ${n}`.length)} ${n}`
   }
   return name
 }
